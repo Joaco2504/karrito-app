@@ -1,0 +1,29 @@
+# Environment & secrets
+.env
+.env.*
+*.env.local
+supabase/.temp/
+
+# OS & editors
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Flutter / Dart artifacts (preserve apk_lista/*.apk)
+karrito_app/.dart_tool/
+karrito_app/.flutter-plugins
+karrito_app/.flutter-plugins-dependencies
+karrito_app/build/
+karrito_app/android/.gradle/
+karrito_app/android/local.properties
+karrito_app/android/captures/
+!apk_lista/
+!apk_lista/*.apk
