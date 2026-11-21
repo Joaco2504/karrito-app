@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/karrito_selector_field.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -46,35 +47,19 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        DropdownButtonFormField<String>(
-                          key: ValueKey<String>('city_$currentCity'),
-                          initialValue: currentCity,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.cityLabel,
-                            prefixIcon: Icon(Icons.location_on_outlined),
-                          ),
-                          items: StoreHierarchy.cities
-                              .map(
-                                (city) => DropdownMenuItem<String>(
-                                  value: city,
-                                  child: Text(city),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              controller.setCity(value);
-                            }
-                          },
+                        KarritoSelectorField<String>(
+                          label: AppStrings.cityLabel,
+                          sheetTitle: AppStrings.selectCityTitle,
+                          leadingIcon: Icons.location_on_outlined,
+                          value: currentCity,
+                          options: StoreHierarchy.cities,
+                          onChanged: controller.setCity,
                         ),
                         const SizedBox(height: 18),
-                        Text(
+                        const KarritoFieldLabel(
                           AppStrings.settingsAppearanceLabel,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         SegmentedButton<String>(
                           showSelectedIcon: false,
                           segments: const [
@@ -107,7 +92,7 @@ class SettingsScreen extends ConsumerWidget {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
-                      SwitchListTile.adaptive(
+                      SwitchListTile(
                         value: keepScreenOn,
                         onChanged: (val) =>
                             controller.setKeepScreenOn(val, notify: false),

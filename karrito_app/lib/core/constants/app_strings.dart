@@ -73,10 +73,17 @@ class AppStrings {
   // Item actions & edit sheet
   static const String editItemTitle = 'Editar producto';
   static const String itemNameLabel = 'Producto';
+  static const String itemNameHint = 'Ej: Papa negra';
   static const String itemQuantityLabel = 'Cantidad';
   static const String itemUnitLabel = 'Unidad';
   static const String itemStoreLabel = 'Comercio';
   static const String itemAisleLabel = 'Pasillo';
+  static const String selectCityTitle = 'Elegí tu localidad';
+  static const String selectUnitTitle = 'Elegí la unidad';
+  static const String selectStoreTitle = 'Elegí el comercio';
+  static const String selectAisleTitle = 'Elegí el pasillo';
+  static const String saveShortButton = 'Guardar';
+  static const String removeShortButton = 'Quitar';
   static const String saveItemButton = 'Guardar cambios';
   static const String deleteItemButton = 'Quitar de la lista';
   static String deleteItemConfirmBody(String name) =>

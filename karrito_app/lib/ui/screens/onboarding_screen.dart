@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/karrito_selector_field.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({this.isReviewMode = false, super.key});
@@ -96,27 +97,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        DropdownButtonFormField<String>(
-                          initialValue:
-                              StoreHierarchy.cities.contains(_selectedCity)
+                        KarritoSelectorField<String>(
+                          label: AppStrings.cityLabel,
+                          sheetTitle: AppStrings.selectCityTitle,
+                          leadingIcon: Icons.location_on_outlined,
+                          value: StoreHierarchy.cities.contains(_selectedCity)
                               ? _selectedCity
                               : StoreHierarchy.defaultCity,
-                          decoration: const InputDecoration(
-                            labelText: AppStrings.cityLabel,
-                            prefixIcon: Icon(Icons.location_on_outlined),
-                          ),
-                          items: StoreHierarchy.cities
-                              .map(
-                                (city) => DropdownMenuItem<String>(
-                                  value: city,
-                                  child: Text(city),
-                                ),
-                              )
-                              .toList(),
+                          options: StoreHierarchy.cities,
                           onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _selectedCity = value);
-                            }
+                            setState(() => _selectedCity = value);
                           },
                         ),
                         const SizedBox(height: 20),

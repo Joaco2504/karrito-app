@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karrito_app/core/constants/app_strings.dart';
+import 'package:karrito_app/core/theme/app_theme.dart';
 import 'package:karrito_app/data/local/app_database.dart';
 import 'package:karrito_app/data/models/procesar_lista_response.dart';
 import 'package:karrito_app/data/services/ai_classifier_service.dart';
@@ -61,7 +62,7 @@ class _TestAiClassifier implements AiClassifierService {
 
 void main() {
   testWidgets(
-    'onboarding completes and renders store tabs, aisles, and check-off flow',
+    'onboarding, selector bottom sheets, edit item sheet, and settings work end-to-end',
     (WidgetTester tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       var dbClosed = false;
@@ -87,9 +88,19 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // First-run onboarding visible with Andalgalá preselected.
+      // First-run onboarding visible with Andalgalá preselected in KarritoSelectorField.
       expect(find.text(AppStrings.onboardingHeadline), findsOneWidget);
       expect(find.text('Andalgalá'), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+
+      // Open locality selector bottom sheet, select Belén.
+      await tester.tap(find.text('Andalgalá'));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.selectCityTitle), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      await tester.tap(find.text('Belén'));
+      await tester.pumpAndSettle();
+      expect(find.text('Belén'), findsOneWidget);
 
       await tester.tap(find.text(AppStrings.startShoppingButton));
       await tester.pumpAndSettle();
@@ -113,17 +124,86 @@ void main() {
       expect(find.text('Papa'), findsOneWidget);
       expect(find.text('Leche'), findsOneWidget);
 
-      // Check off Papa and verify counter flips from 1/1 -> 0/1 and Supermercado 1/2.
-      await tester.tap(find.text('Papa'));
+      // Open EditItemBottomSheet via long-press on Papa.
+      await tester.longPress(find.text('Papa'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Supermercado (1/2)'), findsOneWidget);
-      expect(find.text('0/1'), findsOneWidget);
+      expect(find.text(AppStrings.editItemTitle), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+      expect(find.text(AppStrings.removeShortButton), findsOneWidget);
+      expect(find.text(AppStrings.saveShortButton), findsOneWidget);
 
-      // Switch to Farmacia tab and confirm Ibuprofeno appears.
-      await tester.tap(find.text('Farmacia (1/1)'));
+      // Verify Quitar and Guardar sit horizontally on the same row.
+      final removeCenter = tester.getCenter(
+        find.text(AppStrings.removeShortButton),
+      );
+      final saveCenter = tester.getCenter(
+        find.text(AppStrings.saveShortButton),
+      );
+      expect(removeCenter.dy, closeTo(saveCenter.dy, 2.0));
+      expect(removeCenter.dx, lessThan(saveCenter.dx));
+
+      // Change Comercio from Supermercado to Dietética / Naturista via selector sheet.
+      await tester.tap(find.text('Supermercado').last);
       await tester.pumpAndSettle();
-      expect(find.text('Ibuprofeno'), findsOneWidget);
+      expect(find.text(AppStrings.selectStoreTitle), findsOneWidget);
+      await tester.tap(find.text('Dietética / Naturista'));
+      await tester.pumpAndSettle();
+
+      // Pasillo automatically updates to the first valid aisle of Dietética / Naturista.
+      expect(find.text('Frutos Secos y Semillas'), findsOneWidget);
+
+      // Save changes and confirm item moved tab.
+      await tester.tap(find.text(AppStrings.saveShortButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Dietética / Naturista (1/1)'), findsOneWidget);
+      expect(find.text('Supermercado (1/1)'), findsOneWidget);
+
+      // Check off Leche in Supermercado tab.
+      await tester.tap(find.text('Leche'));
+      await tester.pumpAndSettle();
+      expect(find.text('Supermercado (0/1)'), findsOneWidget);
+
+      // Open Settings and verify KarritoSelectorField and Switch.
+      await tester.tap(find.byTooltip(AppStrings.settingsTooltip));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.settingsTitle), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+      expect(find.text('Belén'), findsOneWidget);
+
+      await tester.tap(find.text('Belén'));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.selectCityTitle), findsOneWidget);
+      await tester.tap(find.text('Andalgalá'));
+      await tester.pumpAndSettle();
+      expect(find.text('Andalgalá'), findsOneWidget);
+
+      // Toggle keepScreenOn switch off and verify it updates state cleanly.
+      final switchFinder = find.byType(Switch);
+      expect(tester.widget<Switch>(switchFinder).value, isTrue);
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(switchFinder).value, isFalse);
+
+      // Verify explicit SwitchThemeData colors in Light and Dark themes.
+      final lightSwitch = AppTheme.light().switchTheme;
+      final darkSwitch = AppTheme.dark().switchTheme;
+      expect(
+        lightSwitch.trackColor?.resolve(<WidgetState>{}),
+        const Color(0xFFEDE7DF),
+      );
+      expect(
+        lightSwitch.trackOutlineColor?.resolve(<WidgetState>{}),
+        const Color(0xFFD0C7BC),
+      );
+      expect(
+        darkSwitch.trackColor?.resolve(<WidgetState>{}),
+        const Color(0xFF2B2329),
+      );
+      expect(
+        darkSwitch.trackOutlineColor?.resolve(<WidgetState>{}),
+        const Color(0xFF4A3F46),
+      );
 
       // Unmount ProviderScope and flush Drift's StreamQueryStore timer cleanly.
       await tester.pumpWidget(const SizedBox.shrink());
