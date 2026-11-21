@@ -27,6 +27,58 @@ class $LocalListsTable extends LocalLists
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSharedMeta = const VerificationMeta(
+    'isShared',
+  );
+  @override
+  late final GeneratedColumn<bool> isShared = GeneratedColumn<bool>(
+    'is_shared',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_shared" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _shareCodeMeta = const VerificationMeta(
+    'shareCode',
+  );
+  @override
+  late final GeneratedColumn<String> shareCode = GeneratedColumn<String>(
+    'share_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isJoinedRemoteMeta = const VerificationMeta(
+    'isJoinedRemote',
+  );
+  @override
+  late final GeneratedColumn<bool> isJoinedRemote = GeneratedColumn<bool>(
+    'is_joined_remote',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_joined_remote" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -65,6 +117,10 @@ class $LocalListsTable extends LocalLists
   List<GeneratedColumn> get $columns => [
     id,
     title,
+    ownerId,
+    isShared,
+    shareCode,
+    isJoinedRemote,
     createdAt,
     updatedAt,
     syncStatus,
@@ -93,6 +149,33 @@ class $LocalListsTable extends LocalLists
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    }
+    if (data.containsKey('is_shared')) {
+      context.handle(
+        _isSharedMeta,
+        isShared.isAcceptableOrUnknown(data['is_shared']!, _isSharedMeta),
+      );
+    }
+    if (data.containsKey('share_code')) {
+      context.handle(
+        _shareCodeMeta,
+        shareCode.isAcceptableOrUnknown(data['share_code']!, _shareCodeMeta),
+      );
+    }
+    if (data.containsKey('is_joined_remote')) {
+      context.handle(
+        _isJoinedRemoteMeta,
+        isJoinedRemote.isAcceptableOrUnknown(
+          data['is_joined_remote']!,
+          _isJoinedRemoteMeta,
+        ),
+      );
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -133,6 +216,22 @@ class $LocalListsTable extends LocalLists
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      ),
+      isShared: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_shared'],
+      )!,
+      shareCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}share_code'],
+      ),
+      isJoinedRemote: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_joined_remote'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -158,12 +257,20 @@ class ShoppingListEntity extends DataClass
     implements Insertable<ShoppingListEntity> {
   final String id;
   final String title;
+  final String? ownerId;
+  final bool isShared;
+  final String? shareCode;
+  final bool isJoinedRemote;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String syncStatus;
   const ShoppingListEntity({
     required this.id,
     required this.title,
+    this.ownerId,
+    required this.isShared,
+    this.shareCode,
+    required this.isJoinedRemote,
     required this.createdAt,
     required this.updatedAt,
     required this.syncStatus,
@@ -173,6 +280,14 @@ class ShoppingListEntity extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || ownerId != null) {
+      map['owner_id'] = Variable<String>(ownerId);
+    }
+    map['is_shared'] = Variable<bool>(isShared);
+    if (!nullToAbsent || shareCode != null) {
+      map['share_code'] = Variable<String>(shareCode);
+    }
+    map['is_joined_remote'] = Variable<bool>(isJoinedRemote);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['sync_status'] = Variable<String>(syncStatus);
@@ -183,6 +298,14 @@ class ShoppingListEntity extends DataClass
     return LocalListsCompanion(
       id: Value(id),
       title: Value(title),
+      ownerId: ownerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerId),
+      isShared: Value(isShared),
+      shareCode: shareCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shareCode),
+      isJoinedRemote: Value(isJoinedRemote),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       syncStatus: Value(syncStatus),
@@ -197,6 +320,10 @@ class ShoppingListEntity extends DataClass
     return ShoppingListEntity(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      ownerId: serializer.fromJson<String?>(json['ownerId']),
+      isShared: serializer.fromJson<bool>(json['isShared']),
+      shareCode: serializer.fromJson<String?>(json['shareCode']),
+      isJoinedRemote: serializer.fromJson<bool>(json['isJoinedRemote']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
@@ -208,6 +335,10 @@ class ShoppingListEntity extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
+      'ownerId': serializer.toJson<String?>(ownerId),
+      'isShared': serializer.toJson<bool>(isShared),
+      'shareCode': serializer.toJson<String?>(shareCode),
+      'isJoinedRemote': serializer.toJson<bool>(isJoinedRemote),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
@@ -217,12 +348,20 @@ class ShoppingListEntity extends DataClass
   ShoppingListEntity copyWith({
     String? id,
     String? title,
+    Value<String?> ownerId = const Value.absent(),
+    bool? isShared,
+    Value<String?> shareCode = const Value.absent(),
+    bool? isJoinedRemote,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? syncStatus,
   }) => ShoppingListEntity(
     id: id ?? this.id,
     title: title ?? this.title,
+    ownerId: ownerId.present ? ownerId.value : this.ownerId,
+    isShared: isShared ?? this.isShared,
+    shareCode: shareCode.present ? shareCode.value : this.shareCode,
+    isJoinedRemote: isJoinedRemote ?? this.isJoinedRemote,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     syncStatus: syncStatus ?? this.syncStatus,
@@ -231,6 +370,12 @@ class ShoppingListEntity extends DataClass
     return ShoppingListEntity(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      isShared: data.isShared.present ? data.isShared.value : this.isShared,
+      shareCode: data.shareCode.present ? data.shareCode.value : this.shareCode,
+      isJoinedRemote: data.isJoinedRemote.present
+          ? data.isJoinedRemote.value
+          : this.isJoinedRemote,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncStatus: data.syncStatus.present
@@ -244,6 +389,10 @@ class ShoppingListEntity extends DataClass
     return (StringBuffer('ShoppingListEntity(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('isShared: $isShared, ')
+          ..write('shareCode: $shareCode, ')
+          ..write('isJoinedRemote: $isJoinedRemote, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus')
@@ -252,13 +401,27 @@ class ShoppingListEntity extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, title, createdAt, updatedAt, syncStatus);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    ownerId,
+    isShared,
+    shareCode,
+    isJoinedRemote,
+    createdAt,
+    updatedAt,
+    syncStatus,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ShoppingListEntity &&
           other.id == this.id &&
           other.title == this.title &&
+          other.ownerId == this.ownerId &&
+          other.isShared == this.isShared &&
+          other.shareCode == this.shareCode &&
+          other.isJoinedRemote == this.isJoinedRemote &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncStatus == this.syncStatus);
@@ -267,6 +430,10 @@ class ShoppingListEntity extends DataClass
 class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
   final Value<String> id;
   final Value<String> title;
+  final Value<String?> ownerId;
+  final Value<bool> isShared;
+  final Value<String?> shareCode;
+  final Value<bool> isJoinedRemote;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> syncStatus;
@@ -274,6 +441,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
   const LocalListsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.isShared = const Value.absent(),
+    this.shareCode = const Value.absent(),
+    this.isJoinedRemote = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
@@ -282,6 +453,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
   LocalListsCompanion.insert({
     required String id,
     required String title,
+    this.ownerId = const Value.absent(),
+    this.isShared = const Value.absent(),
+    this.shareCode = const Value.absent(),
+    this.isJoinedRemote = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.syncStatus = const Value.absent(),
@@ -293,6 +468,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
   static Insertable<ShoppingListEntity> custom({
     Expression<String>? id,
     Expression<String>? title,
+    Expression<String>? ownerId,
+    Expression<bool>? isShared,
+    Expression<String>? shareCode,
+    Expression<bool>? isJoinedRemote,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncStatus,
@@ -301,6 +480,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (isShared != null) 'is_shared': isShared,
+      if (shareCode != null) 'share_code': shareCode,
+      if (isJoinedRemote != null) 'is_joined_remote': isJoinedRemote,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
@@ -311,6 +494,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
   LocalListsCompanion copyWith({
     Value<String>? id,
     Value<String>? title,
+    Value<String?>? ownerId,
+    Value<bool>? isShared,
+    Value<String?>? shareCode,
+    Value<bool>? isJoinedRemote,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String>? syncStatus,
@@ -319,6 +506,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
     return LocalListsCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      ownerId: ownerId ?? this.ownerId,
+      isShared: isShared ?? this.isShared,
+      shareCode: shareCode ?? this.shareCode,
+      isJoinedRemote: isJoinedRemote ?? this.isJoinedRemote,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -334,6 +525,18 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (isShared.present) {
+      map['is_shared'] = Variable<bool>(isShared.value);
+    }
+    if (shareCode.present) {
+      map['share_code'] = Variable<String>(shareCode.value);
+    }
+    if (isJoinedRemote.present) {
+      map['is_joined_remote'] = Variable<bool>(isJoinedRemote.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -355,6 +558,10 @@ class LocalListsCompanion extends UpdateCompanion<ShoppingListEntity> {
     return (StringBuffer('LocalListsCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('isShared: $isShared, ')
+          ..write('shareCode: $shareCode, ')
+          ..write('isJoinedRemote: $isJoinedRemote, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus, ')
@@ -1107,8 +1314,37 @@ class $LocalAisleOrderTable extends LocalAisleOrder
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [storeCategory, aisleName, sortOrder];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('seeded'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    storeCategory,
+    aisleName,
+    sortOrder,
+    updatedAt,
+    syncStatus,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1148,6 +1384,18 @@ class $LocalAisleOrderTable extends LocalAisleOrder
     } else if (isInserting) {
       context.missing(_sortOrderMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
     return context;
   }
 
@@ -1169,6 +1417,14 @@ class $LocalAisleOrderTable extends LocalAisleOrder
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
     );
   }
 
@@ -1183,10 +1439,14 @@ class AisleOrderEntity extends DataClass
   final String storeCategory;
   final String aisleName;
   final int sortOrder;
+  final DateTime? updatedAt;
+  final String syncStatus;
   const AisleOrderEntity({
     required this.storeCategory,
     required this.aisleName,
     required this.sortOrder,
+    this.updatedAt,
+    required this.syncStatus,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1194,6 +1454,10 @@ class AisleOrderEntity extends DataClass
     map['store_category'] = Variable<String>(storeCategory);
     map['aisle_name'] = Variable<String>(aisleName);
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
     return map;
   }
 
@@ -1202,6 +1466,10 @@ class AisleOrderEntity extends DataClass
       storeCategory: Value(storeCategory),
       aisleName: Value(aisleName),
       sortOrder: Value(sortOrder),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      syncStatus: Value(syncStatus),
     );
   }
 
@@ -1214,6 +1482,8 @@ class AisleOrderEntity extends DataClass
       storeCategory: serializer.fromJson<String>(json['storeCategory']),
       aisleName: serializer.fromJson<String>(json['aisleName']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
     );
   }
   @override
@@ -1223,6 +1493,8 @@ class AisleOrderEntity extends DataClass
       'storeCategory': serializer.toJson<String>(storeCategory),
       'aisleName': serializer.toJson<String>(aisleName),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
     };
   }
 
@@ -1230,10 +1502,14 @@ class AisleOrderEntity extends DataClass
     String? storeCategory,
     String? aisleName,
     int? sortOrder,
+    Value<DateTime?> updatedAt = const Value.absent(),
+    String? syncStatus,
   }) => AisleOrderEntity(
     storeCategory: storeCategory ?? this.storeCategory,
     aisleName: aisleName ?? this.aisleName,
     sortOrder: sortOrder ?? this.sortOrder,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
   );
   AisleOrderEntity copyWithCompanion(LocalAisleOrderCompanion data) {
     return AisleOrderEntity(
@@ -1242,6 +1518,10 @@ class AisleOrderEntity extends DataClass
           : this.storeCategory,
       aisleName: data.aisleName.present ? data.aisleName.value : this.aisleName,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
     );
   }
 
@@ -1250,37 +1530,48 @@ class AisleOrderEntity extends DataClass
     return (StringBuffer('AisleOrderEntity(')
           ..write('storeCategory: $storeCategory, ')
           ..write('aisleName: $aisleName, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(storeCategory, aisleName, sortOrder);
+  int get hashCode =>
+      Object.hash(storeCategory, aisleName, sortOrder, updatedAt, syncStatus);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AisleOrderEntity &&
           other.storeCategory == this.storeCategory &&
           other.aisleName == this.aisleName &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus);
 }
 
 class LocalAisleOrderCompanion extends UpdateCompanion<AisleOrderEntity> {
   final Value<String> storeCategory;
   final Value<String> aisleName;
   final Value<int> sortOrder;
+  final Value<DateTime?> updatedAt;
+  final Value<String> syncStatus;
   final Value<int> rowid;
   const LocalAisleOrderCompanion({
     this.storeCategory = const Value.absent(),
     this.aisleName = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalAisleOrderCompanion.insert({
     required String storeCategory,
     required String aisleName,
     required int sortOrder,
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : storeCategory = Value(storeCategory),
        aisleName = Value(aisleName),
@@ -1289,12 +1580,16 @@ class LocalAisleOrderCompanion extends UpdateCompanion<AisleOrderEntity> {
     Expression<String>? storeCategory,
     Expression<String>? aisleName,
     Expression<int>? sortOrder,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncStatus,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (storeCategory != null) 'store_category': storeCategory,
       if (aisleName != null) 'aisle_name': aisleName,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1303,12 +1598,16 @@ class LocalAisleOrderCompanion extends UpdateCompanion<AisleOrderEntity> {
     Value<String>? storeCategory,
     Value<String>? aisleName,
     Value<int>? sortOrder,
+    Value<DateTime?>? updatedAt,
+    Value<String>? syncStatus,
     Value<int>? rowid,
   }) {
     return LocalAisleOrderCompanion(
       storeCategory: storeCategory ?? this.storeCategory,
       aisleName: aisleName ?? this.aisleName,
       sortOrder: sortOrder ?? this.sortOrder,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1325,6 +1624,12 @@ class LocalAisleOrderCompanion extends UpdateCompanion<AisleOrderEntity> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1337,6 +1642,8 @@ class LocalAisleOrderCompanion extends UpdateCompanion<AisleOrderEntity> {
           ..write('storeCategory: $storeCategory, ')
           ..write('aisleName: $aisleName, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1359,6 +1666,17 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _preferredStoreMeta = const VerificationMeta(
     'preferredStore',
@@ -1405,13 +1723,27 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     normalizedName,
+    displayName,
     preferredStore,
     preferredAisle,
     useCount,
     updatedAt,
+    syncStatus,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1435,6 +1767,15 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
       );
     } else if (isInserting) {
       context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
     }
     if (data.containsKey('preferred_store')) {
       context.handle(
@@ -1472,6 +1813,12 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
     return context;
   }
 
@@ -1485,6 +1832,10 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
         DriftSqlType.string,
         data['${effectivePrefix}normalized_name'],
       )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      ),
       preferredStore: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}preferred_store'],
@@ -1501,6 +1852,10 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
     );
   }
 
@@ -1513,35 +1868,47 @@ class $LocalLearnedItemsTable extends LocalLearnedItems
 class LearnedItemEntity extends DataClass
     implements Insertable<LearnedItemEntity> {
   final String normalizedName;
+  final String? displayName;
   final String preferredStore;
   final String preferredAisle;
   final int useCount;
   final DateTime updatedAt;
+  final String syncStatus;
   const LearnedItemEntity({
     required this.normalizedName,
+    this.displayName,
     required this.preferredStore,
     required this.preferredAisle,
     required this.useCount,
     required this.updatedAt,
+    required this.syncStatus,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['normalized_name'] = Variable<String>(normalizedName);
+    if (!nullToAbsent || displayName != null) {
+      map['display_name'] = Variable<String>(displayName);
+    }
     map['preferred_store'] = Variable<String>(preferredStore);
     map['preferred_aisle'] = Variable<String>(preferredAisle);
     map['use_count'] = Variable<int>(useCount);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
     return map;
   }
 
   LocalLearnedItemsCompanion toCompanion(bool nullToAbsent) {
     return LocalLearnedItemsCompanion(
       normalizedName: Value(normalizedName),
+      displayName: displayName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayName),
       preferredStore: Value(preferredStore),
       preferredAisle: Value(preferredAisle),
       useCount: Value(useCount),
       updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
     );
   }
 
@@ -1552,10 +1919,12 @@ class LearnedItemEntity extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LearnedItemEntity(
       normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      displayName: serializer.fromJson<String?>(json['displayName']),
       preferredStore: serializer.fromJson<String>(json['preferredStore']),
       preferredAisle: serializer.fromJson<String>(json['preferredAisle']),
       useCount: serializer.fromJson<int>(json['useCount']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
     );
   }
   @override
@@ -1563,31 +1932,40 @@ class LearnedItemEntity extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'normalizedName': serializer.toJson<String>(normalizedName),
+      'displayName': serializer.toJson<String?>(displayName),
       'preferredStore': serializer.toJson<String>(preferredStore),
       'preferredAisle': serializer.toJson<String>(preferredAisle),
       'useCount': serializer.toJson<int>(useCount),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
     };
   }
 
   LearnedItemEntity copyWith({
     String? normalizedName,
+    Value<String?> displayName = const Value.absent(),
     String? preferredStore,
     String? preferredAisle,
     int? useCount,
     DateTime? updatedAt,
+    String? syncStatus,
   }) => LearnedItemEntity(
     normalizedName: normalizedName ?? this.normalizedName,
+    displayName: displayName.present ? displayName.value : this.displayName,
     preferredStore: preferredStore ?? this.preferredStore,
     preferredAisle: preferredAisle ?? this.preferredAisle,
     useCount: useCount ?? this.useCount,
     updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
   );
   LearnedItemEntity copyWithCompanion(LocalLearnedItemsCompanion data) {
     return LearnedItemEntity(
       normalizedName: data.normalizedName.present
           ? data.normalizedName.value
           : this.normalizedName,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
       preferredStore: data.preferredStore.present
           ? data.preferredStore.value
           : this.preferredStore,
@@ -1596,6 +1974,9 @@ class LearnedItemEntity extends DataClass
           : this.preferredAisle,
       useCount: data.useCount.present ? data.useCount.value : this.useCount,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
     );
   }
 
@@ -1603,10 +1984,12 @@ class LearnedItemEntity extends DataClass
   String toString() {
     return (StringBuffer('LearnedItemEntity(')
           ..write('normalizedName: $normalizedName, ')
+          ..write('displayName: $displayName, ')
           ..write('preferredStore: $preferredStore, ')
           ..write('preferredAisle: $preferredAisle, ')
           ..write('useCount: $useCount, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
@@ -1614,43 +1997,53 @@ class LearnedItemEntity extends DataClass
   @override
   int get hashCode => Object.hash(
     normalizedName,
+    displayName,
     preferredStore,
     preferredAisle,
     useCount,
     updatedAt,
+    syncStatus,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LearnedItemEntity &&
           other.normalizedName == this.normalizedName &&
+          other.displayName == this.displayName &&
           other.preferredStore == this.preferredStore &&
           other.preferredAisle == this.preferredAisle &&
           other.useCount == this.useCount &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus);
 }
 
 class LocalLearnedItemsCompanion extends UpdateCompanion<LearnedItemEntity> {
   final Value<String> normalizedName;
+  final Value<String?> displayName;
   final Value<String> preferredStore;
   final Value<String> preferredAisle;
   final Value<int> useCount;
   final Value<DateTime> updatedAt;
+  final Value<String> syncStatus;
   final Value<int> rowid;
   const LocalLearnedItemsCompanion({
     this.normalizedName = const Value.absent(),
+    this.displayName = const Value.absent(),
     this.preferredStore = const Value.absent(),
     this.preferredAisle = const Value.absent(),
     this.useCount = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalLearnedItemsCompanion.insert({
     required String normalizedName,
+    this.displayName = const Value.absent(),
     required String preferredStore,
     required String preferredAisle,
     this.useCount = const Value.absent(),
     required DateTime updatedAt,
+    this.syncStatus = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : normalizedName = Value(normalizedName),
        preferredStore = Value(preferredStore),
@@ -1658,36 +2051,44 @@ class LocalLearnedItemsCompanion extends UpdateCompanion<LearnedItemEntity> {
        updatedAt = Value(updatedAt);
   static Insertable<LearnedItemEntity> custom({
     Expression<String>? normalizedName,
+    Expression<String>? displayName,
     Expression<String>? preferredStore,
     Expression<String>? preferredAisle,
     Expression<int>? useCount,
     Expression<DateTime>? updatedAt,
+    Expression<String>? syncStatus,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (normalizedName != null) 'normalized_name': normalizedName,
+      if (displayName != null) 'display_name': displayName,
       if (preferredStore != null) 'preferred_store': preferredStore,
       if (preferredAisle != null) 'preferred_aisle': preferredAisle,
       if (useCount != null) 'use_count': useCount,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   LocalLearnedItemsCompanion copyWith({
     Value<String>? normalizedName,
+    Value<String?>? displayName,
     Value<String>? preferredStore,
     Value<String>? preferredAisle,
     Value<int>? useCount,
     Value<DateTime>? updatedAt,
+    Value<String>? syncStatus,
     Value<int>? rowid,
   }) {
     return LocalLearnedItemsCompanion(
       normalizedName: normalizedName ?? this.normalizedName,
+      displayName: displayName ?? this.displayName,
       preferredStore: preferredStore ?? this.preferredStore,
       preferredAisle: preferredAisle ?? this.preferredAisle,
       useCount: useCount ?? this.useCount,
       updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1697,6 +2098,9 @@ class LocalLearnedItemsCompanion extends UpdateCompanion<LearnedItemEntity> {
     final map = <String, Expression>{};
     if (normalizedName.present) {
       map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
     }
     if (preferredStore.present) {
       map['preferred_store'] = Variable<String>(preferredStore.value);
@@ -1710,6 +2114,9 @@ class LocalLearnedItemsCompanion extends UpdateCompanion<LearnedItemEntity> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1720,10 +2127,12 @@ class LocalLearnedItemsCompanion extends UpdateCompanion<LearnedItemEntity> {
   String toString() {
     return (StringBuffer('LocalLearnedItemsCompanion(')
           ..write('normalizedName: $normalizedName, ')
+          ..write('displayName: $displayName, ')
           ..write('preferredStore: $preferredStore, ')
           ..write('preferredAisle: $preferredAisle, ')
           ..write('useCount: $useCount, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2090,6 +2499,379 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
   }
 }
 
+class $LocalPendingDeletionsTable extends LocalPendingDeletions
+    with TableInfo<$LocalPendingDeletionsTable, PendingDeletionEntity> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPendingDeletionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityKeyMeta = const VerificationMeta(
+    'entityKey',
+  );
+  @override
+  late final GeneratedColumn<String> entityKey = GeneratedColumn<String>(
+    'entity_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isLeaveOnlyMeta = const VerificationMeta(
+    'isLeaveOnly',
+  );
+  @override
+  late final GeneratedColumn<bool> isLeaveOnly = GeneratedColumn<bool>(
+    'is_leave_only',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_leave_only" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entityType,
+    entityKey,
+    isLeaveOnly,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_pending_deletions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingDeletionEntity> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_key')) {
+      context.handle(
+        _entityKeyMeta,
+        entityKey.isAcceptableOrUnknown(data['entity_key']!, _entityKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityKeyMeta);
+    }
+    if (data.containsKey('is_leave_only')) {
+      context.handle(
+        _isLeaveOnlyMeta,
+        isLeaveOnly.isAcceptableOrUnknown(
+          data['is_leave_only']!,
+          _isLeaveOnlyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingDeletionEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingDeletionEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_key'],
+      )!,
+      isLeaveOnly: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_leave_only'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalPendingDeletionsTable createAlias(String alias) {
+    return $LocalPendingDeletionsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingDeletionEntity extends DataClass
+    implements Insertable<PendingDeletionEntity> {
+  final String id;
+  final String entityType;
+  final String entityKey;
+  final bool isLeaveOnly;
+  final DateTime deletedAt;
+  const PendingDeletionEntity({
+    required this.id,
+    required this.entityType,
+    required this.entityKey,
+    required this.isLeaveOnly,
+    required this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_key'] = Variable<String>(entityKey);
+    map['is_leave_only'] = Variable<bool>(isLeaveOnly);
+    map['deleted_at'] = Variable<DateTime>(deletedAt);
+    return map;
+  }
+
+  LocalPendingDeletionsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPendingDeletionsCompanion(
+      id: Value(id),
+      entityType: Value(entityType),
+      entityKey: Value(entityKey),
+      isLeaveOnly: Value(isLeaveOnly),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory PendingDeletionEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingDeletionEntity(
+      id: serializer.fromJson<String>(json['id']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityKey: serializer.fromJson<String>(json['entityKey']),
+      isLeaveOnly: serializer.fromJson<bool>(json['isLeaveOnly']),
+      deletedAt: serializer.fromJson<DateTime>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityKey': serializer.toJson<String>(entityKey),
+      'isLeaveOnly': serializer.toJson<bool>(isLeaveOnly),
+      'deletedAt': serializer.toJson<DateTime>(deletedAt),
+    };
+  }
+
+  PendingDeletionEntity copyWith({
+    String? id,
+    String? entityType,
+    String? entityKey,
+    bool? isLeaveOnly,
+    DateTime? deletedAt,
+  }) => PendingDeletionEntity(
+    id: id ?? this.id,
+    entityType: entityType ?? this.entityType,
+    entityKey: entityKey ?? this.entityKey,
+    isLeaveOnly: isLeaveOnly ?? this.isLeaveOnly,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+  PendingDeletionEntity copyWithCompanion(LocalPendingDeletionsCompanion data) {
+    return PendingDeletionEntity(
+      id: data.id.present ? data.id.value : this.id,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityKey: data.entityKey.present ? data.entityKey.value : this.entityKey,
+      isLeaveOnly: data.isLeaveOnly.present
+          ? data.isLeaveOnly.value
+          : this.isLeaveOnly,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingDeletionEntity(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityKey: $entityKey, ')
+          ..write('isLeaveOnly: $isLeaveOnly, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, entityType, entityKey, isLeaveOnly, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingDeletionEntity &&
+          other.id == this.id &&
+          other.entityType == this.entityType &&
+          other.entityKey == this.entityKey &&
+          other.isLeaveOnly == this.isLeaveOnly &&
+          other.deletedAt == this.deletedAt);
+}
+
+class LocalPendingDeletionsCompanion
+    extends UpdateCompanion<PendingDeletionEntity> {
+  final Value<String> id;
+  final Value<String> entityType;
+  final Value<String> entityKey;
+  final Value<bool> isLeaveOnly;
+  final Value<DateTime> deletedAt;
+  final Value<int> rowid;
+  const LocalPendingDeletionsCompanion({
+    this.id = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityKey = const Value.absent(),
+    this.isLeaveOnly = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPendingDeletionsCompanion.insert({
+    required String id,
+    required String entityType,
+    required String entityKey,
+    this.isLeaveOnly = const Value.absent(),
+    required DateTime deletedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       entityType = Value(entityType),
+       entityKey = Value(entityKey),
+       deletedAt = Value(deletedAt);
+  static Insertable<PendingDeletionEntity> custom({
+    Expression<String>? id,
+    Expression<String>? entityType,
+    Expression<String>? entityKey,
+    Expression<bool>? isLeaveOnly,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityKey != null) 'entity_key': entityKey,
+      if (isLeaveOnly != null) 'is_leave_only': isLeaveOnly,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPendingDeletionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? entityType,
+    Value<String>? entityKey,
+    Value<bool>? isLeaveOnly,
+    Value<DateTime>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalPendingDeletionsCompanion(
+      id: id ?? this.id,
+      entityType: entityType ?? this.entityType,
+      entityKey: entityKey ?? this.entityKey,
+      isLeaveOnly: isLeaveOnly ?? this.isLeaveOnly,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityKey.present) {
+      map['entity_key'] = Variable<String>(entityKey.value);
+    }
+    if (isLeaveOnly.present) {
+      map['is_leave_only'] = Variable<bool>(isLeaveOnly.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPendingDeletionsCompanion(')
+          ..write('id: $id, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityKey: $entityKey, ')
+          ..write('isLeaveOnly: $isLeaveOnly, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2103,6 +2885,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LocalPreferencesTable localPreferences = $LocalPreferencesTable(
     this,
   );
+  late final $LocalPendingDeletionsTable localPendingDeletions =
+      $LocalPendingDeletionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2113,6 +2897,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localAisleOrder,
     localLearnedItems,
     localPreferences,
+    localPendingDeletions,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2130,6 +2915,10 @@ typedef $$LocalListsTableCreateCompanionBuilder =
     LocalListsCompanion Function({
       required String id,
       required String title,
+      Value<String?> ownerId,
+      Value<bool> isShared,
+      Value<String?> shareCode,
+      Value<bool> isJoinedRemote,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<String> syncStatus,
@@ -2139,6 +2928,10 @@ typedef $$LocalListsTableUpdateCompanionBuilder =
     LocalListsCompanion Function({
       Value<String> id,
       Value<String> title,
+      Value<String?> ownerId,
+      Value<bool> isShared,
+      Value<String?> shareCode,
+      Value<bool> isJoinedRemote,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String> syncStatus,
@@ -2185,6 +2978,26 @@ class $$LocalListsTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isShared => $composableBuilder(
+    column: $table.isShared,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get shareCode => $composableBuilder(
+    column: $table.shareCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isJoinedRemote => $composableBuilder(
+    column: $table.isJoinedRemote,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2248,6 +3061,26 @@ class $$LocalListsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isShared => $composableBuilder(
+    column: $table.isShared,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get shareCode => $composableBuilder(
+    column: $table.shareCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isJoinedRemote => $composableBuilder(
+    column: $table.isJoinedRemote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2278,6 +3111,20 @@ class $$LocalListsTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isShared =>
+      $composableBuilder(column: $table.isShared, builder: (column) => column);
+
+  GeneratedColumn<String> get shareCode =>
+      $composableBuilder(column: $table.shareCode, builder: (column) => column);
+
+  GeneratedColumn<bool> get isJoinedRemote => $composableBuilder(
+    column: $table.isJoinedRemote,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2346,6 +3193,10 @@ class $$LocalListsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String?> ownerId = const Value.absent(),
+                Value<bool> isShared = const Value.absent(),
+                Value<String?> shareCode = const Value.absent(),
+                Value<bool> isJoinedRemote = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
@@ -2353,6 +3204,10 @@ class $$LocalListsTableTableManager
               }) => LocalListsCompanion(
                 id: id,
                 title: title,
+                ownerId: ownerId,
+                isShared: isShared,
+                shareCode: shareCode,
+                isJoinedRemote: isJoinedRemote,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncStatus: syncStatus,
@@ -2362,6 +3217,10 @@ class $$LocalListsTableTableManager
               ({
                 required String id,
                 required String title,
+                Value<String?> ownerId = const Value.absent(),
+                Value<bool> isShared = const Value.absent(),
+                Value<String?> shareCode = const Value.absent(),
+                Value<bool> isJoinedRemote = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<String> syncStatus = const Value.absent(),
@@ -2369,6 +3228,10 @@ class $$LocalListsTableTableManager
               }) => LocalListsCompanion.insert(
                 id: id,
                 title: title,
+                ownerId: ownerId,
+                isShared: isShared,
+                shareCode: shareCode,
+                isJoinedRemote: isJoinedRemote,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncStatus: syncStatus,
@@ -2891,6 +3754,8 @@ typedef $$LocalAisleOrderTableCreateCompanionBuilder =
       required String storeCategory,
       required String aisleName,
       required int sortOrder,
+      Value<DateTime?> updatedAt,
+      Value<String> syncStatus,
       Value<int> rowid,
     });
 typedef $$LocalAisleOrderTableUpdateCompanionBuilder =
@@ -2898,6 +3763,8 @@ typedef $$LocalAisleOrderTableUpdateCompanionBuilder =
       Value<String> storeCategory,
       Value<String> aisleName,
       Value<int> sortOrder,
+      Value<DateTime?> updatedAt,
+      Value<String> syncStatus,
       Value<int> rowid,
     });
 
@@ -2922,6 +3789,16 @@ class $$LocalAisleOrderTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2949,6 +3826,16 @@ class $$LocalAisleOrderTableOrderingComposer
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalAisleOrderTableAnnotationComposer
@@ -2970,6 +3857,14 @@ class $$LocalAisleOrderTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalAisleOrderTableTableManager
@@ -3012,11 +3907,15 @@ class $$LocalAisleOrderTableTableManager
                 Value<String> storeCategory = const Value.absent(),
                 Value<String> aisleName = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalAisleOrderCompanion(
                 storeCategory: storeCategory,
                 aisleName: aisleName,
                 sortOrder: sortOrder,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3024,11 +3923,15 @@ class $$LocalAisleOrderTableTableManager
                 required String storeCategory,
                 required String aisleName,
                 required int sortOrder,
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalAisleOrderCompanion.insert(
                 storeCategory: storeCategory,
                 aisleName: aisleName,
                 sortOrder: sortOrder,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3068,19 +3971,23 @@ typedef $$LocalAisleOrderTableProcessedTableManager =
 typedef $$LocalLearnedItemsTableCreateCompanionBuilder =
     LocalLearnedItemsCompanion Function({
       required String normalizedName,
+      Value<String?> displayName,
       required String preferredStore,
       required String preferredAisle,
       Value<int> useCount,
       required DateTime updatedAt,
+      Value<String> syncStatus,
       Value<int> rowid,
     });
 typedef $$LocalLearnedItemsTableUpdateCompanionBuilder =
     LocalLearnedItemsCompanion Function({
       Value<String> normalizedName,
+      Value<String?> displayName,
       Value<String> preferredStore,
       Value<String> preferredAisle,
       Value<int> useCount,
       Value<DateTime> updatedAt,
+      Value<String> syncStatus,
       Value<int> rowid,
     });
 
@@ -3095,6 +4002,11 @@ class $$LocalLearnedItemsTableFilterComposer
   });
   ColumnFilters<String> get normalizedName => $composableBuilder(
     column: $table.normalizedName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3117,6 +4029,11 @@ class $$LocalLearnedItemsTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$LocalLearnedItemsTableOrderingComposer
@@ -3130,6 +4047,11 @@ class $$LocalLearnedItemsTableOrderingComposer
   });
   ColumnOrderings<String> get normalizedName => $composableBuilder(
     column: $table.normalizedName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3152,6 +4074,11 @@ class $$LocalLearnedItemsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalLearnedItemsTableAnnotationComposer
@@ -3165,6 +4092,11 @@ class $$LocalLearnedItemsTableAnnotationComposer
   });
   GeneratedColumn<String> get normalizedName => $composableBuilder(
     column: $table.normalizedName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
     builder: (column) => column,
   );
 
@@ -3183,6 +4115,11 @@ class $$LocalLearnedItemsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalLearnedItemsTableTableManager
@@ -3226,33 +4163,41 @@ class $$LocalLearnedItemsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> normalizedName = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
                 Value<String> preferredStore = const Value.absent(),
                 Value<String> preferredAisle = const Value.absent(),
                 Value<int> useCount = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLearnedItemsCompanion(
                 normalizedName: normalizedName,
+                displayName: displayName,
                 preferredStore: preferredStore,
                 preferredAisle: preferredAisle,
                 useCount: useCount,
                 updatedAt: updatedAt,
+                syncStatus: syncStatus,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String normalizedName,
+                Value<String?> displayName = const Value.absent(),
                 required String preferredStore,
                 required String preferredAisle,
                 Value<int> useCount = const Value.absent(),
                 required DateTime updatedAt,
+                Value<String> syncStatus = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalLearnedItemsCompanion.insert(
                 normalizedName: normalizedName,
+                displayName: displayName,
                 preferredStore: preferredStore,
                 preferredAisle: preferredAisle,
                 useCount: useCount,
                 updatedAt: updatedAt,
+                syncStatus: syncStatus,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3514,6 +4459,241 @@ typedef $$LocalPreferencesTableProcessedTableManager =
       UserPreferencesEntity,
       PrefetchHooks Function()
     >;
+typedef $$LocalPendingDeletionsTableCreateCompanionBuilder =
+    LocalPendingDeletionsCompanion Function({
+      required String id,
+      required String entityType,
+      required String entityKey,
+      Value<bool> isLeaveOnly,
+      required DateTime deletedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalPendingDeletionsTableUpdateCompanionBuilder =
+    LocalPendingDeletionsCompanion Function({
+      Value<String> id,
+      Value<String> entityType,
+      Value<String> entityKey,
+      Value<bool> isLeaveOnly,
+      Value<DateTime> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalPendingDeletionsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalPendingDeletionsTable> {
+  $$LocalPendingDeletionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityKey => $composableBuilder(
+    column: $table.entityKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isLeaveOnly => $composableBuilder(
+    column: $table.isLeaveOnly,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalPendingDeletionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalPendingDeletionsTable> {
+  $$LocalPendingDeletionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityKey => $composableBuilder(
+    column: $table.entityKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isLeaveOnly => $composableBuilder(
+    column: $table.isLeaveOnly,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalPendingDeletionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalPendingDeletionsTable> {
+  $$LocalPendingDeletionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityKey =>
+      $composableBuilder(column: $table.entityKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get isLeaveOnly => $composableBuilder(
+    column: $table.isLeaveOnly,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$LocalPendingDeletionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalPendingDeletionsTable,
+          PendingDeletionEntity,
+          $$LocalPendingDeletionsTableFilterComposer,
+          $$LocalPendingDeletionsTableOrderingComposer,
+          $$LocalPendingDeletionsTableAnnotationComposer,
+          $$LocalPendingDeletionsTableCreateCompanionBuilder,
+          $$LocalPendingDeletionsTableUpdateCompanionBuilder,
+          (
+            PendingDeletionEntity,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalPendingDeletionsTable,
+              PendingDeletionEntity
+            >,
+          ),
+          PendingDeletionEntity,
+          PrefetchHooks Function()
+        > {
+  $$LocalPendingDeletionsTableTableManager(
+    _$AppDatabase db,
+    $LocalPendingDeletionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalPendingDeletionsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$LocalPendingDeletionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LocalPendingDeletionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<String> entityKey = const Value.absent(),
+                Value<bool> isLeaveOnly = const Value.absent(),
+                Value<DateTime> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalPendingDeletionsCompanion(
+                id: id,
+                entityType: entityType,
+                entityKey: entityKey,
+                isLeaveOnly: isLeaveOnly,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String entityType,
+                required String entityKey,
+                Value<bool> isLeaveOnly = const Value.absent(),
+                required DateTime deletedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalPendingDeletionsCompanion.insert(
+                id: id,
+                entityType: entityType,
+                entityKey: entityKey,
+                isLeaveOnly: isLeaveOnly,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $LocalPendingDeletionsTable,
+                    PendingDeletionEntity
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalPendingDeletionsTable,
+                    PendingDeletionEntity
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalPendingDeletionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalPendingDeletionsTable,
+      PendingDeletionEntity,
+      $$LocalPendingDeletionsTableFilterComposer,
+      $$LocalPendingDeletionsTableOrderingComposer,
+      $$LocalPendingDeletionsTableAnnotationComposer,
+      $$LocalPendingDeletionsTableCreateCompanionBuilder,
+      $$LocalPendingDeletionsTableUpdateCompanionBuilder,
+      (
+        PendingDeletionEntity,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalPendingDeletionsTable,
+          PendingDeletionEntity
+        >,
+      ),
+      PendingDeletionEntity,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3528,4 +4708,6 @@ class $AppDatabaseManager {
       $$LocalLearnedItemsTableTableManager(_db, _db.localLearnedItems);
   $$LocalPreferencesTableTableManager get localPreferences =>
       $$LocalPreferencesTableTableManager(_db, _db.localPreferences);
+  $$LocalPendingDeletionsTableTableManager get localPendingDeletions =>
+      $$LocalPendingDeletionsTableTableManager(_db, _db.localPendingDeletions);
 }

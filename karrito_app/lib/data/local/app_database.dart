@@ -14,6 +14,11 @@ class LocalLists extends Table {
 
   TextColumn get id => text()();
   TextColumn get title => text()();
+  TextColumn get ownerId => text().nullable()();
+  BoolColumn get isShared => boolean().withDefault(const Constant(false))();
+  TextColumn get shareCode => text().nullable()();
+  BoolColumn get isJoinedRemote =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
@@ -53,6 +58,8 @@ class LocalAisleOrder extends Table {
   TextColumn get storeCategory => text()();
   TextColumn get aisleName => text()();
   IntColumn get sortOrder => integer()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get syncStatus => text().withDefault(const Constant('seeded'))();
 
   @override
   Set<Column<Object>> get primaryKey => {storeCategory, aisleName};
@@ -64,10 +71,12 @@ class LocalLearnedItems extends Table {
   String get tableName => 'local_learned_items';
 
   TextColumn get normalizedName => text()();
+  TextColumn get displayName => text().nullable()();
   TextColumn get preferredStore => text()();
   TextColumn get preferredAisle => text()();
   IntColumn get useCount => integer().withDefault(const Constant(1))();
   DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
 
   @override
   Set<Column<Object>> get primaryKey => {normalizedName};
@@ -90,6 +99,21 @@ class LocalPreferences extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@DataClassName('PendingDeletionEntity')
+class LocalPendingDeletions extends Table {
+  @override
+  String get tableName => 'local_pending_deletions';
+
+  TextColumn get id => text()();
+  TextColumn get entityType => text()();
+  TextColumn get entityKey => text()();
+  BoolColumn get isLeaveOnly => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get deletedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     LocalLists,
@@ -97,13 +121,14 @@ class LocalPreferences extends Table {
     LocalAisleOrder,
     LocalLearnedItems,
     LocalPreferences,
+    LocalPendingDeletions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -111,6 +136,19 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await _seedInitialData();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          await m.addColumn(localLists, localLists.ownerId);
+          await m.addColumn(localLists, localLists.isShared);
+          await m.addColumn(localLists, localLists.shareCode);
+          await m.addColumn(localLists, localLists.isJoinedRemote);
+          await m.addColumn(localAisleOrder, localAisleOrder.updatedAt);
+          await m.addColumn(localAisleOrder, localAisleOrder.syncStatus);
+          await m.addColumn(localLearnedItems, localLearnedItems.displayName);
+          await m.addColumn(localLearnedItems, localLearnedItems.syncStatus);
+          await m.createTable(localPendingDeletions);
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
@@ -125,6 +163,7 @@ class AppDatabase extends _$AppDatabase {
             storeCategory: entry.store,
             aisleName: entry.aisle,
             sortOrder: entry.sortOrder,
+            syncStatus: const Value('seeded'),
           ),
         )
         .toList();

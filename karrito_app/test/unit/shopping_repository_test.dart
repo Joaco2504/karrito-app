@@ -254,4 +254,66 @@ void main() {
       throwsA(isA<ShoppingActionException>()),
     );
   });
+
+  test('saves custom aisle order per store and marks pending sync', () async {
+    final initialAisles = await repo.getAislesForStore('Supermercado');
+    expect(initialAisles.first, 'Verdulería y Frutería');
+    expect(initialAisles, isNot(contains(StoreHierarchy.offlinePendingAisle)));
+
+    final reordered = List<String>.from(initialAisles);
+    reordered.remove('Bebidas');
+    reordered.insert(0, 'Bebidas');
+
+    await repo.saveAisleOrder(
+      storeCategory: 'Supermercado',
+      orderedAisles: reordered,
+    );
+
+    final updatedMap = await repo.watchAisleOrderMap().first;
+    expect(updatedMap[('Supermercado', 'Bebidas')], 10);
+    expect(updatedMap[('Supermercado', 'Verdulería y Frutería')], 20);
+
+    final updatedList = await repo.getAislesForStore('Supermercado');
+    expect(updatedList.first, 'Bebidas');
+  });
+
+  test(
+    'adds frequent products from learned_items with zero AI calls and deletes cleanly',
+    () async {
+      final listId = (await repo.watchLists().first).first.id;
+      await repo.addItemsFromInput(
+        listId: listId,
+        rawInput: '2 kg de papa, 1 caja ibuprofeno',
+        isOnline: true,
+      );
+      final aiCallsAfterSeed = fakeAi.callCount;
+
+      var learned = await repo.watchLearnedItems().first;
+      expect(learned, hasLength(2));
+
+      final papaLearned = learned.firstWhere((e) => e.normalizedName == 'papa');
+      final addedName = await repo.addLearnedItemToList(
+        listId: listId,
+        learnedItem: papaLearned,
+      );
+      expect(addedName, 'Papa');
+      expect(fakeAi.callCount, aiCallsAfterSeed);
+
+      learned = await repo.watchLearnedItems().first;
+      expect(learned.first.normalizedName, 'papa');
+      expect(learned.first.useCount, 2);
+
+      await repo.removeLearnedItem('papa');
+      learned = await repo.watchLearnedItems().first;
+      expect(learned.any((e) => e.normalizedName == 'papa'), isFalse);
+
+      final tombstones = await db.select(db.localPendingDeletions).get();
+      expect(
+        tombstones.any(
+          (t) => t.entityType == 'learned' && t.entityKey == 'papa',
+        ),
+        isTrue,
+      );
+    },
+  );
 }

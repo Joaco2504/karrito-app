@@ -100,6 +100,15 @@ class ShoppingRepository {
     };
   }
 
+  Stream<List<LearnedItemEntity>> watchLearnedItems() {
+    final query = _db.select(_db.localLearnedItems)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.useCount, mode: OrderingMode.desc),
+        (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
   Stream<int> watchPendingAiCount(String listId) {
     final query = _db.select(_db.localItems)
       ..where(
@@ -109,17 +118,18 @@ class ShoppingRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // Lists CRUD (Max 3 lists in Phase 2)
+  // Lists CRUD (Max 3 owned lists in free mode)
   // ---------------------------------------------------------------------------
 
-  Future<String> createList(String rawTitle) async {
+  Future<String> createList(String rawTitle, {String? ownerId}) async {
     final title = ItemTextParser.toSentenceCase(rawTitle);
     if (title.isEmpty) {
       throw const ShoppingActionException(AppStrings.invalidListNameError);
     }
 
     final existing = await _db.select(_db.localLists).get();
-    if (existing.length >= StoreHierarchy.maxActiveListsPhase2) {
+    final ownedCount = existing.where((l) => !l.isJoinedRemote).length;
+    if (ownedCount >= StoreHierarchy.maxActiveListsPhase2) {
       throw const ShoppingActionException(AppStrings.maxListsReached);
     }
 
@@ -131,6 +141,7 @@ class ShoppingRepository {
           LocalListsCompanion.insert(
             id: id,
             title: title,
+            ownerId: Value(ownerId),
             createdAt: now,
             updatedAt: now,
             syncStatus: const Value('pending'),
@@ -160,7 +171,158 @@ class ShoppingRepository {
       throw const ShoppingActionException(AppStrings.cannotDeleteLastList);
     }
 
-    await (_db.delete(_db.localLists)..where((t) => t.id.equals(listId))).go();
+    ShoppingListEntity? target;
+    for (final list in existing) {
+      if (list.id == listId) {
+        target = list;
+        break;
+      }
+    }
+
+    await _db.transaction(() async {
+      if (target != null) {
+        await _db
+            .into(_db.localPendingDeletions)
+            .insert(
+              LocalPendingDeletionsCompanion.insert(
+                id: _uuid.v4(),
+                entityType: 'list',
+                entityKey: listId,
+                isLeaveOnly: Value(target.isJoinedRemote),
+                deletedAt: DateTime.now(),
+              ),
+            );
+      }
+      await (_db.delete(
+        _db.localLists,
+      )..where((t) => t.id.equals(listId))).go();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Aisle Ordering & Frequent Items
+  // ---------------------------------------------------------------------------
+
+  Future<List<String>> getAislesForStore(String storeCategory) async {
+    final normalizedStore = StoreHierarchy.normalizeStore(storeCategory);
+    final orderRows = await (_db.select(
+      _db.localAisleOrder,
+    )..where((t) => t.storeCategory.equals(normalizedStore))).get();
+    final itemRows = await (_db.select(
+      _db.localItems,
+    )..where((t) => t.storeCategory.equals(normalizedStore))).get();
+
+    final orderMap = <String, int>{
+      for (final row in orderRows) row.aisleName: row.sortOrder,
+    };
+
+    final candidates = <String>{
+      ...(StoreHierarchy.storeAisles[normalizedStore] ?? const <String>[]),
+      ...orderRows.map((r) => r.aisleName),
+      ...itemRows.map((r) => r.aisleName),
+    }..remove(StoreHierarchy.offlinePendingAisle);
+
+    final sorted = candidates.toList()
+      ..sort((a, b) {
+        final orderA = orderMap[a] ?? 500;
+        final orderB = orderMap[b] ?? 500;
+        if (orderA != orderB) return orderA.compareTo(orderB);
+        return a.compareTo(b);
+      });
+
+    return sorted;
+  }
+
+  Future<void> saveAisleOrder({
+    required String storeCategory,
+    required List<String> orderedAisles,
+  }) async {
+    final normalizedStore = StoreHierarchy.normalizeStore(storeCategory);
+    final now = DateTime.now();
+
+    await _db.transaction(() async {
+      for (var i = 0; i < orderedAisles.length; i++) {
+        final aisle = orderedAisles[i];
+        await _db
+            .into(_db.localAisleOrder)
+            .insertOnConflictUpdate(
+              LocalAisleOrderCompanion.insert(
+                storeCategory: normalizedStore,
+                aisleName: aisle,
+                sortOrder: (i + 1) * 10,
+                updatedAt: Value(now),
+                syncStatus: const Value('pending'),
+              ),
+            );
+      }
+    });
+  }
+
+  /// Adds a frequent product directly from `local_learned_items` into the
+  /// active list with zero Gemini / `procesar-lista` API usage.
+  Future<String> addLearnedItemToList({
+    required String listId,
+    required LearnedItemEntity learnedItem,
+  }) async {
+    final displayTitle = (learnedItem.displayName?.trim().isNotEmpty ?? false)
+        ? learnedItem.displayName!.trim()
+        : ItemTextParser.toSentenceCase(learnedItem.normalizedName);
+    final now = DateTime.now();
+
+    await _db.transaction(() async {
+      final nextPos = await _nextPosition(listId);
+      await _db
+          .into(_db.localItems)
+          .insert(
+            LocalItemsCompanion.insert(
+              id: _uuid.v4(),
+              listId: listId,
+              rawText: displayTitle,
+              cleanName: displayTitle,
+              quantity: const Value(1.0),
+              unit: const Value('u'),
+              storeCategory: learnedItem.preferredStore,
+              aisleName: learnedItem.preferredAisle,
+              isChecked: const Value(false),
+              position: Value(nextPos),
+              updatedAt: now,
+              syncStatus: const Value('pending'),
+            ),
+          );
+
+      await (_db.update(_db.localLearnedItems)
+            ..where((t) => t.normalizedName.equals(learnedItem.normalizedName)))
+          .write(
+            LocalLearnedItemsCompanion(
+              useCount: Value(learnedItem.useCount + 1),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending'),
+            ),
+          );
+
+      await _touchList(listId, now);
+    });
+
+    return displayTitle;
+  }
+
+  Future<void> removeLearnedItem(String normalizedName) async {
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.localLearnedItems,
+      )..where((t) => t.normalizedName.equals(normalizedName))).go();
+
+      await _db
+          .into(_db.localPendingDeletions)
+          .insert(
+            LocalPendingDeletionsCompanion.insert(
+              id: _uuid.v4(),
+              entityType: 'learned',
+              entityKey: normalizedName,
+              deletedAt: DateTime.now(),
+            ),
+          );
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -349,6 +511,9 @@ class ShoppingRepository {
       LocalItemsCompanion(
         isChecked: Value(!item.isChecked),
         updatedAt: Value(now),
+        syncStatus: item.syncStatus == 'pending_ai'
+            ? const Value.absent()
+            : const Value('pending'),
       ),
     );
     await _touchList(item.listId, now);
@@ -407,10 +572,12 @@ class ShoppingRepository {
             .insertOnConflictUpdate(
               LocalLearnedItemsCompanion.insert(
                 normalizedName: learnedKey,
+                displayName: Value(trimmedName),
                 preferredStore: normalizedStore,
                 preferredAisle: normalizedAisle,
                 useCount: Value((existingLearned?.useCount ?? 0) + 1),
                 updatedAt: now,
+                syncStatus: const Value('pending'),
               ),
             );
       }
@@ -420,13 +587,56 @@ class ShoppingRepository {
   }
 
   Future<void> deleteItem(ShoppingItemEntity item) async {
-    await (_db.delete(_db.localItems)..where((t) => t.id.equals(item.id))).go();
-    await _touchList(item.listId, DateTime.now());
+    await _db.transaction(() async {
+      await _db
+          .into(_db.localPendingDeletions)
+          .insert(
+            LocalPendingDeletionsCompanion.insert(
+              id: _uuid.v4(),
+              entityType: 'item',
+              entityKey: item.id,
+              deletedAt: DateTime.now(),
+            ),
+          );
+      await (_db.delete(
+        _db.localItems,
+      )..where((t) => t.id.equals(item.id))).go();
+      await _touchList(item.listId, DateTime.now());
+    });
   }
 
   // ---------------------------------------------------------------------------
-  // Preferences
+  // Account Migration Helper & Preferences
   // ---------------------------------------------------------------------------
+
+  /// Marks all local SQLite data as pending upload under [newOwnerId] when a
+  /// guest session transitions into an existing permanent Google account UID.
+  Future<void> prepareLocalDataForAccountSwitch(String newOwnerId) async {
+    await _db.transaction(() async {
+      await (_db.update(
+        _db.localLists,
+      )..where((t) => t.isJoinedRemote.equals(false))).write(
+        LocalListsCompanion(
+          ownerId: Value(newOwnerId),
+          syncStatus: const Value('pending'),
+        ),
+      );
+
+      await (_db.update(_db.localItems)
+            ..where((t) => t.syncStatus.equals('synced')))
+          .write(const LocalItemsCompanion(syncStatus: Value('pending')));
+
+      await (_db.update(_db.localAisleOrder)
+            ..where((t) => t.syncStatus.equals('synced')))
+          .write(const LocalAisleOrderCompanion(syncStatus: Value('pending')));
+
+      await (_db.update(
+        _db.localLearnedItems,
+      )..where((t) => t.syncStatus.equals('synced'))).write(
+        const LocalLearnedItemsCompanion(syncStatus: Value('pending')),
+      );
+    });
+  }
 
   Future<void> updatePreferences({
     String? city,
@@ -488,8 +698,10 @@ class ShoppingRepository {
           _db.localLearnedItems,
         )..where((t) => t.normalizedName.equals(learned.normalizedName))).write(
           LocalLearnedItemsCompanion(
+            displayName: Value(candidate.cleanName),
             useCount: Value(learned.useCount + 1),
             updatedAt: Value(now),
+            syncStatus: const Value('pending'),
           ),
         );
       }
@@ -578,10 +790,12 @@ class ShoppingRepository {
                 .insert(
                   LocalLearnedItemsCompanion.insert(
                     normalizedName: key,
+                    displayName: Value(item.cleanName),
                     preferredStore: store,
                     preferredAisle: aisle,
                     useCount: const Value(1),
                     updatedAt: now,
+                    syncStatus: const Value('pending'),
                   ),
                   mode: InsertMode.insertOrIgnore,
                 );
@@ -590,8 +804,10 @@ class ShoppingRepository {
               _db.localLearnedItems,
             )..where((t) => t.normalizedName.equals(key))).write(
               LocalLearnedItemsCompanion(
+                displayName: Value(learned.displayName ?? item.cleanName),
                 useCount: Value(learned.useCount + 1),
                 updatedAt: Value(now),
+                syncStatus: const Value('pending'),
               ),
             );
           }
@@ -689,10 +905,12 @@ class ShoppingRepository {
               .insertOnConflictUpdate(
                 LocalLearnedItemsCompanion.insert(
                   normalizedName: key,
+                  displayName: Value(learned?.displayName ?? item.cleanName),
                   preferredStore: store,
                   preferredAisle: aisle,
                   useCount: Value((learned?.useCount ?? 0) + 1),
                   updatedAt: now,
+                  syncStatus: const Value('pending'),
                 ),
               );
         }
@@ -730,6 +948,7 @@ class ShoppingRepository {
             storeCategory: store,
             aisleName: aisle,
             sortOrder: 500,
+            syncStatus: const Value('seeded'),
           ),
           mode: InsertMode.insertOrIgnore,
         );

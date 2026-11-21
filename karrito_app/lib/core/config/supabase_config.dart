@@ -1,8 +1,8 @@
-/// Configuración pública de Supabase para la app cliente de Karrito.
+/// Configuración pública de Supabase y OAuth cliente para Karrito.
 ///
-/// Solo expone la URL del proyecto y la clave pública `anon`.
-/// Las claves privilegiadas (`service_role`, `GEMINI_API_KEY`) viven
-/// únicamente en las Edge Functions de Supabase.
+/// Solo expone identificadores públicos (`url`, `anon`, Web Client ID OAuth).
+/// Las claves secretas (`service_role`, `GEMINI_API_KEY`, client secret OAuth)
+/// viven únicamente en Supabase.
 abstract final class SupabaseConfig {
   static const String supabaseUrl = 'https://jblsngzlpstojzwsdchb.supabase.co';
 
@@ -12,4 +12,8 @@ abstract final class SupabaseConfig {
       '5ZjeElsUz12OiNRD6C2p0zOQKUMiYDTBAcxWwg5mVmc';
 
   static const String schema = 'karrito';
+
+  /// Web Client ID (`client_type: 3`) extraído de `android/app/google-services.json`.
+  static const String googleWebClientId =
+      '971712549329-74go0rk99uvi2rsenfvthls858t66q9d.apps.googleusercontent.com';
 }

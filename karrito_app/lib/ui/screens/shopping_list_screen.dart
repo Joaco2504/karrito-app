@@ -7,9 +7,12 @@ import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/aisle_reorder_sheet.dart';
 import '../widgets/aisle_section_card.dart';
 import '../widgets/edit_item_sheet.dart';
+import '../widgets/frequent_items_sheet.dart';
 import '../widgets/list_selector_sheet.dart';
+import '../widgets/live_share_sheets.dart';
 import 'settings_screen.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
@@ -63,6 +66,85 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     );
   }
 
+  Future<void> _openAisleReorder(String storeCategory) async {
+    final controller = ref.read(shoppingControllerProvider.notifier);
+    final aisles = await controller.getAislesForStore(storeCategory);
+    if (!mounted || aisles.isEmpty) return;
+
+    final reordered = await AisleReorderSheet.show(
+      context: context,
+      storeCategory: storeCategory,
+      initialAisles: aisles,
+    );
+    if (reordered == null || !mounted) return;
+
+    await controller.saveAisleOrder(
+      storeCategory: storeCategory,
+      orderedAisles: reordered,
+    );
+  }
+
+  Future<void> _openFrequentItems() async {
+    final controller = ref.read(shoppingControllerProvider.notifier);
+    await FrequentItemsSheet.show(
+      context: context,
+      onAddFrequent: controller.addFromFrequent,
+      onRemoveFrequent: controller.removeFromFrequent,
+    );
+  }
+
+  Future<void> _handleShareLive() async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null) return;
+
+    final controller = ref.read(shoppingControllerProvider.notifier);
+    final outcome = await controller.enableLiveShareForActiveList();
+    if (outcome == null || !mounted) return;
+
+    if (outcome.requiresPro) {
+      await ProLiveRequiredSheet.show(context);
+      return;
+    }
+
+    if (outcome.shareCode != null) {
+      await LiveShareCodeSheet.show(
+        context: context,
+        listTitle: activeList.title,
+        shareCode: outcome.shareCode!,
+      );
+    }
+  }
+
+  Future<void> _handleJoinWithCode() async {
+    final controller = ref.read(shoppingControllerProvider.notifier);
+    await JoinSharedListSheet.show(
+      context: context,
+      onJoin: controller.joinSharedListByCode,
+    );
+  }
+
+  Future<void> _openShareOptions() async {
+    final isGuest = ref.read(accountStatusProvider).isAnonymous;
+    final choice = await ShareOptionsSheet.show(
+      context: context,
+      isGuestAccount: isGuest,
+    );
+    if (choice == null || !mounted) return;
+
+    switch (choice) {
+      case ShareOptionChoice.text:
+        await ref
+            .read(shoppingControllerProvider.notifier)
+            .shareActiveListAsText();
+      case ShareOptionChoice.live:
+        await _handleShareLive();
+      case ShareOptionChoice.openSettings:
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+    }
+  }
+
   void _openListSelector(
     List<ShoppingListEntity> lists,
     ShoppingListEntity activeList,
@@ -81,6 +163,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
       onCreate: controller.createList,
       onRename: controller.renameList,
       onDelete: controller.deleteList,
+      onShareLive: _handleShareLive,
+      onJoinWithCode: _handleJoinWithCode,
     );
   }
 
@@ -119,8 +203,10 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     final lists = listsAsync.value ?? const <ShoppingListEntity>[];
     final items = itemsAsync.value ?? const <ShoppingItemEntity>[];
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final karritoColors = Theme.of(context).extension<KarritoColors>()!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
 
     // Group items dynamically by store
     final itemsByStore = <String, List<ShoppingItemEntity>>{};
@@ -193,15 +279,22 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (activeList.isShared) ...[
+                          Icon(
+                            Icons.sensors_rounded,
+                            size: 16,
+                            color: karritoColors.completed,
+                          ),
+                          const SizedBox(width: 5),
+                        ],
                         Flexible(
                           child: Text(
                             activeList.title,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -216,7 +309,28 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                 ),
               ),
         actions: [
+          Semantics(
+            button: true,
+            label: isDark
+                ? AppStrings.switchToLightTooltip
+                : AppStrings.switchToDarkTooltip,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: isDark
+                  ? AppStrings.switchToLightTooltip
+                  : AppStrings.switchToDarkTooltip,
+              icon: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              ),
+              onPressed: () {
+                ref
+                    .read(shoppingControllerProvider.notifier)
+                    .setThemeMode(isDark ? 'light' : 'dark');
+              },
+            ),
+          ),
           IconButton(
+            visualDensity: VisualDensity.compact,
             tooltip: keepScreenOn
                 ? AppStrings.wakelockOnTooltip
                 : AppStrings.wakelockOffTooltip,
@@ -238,13 +352,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             },
           ),
           IconButton(
+            visualDensity: VisualDensity.compact,
             tooltip: AppStrings.shareListTooltip,
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              ref.read(shoppingControllerProvider.notifier).shareActiveList();
-            },
+            onPressed: _openShareOptions,
           ),
           IconButton(
+            visualDensity: VisualDensity.compact,
             tooltip: AppStrings.settingsTooltip,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
@@ -292,51 +406,126 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             child: const Text(AppStrings.reprocessNowButton),
                           ),
                   ),
+                if (activeList != null &&
+                    activeList.isShared &&
+                    activeList.shareCode != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => LiveShareCodeSheet.show(
+                        context: context,
+                        listTitle: activeList.title,
+                        shareCode: activeList.shareCode!,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: karritoColors.completedContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.sensors_rounded,
+                              size: 16,
+                              color: karritoColors.completed,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${AppStrings.liveListBadge} · Código ${activeList.shareCode}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: karritoColors.onCompletedContainer,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              AppStrings.shareListTooltip,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: karritoColors.completed,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: Card(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      padding: const EdgeInsets.fromLTRB(12, 8, 10, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _inputController,
-                              focusNode: _inputFocusNode,
-                              enabled: !uiState.isSubmitting,
-                              minLines: 1,
-                              maxLines: 4,
-                              keyboardType: TextInputType.multiline,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: const InputDecoration(
-                                hintText: AppStrings.inputHint,
-                                filled: false,
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 8,
-                                ),
+                          TextField(
+                            controller: _inputController,
+                            focusNode: _inputFocusNode,
+                            enabled: !uiState.isSubmitting,
+                            minLines: 1,
+                            maxLines: 4,
+                            keyboardType: TextInputType.multiline,
+                            textCapitalization: TextCapitalization.sentences,
+                            decoration: const InputDecoration(
+                              hintText: AppStrings.inputHint,
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            onPressed: uiState.isSubmitting
-                                ? null
-                                : _submitInput,
-                            child: uiState.isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(AppStrings.addItemsButton),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: _openFrequentItems,
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 40),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.history_rounded,
+                                  size: 18,
+                                ),
+                                label: const Text(AppStrings.frequentButton),
+                              ),
+                              const Spacer(),
+                              FilledButton(
+                                onPressed: uiState.isSubmitting
+                                    ? null
+                                    : _submitInput,
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 40),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                child: uiState.isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(AppStrings.addItemsButton),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -382,7 +571,35 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  if (effectiveStore != null && sortedAisles.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 12, 2),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '$effectiveStore · ${sortedAisles.length} ${sortedAisles.length == 1 ? 'pasillo' : 'pasillos'}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: karritoColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _openAisleReorder(effectiveStore),
+                            icon: const Icon(Icons.reorder_rounded, size: 18),
+                            label: const Text(AppStrings.reorderAislesButton),
+                            style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
                 Expanded(
                   child: itemsAsync.isLoading && items.isEmpty

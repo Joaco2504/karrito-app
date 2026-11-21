@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
 
 class ListSelectorSheet extends StatelessWidget {
@@ -12,6 +13,8 @@ class ListSelectorSheet extends StatelessWidget {
     required this.onCreate,
     required this.onRename,
     required this.onDelete,
+    required this.onShareLive,
+    required this.onJoinWithCode,
     super.key,
   });
 
@@ -21,6 +24,8 @@ class ListSelectorSheet extends StatelessWidget {
   final Future<bool> Function(String title) onCreate;
   final Future<bool> Function(String listId, String title) onRename;
   final Future<bool> Function(String listId) onDelete;
+  final VoidCallback onShareLive;
+  final VoidCallback onJoinWithCode;
 
   static Future<void> show({
     required BuildContext context,
@@ -30,9 +35,12 @@ class ListSelectorSheet extends StatelessWidget {
     required Future<bool> Function(String title) onCreate,
     required Future<bool> Function(String listId, String title) onRename,
     required Future<bool> Function(String listId) onDelete,
+    required VoidCallback onShareLive,
+    required VoidCallback onJoinWithCode,
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       builder: (_) => ListSelectorSheet(
@@ -42,6 +50,8 @@ class ListSelectorSheet extends StatelessWidget {
         onCreate: onCreate,
         onRename: onRename,
         onDelete: onDelete,
+        onShareLive: onShareLive,
+        onJoinWithCode: onJoinWithCode,
       ),
     );
   }
@@ -131,7 +141,11 @@ class ListSelectorSheet extends StatelessWidget {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text(AppStrings.deleteListButton),
-          content: Text(AppStrings.deleteListConfirmBody(list.title)),
+          content: Text(
+            list.isJoinedRemote
+                ? AppStrings.leaveSharedListConfirmBody(list.title)
+                : AppStrings.deleteListConfirmBody(list.title),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -160,103 +174,169 @@ class ListSelectorSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canCreate = lists.length < StoreHierarchy.maxActiveListsPhase2;
+    final ownedCount = lists.where((l) => !l.isJoinedRemote).length;
+    final canCreate = ownedCount < StoreHierarchy.maxActiveListsPhase2;
     final canDelete = lists.length > 1;
     final colorScheme = Theme.of(context).colorScheme;
+    final karritoColors = Theme.of(context).extension<KarritoColors>()!;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Tus listas (${lists.length}/${StoreHierarchy.maxActiveListsPhase2})',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Tus listas ($ownedCount/${StoreHierarchy.maxActiveListsPhase2})',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (canCreate)
+                      FilledButton.icon(
+                        onPressed: () => _showCreateDialog(context),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text(AppStrings.newListTitle),
+                      ),
+                  ],
                 ),
-                if (canCreate)
-                  FilledButton.icon(
-                    onPressed: () => _showCreateDialog(context),
-                    icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text(AppStrings.newListTitle),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...lists.map((list) {
-            final isSelected = list.id == activeListId;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                color: isSelected
-                    ? colorScheme.primaryContainer.withValues(alpha: 0.45)
-                    : null,
-                child: ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  leading: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
+              ),
+              const SizedBox(height: 8),
+              ...lists.map((list) {
+                final isSelected = list.id == activeListId;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Card(
                     color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                  title: Text(
-                    list.title,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                        ? colorScheme.primaryContainer.withValues(alpha: 0.45)
+                        : null,
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_off_rounded,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      title: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              list.title,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (list.isShared) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: karritoColors.completedContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                AppStrings.liveListBadge,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: karritoColors.onCompletedContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      subtitle: list.isShared && list.shareCode != null
+                          ? Text(
+                              'Código: ${list.shareCode}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: karritoColors.textSecondary,
+                                  ),
+                            )
+                          : null,
+                      onTap: () {
+                        onSelect(list.id);
+                        Navigator.of(context).pop();
+                      },
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!list.isJoinedRemote)
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 20),
+                              tooltip: AppStrings.renameListTitle,
+                              onPressed: () => _showRenameDialog(context, list),
+                            ),
+                          if (canDelete)
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 20,
+                                color: colorScheme.error,
+                              ),
+                              tooltip: AppStrings.deleteListButton,
+                              onPressed: () => _confirmDelete(context, list),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                  onTap: () {
-                    onSelect(list.id);
-                    Navigator.of(context).pop();
-                  },
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 20),
-                        tooltip: AppStrings.renameListTitle,
-                        onPressed: () => _showRenameDialog(context, list),
-                      ),
-                      if (canDelete)
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 20,
-                            color: colorScheme.error,
-                          ),
-                          tooltip: AppStrings.deleteListButton,
-                          onPressed: () => _confirmDelete(context, list),
-                        ),
-                    ],
+                );
+              }),
+              if (!canCreate) ...[
+                const SizedBox(height: 2),
+                Text(
+                  AppStrings.maxListsReached,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+              ],
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onShareLive();
+                },
+                icon: const Icon(Icons.sensors_rounded, size: 20),
+                label: const Text(AppStrings.shareLiveOption),
               ),
-            );
-          }),
-          if (!canCreate) ...[
-            const SizedBox(height: 4),
-            Text(
-              AppStrings.maxListsReached,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onJoinWithCode();
+                },
+                icon: const Icon(Icons.group_add_outlined, size: 20),
+                label: const Text(AppStrings.joinWithCodeButton),
               ),
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

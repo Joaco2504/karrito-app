@@ -3,6 +3,10 @@
 .env.*
 *.env.local
 supabase/.temp/
+*firebase-adminsdk*.json
+client_secret*.json
+**/client_secret*.json
+**/*firebase-adminsdk*.json
 
 # OS & editors
 .DS_Store

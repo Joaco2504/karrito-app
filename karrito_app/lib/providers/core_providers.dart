@@ -6,6 +6,7 @@ import '../data/local/app_database.dart';
 import '../data/repositories/shopping_repository.dart';
 import '../data/services/ai_classifier_service.dart';
 import '../data/services/auth_service.dart';
+import '../data/services/sync_service.dart';
 import '../data/services/wakelock_service.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -37,6 +38,14 @@ final shoppingRepositoryProvider = Provider<ShoppingRepository>((ref) {
   return ShoppingRepository(
     db: ref.watch(appDatabaseProvider),
     aiClassifier: ref.watch(aiClassifierServiceProvider),
+  );
+});
+
+final syncServiceProvider = Provider<SyncService>((ref) {
+  return SupabaseSyncService(
+    db: ref.watch(appDatabaseProvider),
+    client: ref.watch(supabaseClientProvider),
+    authService: ref.watch(authServiceProvider),
   );
 });
 

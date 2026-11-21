@@ -9,6 +9,7 @@ import 'core/config/supabase_config.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_database.dart';
+import 'data/services/sync_service.dart';
 import 'providers/core_providers.dart';
 import 'providers/shopping_providers.dart';
 import 'ui/screens/onboarding_screen.dart';
@@ -38,28 +39,92 @@ class KarritoApp extends ConsumerStatefulWidget {
 class _KarritoAppState extends ConsumerState<KarritoApp> {
   bool? _lastOnline;
   bool? _lastKeepScreenOn;
+  RealtimeChannel? _realtimeChannel;
+  String? _realtimeListId;
+  SyncService? _syncService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _syncService = ref.read(syncServiceProvider);
       _handleOnlineState(ref.read(isOnlineProvider));
+      _updateRealtimeSubscription(
+        isOnline: ref.read(isOnlineProvider),
+        activeList: ref.read(activeListProvider),
+      );
     });
+  }
+
+  @override
+  void dispose() {
+    final channel = _realtimeChannel;
+    final sync = _syncService;
+    _realtimeChannel = null;
+    if (channel != null && sync != null) {
+      unawaited(sync.unsubscribeChannel(channel));
+    }
+    super.dispose();
   }
 
   void _handleOnlineState(bool isOnline) {
     final wasOnline = _lastOnline;
     _lastOnline = isOnline;
-    if (!isOnline) return;
+    if (!isOnline) {
+      _updateRealtimeSubscription(
+        isOnline: false,
+        activeList: ref.read(activeListProvider),
+      );
+      return;
+    }
 
     if (wasOnline != true) {
-      unawaited(ref.read(authServiceProvider).ensureSignedInSilently());
-      unawaited(
-        ref
-            .read(shoppingControllerProvider.notifier)
-            .reprocessPendingAi(userTriggered: false),
-      );
+      unawaited(_bootstrapOnlineSync());
+    }
+  }
+
+  Future<void> _bootstrapOnlineSync() async {
+    await ref.read(authServiceProvider).ensureSignedInSilently();
+    if (!mounted) return;
+    ref.read(accountStatusProvider.notifier).refresh();
+    await ref
+        .read(shoppingControllerProvider.notifier)
+        .reprocessPendingAi(userTriggered: false);
+    if (!mounted) return;
+    await ref
+        .read(shoppingControllerProvider.notifier)
+        .syncNow(userTriggered: false);
+    if (!mounted) return;
+    _updateRealtimeSubscription(
+      isOnline: ref.read(isOnlineProvider),
+      activeList: ref.read(activeListProvider),
+    );
+  }
+
+  void _updateRealtimeSubscription({
+    required bool isOnline,
+    required ShoppingListEntity? activeList,
+  }) {
+    final targetId = (isOnline && activeList != null && activeList.isShared)
+        ? activeList.id
+        : null;
+
+    if (targetId == _realtimeListId) {
+      return;
+    }
+
+    final sync = ref.read(syncServiceProvider);
+    final oldChannel = _realtimeChannel;
+    _realtimeChannel = null;
+    _realtimeListId = targetId;
+
+    if (oldChannel != null) {
+      unawaited(sync.unsubscribeChannel(oldChannel));
+    }
+
+    if (targetId != null) {
+      _realtimeChannel = sync.subscribeToSharedList(targetId);
     }
   }
 
@@ -78,6 +143,17 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   Widget build(BuildContext context) {
     ref.listen<bool>(isOnlineProvider, (_, next) {
       _handleOnlineState(next);
+      _updateRealtimeSubscription(
+        isOnline: next,
+        activeList: ref.read(activeListProvider),
+      );
+    });
+
+    ref.listen<ShoppingListEntity?>(activeListProvider, (_, next) {
+      _updateRealtimeSubscription(
+        isOnline: ref.read(isOnlineProvider),
+        activeList: next,
+      );
     });
 
     ref.listen<AsyncValue<UserPreferencesEntity>>(preferencesProvider, (

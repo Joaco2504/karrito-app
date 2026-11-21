@@ -28,6 +28,8 @@ class AppStrings {
 
   // Main shopping screen
   static const String listSelectorTooltip = 'Elegir lista';
+  static const String switchToLightTooltip = 'Cambiar a modo claro';
+  static const String switchToDarkTooltip = 'Cambiar a modo oscuro';
   static const String newListTitle = 'Nueva lista';
   static const String newListHint = 'Ej: Asado del domingo';
   static const String renameListTitle = 'Renombrar lista';
@@ -35,21 +37,49 @@ class AppStrings {
   static const String saveListButton = 'Guardar nombre';
   static const String deleteListButton = 'Borrar lista';
   static const String maxListsReached =
-      'Ya tenés 3 listas activas. Borrá una para crear otra nueva.';
+      'Ya tenés 3 listas propias activas. Borrá una para crear otra nueva.';
   static const String cannotDeleteLastList =
       'Necesitás al menos una lista activa. Creá otra antes de borrar esta.';
   static String deleteListConfirmBody(String title) =>
       'Se va a borrar "$title" junto con todos sus productos guardados.';
+  static String leaveSharedListConfirmBody(String title) =>
+      'Vas a salir de la lista compartida "$title". Podés volver a entrar después con el código.';
 
   static const String inputHint =
       'Escribí o pegá lo que te falta (ej: 2 kg de papa, leche, 10 tornillos)';
   static const String addItemsButton = 'Agregar';
+  static const String frequentButton = 'Frecuentes';
+  static const String reorderAislesButton = 'Ordenar pasillos';
   static const String processingItemsLabel = 'Ordenando tu lista...';
 
   static const String wakelockOnTooltip = 'Pantalla encendida activada';
   static const String wakelockOffTooltip = 'Mantener pantalla encendida';
   static const String shareListTooltip = 'Compartir lista';
   static const String settingsTooltip = 'Abrir ajustes';
+
+  // Aisle reordering
+  static const String reorderAislesTitle = 'Ordenar pasillos';
+  static String reorderAislesSubtitle(String store) =>
+      'Arrastrá los pasillos de $store en el orden en que recorrés tu local.';
+  static const String saveOrderButton = 'Guardar orden';
+  static String reorderSuccessNotice(String store) =>
+      'Guardamos tu orden de pasillos para $store.';
+
+  // Frequent items sheet
+  static const String frequentItemsTitle = 'Productos frecuentes';
+  static const String frequentSearchLabel = 'Buscar producto frecuente';
+  static const String frequentSearchHint =
+      'Escribí para filtrar tu lista habitual';
+  static const String frequentEmptyTitle =
+      'Todavía no tenés productos frecuentes';
+  static const String frequentEmptyBody =
+      'Cada producto que cargues se guarda acá para sumarlo después sin gastar consultas.';
+  static const String frequentNoMatches =
+      'No encontramos productos frecuentes con ese nombre.';
+  static const String removeFrequentTooltip = 'Quitar de frecuentes';
+  static String addedFromFrequentNotice(String name) =>
+      'Sumamos "$name" desde tus frecuentes.';
+  static const String doneButton = 'Listo';
 
   // Connection & pending AI banner
   static const String offlineBannerTitle = 'Estás sin señal';
@@ -69,6 +99,7 @@ class AppStrings {
   static const String allCheckedInStore =
       'Ya tachaste todo lo de este comercio.';
   static const String pendingOfflineBadge = 'Sin señal';
+  static const String liveListBadge = 'En vivo';
 
   // Item actions & edit sheet
   static const String editItemTitle = 'Editar producto';
@@ -91,12 +122,68 @@ class AppStrings {
   static const String cancelButton = 'Cancelar';
   static const String deleteButton = 'Borrar';
 
-  // Share formatting
+  // Share formatting & collaborative live lists
   static const String shareEmptyListError =
       'Tu lista no tiene productos pendientes para compartir. Agregá algo o destachá un ítem.';
   static const String shareHeader = 'Lista de compras - Karrito';
   static const String shareRemainingCheckedNote =
       'Solo se incluyeron los productos que faltan comprar.';
+  static const String shareOptionsTitle = 'Compartir lista';
+  static const String shareAsTextOption = 'Enviar texto por WhatsApp';
+  static const String shareAsTextSubtitle =
+      'Manda los productos pendientes agrupados por comercio y pasillo.';
+  static const String shareLiveOption = 'Compartir lista en vivo';
+  static const String shareLiveSubtitle =
+      'Creá un código de 6 caracteres para que otra persona tache con vos en tiempo real.';
+  static const String joinWithCodeButton = 'Unirme con código';
+  static const String joinSheetTitle = 'Unirme con código';
+  static const String joinCodeLabel = 'Código de 6 caracteres';
+  static const String joinCodeHint = 'Ej: K7M4P9';
+  static const String joinSubmitButton = 'Unirme';
+  static const String invalidShareCodeError =
+      'Escribí un código válido de 6 letras o números para unirte a la lista.';
+  static const String liveOfflineError =
+      'No tenés conexión a internet ahora. Probá de nuevo cuando vuelva la señal para usar listas en vivo.';
+  static const String liveShareTitle = 'Lista compartida en vivo';
+  static const String liveShareSubtitle =
+      'Pasale este código a quien haga las compras con vos para ver y tachar productos al instante.';
+  static const String shareCodeLabel = 'Código para compartir';
+  static const String copyCodeButton = 'Copiar código';
+  static const String codeCopiedNotice = 'Código copiado para compartir.';
+  static const String sendInviteButton = 'Enviar código';
+  static const String proLiveSheetTitle = 'Listas en vivo en el plan Pro';
+  static const String proLiveSheetBody =
+      'Crear listas colaborativas en vivo con código compartido forma parte del plan Pro (\$ 3 USD por mes). Igual podés unirte gratis a la lista de otra persona si te pasan un código.';
+  static const String proLiveUnderstandButton = 'Entendido';
+  static String liveJoinedNotice(String title) =>
+      'Te uniste a "$title". Ya podés ver y tachar productos en vivo.';
+  static String liveInviteMessage(String title, String code) =>
+      'Sumate a mi lista "$title" en vivo en Karrito. Entrá a Tus listas -> Unirme con código e ingresá: $code';
+  static const String guestShareSuggestionTitle = 'Respaldá tus listas';
+  static const String guestShareSuggestionBody =
+      'Estás usando modo invitado. Si vinculás tu cuenta de Google en Ajustes no perdés tus listas ni tu orden de pasillos si cambiás de teléfono.';
+  static const String goToSettingsButton = 'Ir a Ajustes';
+
+  // Google account & cloud sync
+  static const String cloudBackupSection = 'Cuenta y respaldo';
+  static const String guestAccountTitle = 'Modo invitado';
+  static const String guestAccountSubtitle =
+      'Vinculá tu Google para guardar tus listas, pasillos y frecuentes en la nube y recuperarlos en otro celular.';
+  static const String linkedAccountTitle = 'Cuenta vinculada con Google';
+  static const String linkGoogleButton = 'Vincular con Google';
+  static const String linkingGoogleLabel = 'Vinculando cuenta...';
+  static const String syncNowButton = 'Sincronizar ahora';
+  static const String syncingNowLabel = 'Sincronizando...';
+  static const String googleLinkedNotice =
+      'Cuenta vinculada. Ya respaldamos tus listas, pasillos y frecuentes.';
+  static const String googleOfflineError =
+      'No pudimos vincular tu cuenta porque no hay conexión a internet. Probá cuando vuelva la señal.';
+  static const String googleTokenError =
+      'No pudimos completar la verificación con Google. Probá de nuevo en unos segundos.';
+  static const String syncCompletedNotice =
+      'Sincronización completa con tu cuenta.';
+  static const String syncFailedError =
+      'No pudimos sincronizar ahora. Tus cambios siguen seguros en el teléfono y se suben cuando mejore la señal.';
 
   // Errors & feedback
   static const String emptyInputError =
@@ -164,14 +251,14 @@ class AppStrings {
           'Cada vez que movés un producto a otro pasillo o comercio desde el menú de edición, la app recuerda tu preferencia. La próxima vez que lo cargues va directo adonde vos elegiste, sin gastar consultas.',
     ),
     (
-      question: '¿Por qué a veces no usa el límite diario?',
+      question: '¿Para qué sirve vincular mi cuenta de Google?',
       answer:
-          'Cuando escribís productos simples separados por comas que ya cargaste antes, Karrito los reconoce desde la memoria local del teléfono y los agrega en el acto.',
+          'Si vinculás tu Google en Ajustes, tus listas, pasillos ordenados y productos frecuentes se sincronizan con la nube. Así no perdés nada si cambiás de celular.',
     ),
     (
-      question: '¿Cómo mantengo la pantalla prendida mientras compro?',
+      question: '¿Puedo unirme gratis a una lista compartida en vivo?',
       answer:
-          'Tocá el ícono de pantalla arriba en tu lista o activalo acá en Ajustes. Así no tenés que desbloquear el teléfono en cada pasillo.',
+          'Sí. Si otra persona con plan Pro comparte un código de 6 caracteres, podés tocar "Unirme con código" desde el selector de listas y tachar productos en vivo con cuenta gratuita o en modo invitado.',
     ),
   ];
 }
