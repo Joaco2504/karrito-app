@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-field: var(--field);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-switch-off-track: var(--switch-off-track);
+  --color-switch-off-border: var(--switch-off-border);
+  --color-switch-off-thumb: var(--switch-off-thumb);
+  --color-switch-on-thumb: var(--switch-on-thumb);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light dark;
+
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+
+  /* Paleta oficial Karrito - Modo claro */
+  --background: #FAF7F2;
+  --foreground: #1F1A1D;
+  --card: #FFFFFF;
+  --card-foreground: #1F1A1D;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F1A1D;
+  --field: #F5F1EA;
+  --primary: #4E1A3D;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F2ECE4;
+  --secondary-foreground: #1F1A1D;
+  --brand-accent: #C86D1F;
+  --brand-accent-foreground: #FFFFFF;
+  --success: #2B6E4E;
+  --success-foreground: #FFFFFF;
+  --muted: #F2ECE4;
+  --muted-foreground: #6B6268;
+  --accent: #F3ECE4;
+  --accent-foreground: #1F1A1D;
+  --destructive: #B91C1C;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5DFD5;
+  --input: #E5DFD5;
+  --ring: #4E1A3D;
+  --switch-off-track: #EDE7DF;
+  --switch-off-border: #D0C7BC;
+  --switch-off-thumb: #6B6268;
+  --switch-on-thumb: #FFFFFF;
+  --chart-1: #4E1A3D;
+  --chart-2: #C86D1F;
+  --chart-3: #2B6E4E;
+  --chart-4: #6B6268;
+  --chart-5: #A35B8A;
+  --radius: 0.75rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F1A1D;
+  --sidebar-primary: #4E1A3D;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3ECE4;
+  --sidebar-accent-foreground: #1F1A1D;
+  --sidebar-border: #E5DFD5;
+  --sidebar-ring: #4E1A3D;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #141013;
+    --foreground: #F5F0F3;
+    --card: #211B20;
+    --card-foreground: #F5F0F3;
+    --popover: #211B20;
+    --popover-foreground: #F5F0F3;
+    --field: #2B2329;
+    --primary: #E08EC3;
+    --primary-foreground: #380D29;
+    --secondary: #2B2329;
+    --secondary-foreground: #F5F0F3;
+    --brand-accent: #F0A35E;
+    --brand-accent-foreground: #2E1605;
+    --success: #5EC293;
+    --success-foreground: #0D291C;
+    --muted: #282127;
+    --muted-foreground: #A89DA4;
+    --accent: #2D242B;
+    --accent-foreground: #F5F0F3;
+    --destructive: #F87171;
+    --destructive-foreground: #2A0909;
+    --border: #362D33;
+    --input: #362D33;
+    --ring: #E08EC3;
+    --switch-off-track: #2B2329;
+    --switch-off-border: #4A3F46;
+    --switch-off-thumb: #D6CCD2;
+    --switch-on-thumb: #380D29;
+    --chart-1: #E08EC3;
+    --chart-2: #F0A35E;
+    --chart-3: #5EC293;
+    --chart-4: #A89DA4;
+    --chart-5: #C47AA9;
+    --sidebar: #211B20;
+    --sidebar-foreground: #F5F0F3;
+    --sidebar-primary: #E08EC3;
+    --sidebar-primary-foreground: #380D29;
+    --sidebar-accent: #2D242B;
+    --sidebar-accent-foreground: #F5F0F3;
+    --sidebar-border: #362D33;
+    --sidebar-ring: #E08EC3;
+  }
+}
+
+.dark {
+  /* Paleta oficial Karrito - Modo oscuro */
+  --background: #141013;
+  --foreground: #F5F0F3;
+  --card: #211B20;
+  --card-foreground: #F5F0F3;
+  --popover: #211B20;
+  --popover-foreground: #F5F0F3;
+  --field: #2B2329;
+  --primary: #E08EC3;
+  --primary-foreground: #380D29;
+  --secondary: #2B2329;
+  --secondary-foreground: #F5F0F3;
+  --brand-accent: #F0A35E;
+  --brand-accent-foreground: #2E1605;
+  --success: #5EC293;
+  --success-foreground: #0D291C;
+  --muted: #282127;
+  --muted-foreground: #A89DA4;
+  --accent: #2D242B;
+  --accent-foreground: #F5F0F3;
+  --destructive: #F87171;
+  --destructive-foreground: #2A0909;
+  --border: #362D33;
+  --input: #362D33;
+  --ring: #E08EC3;
+  --switch-off-track: #2B2329;
+  --switch-off-border: #4A3F46;
+  --switch-off-thumb: #D6CCD2;
+  --switch-on-thumb: #380D29;
+  --chart-1: #E08EC3;
+  --chart-2: #F0A35E;
+  --chart-3: #5EC293;
+  --chart-4: #A89DA4;
+  --chart-5: #C47AA9;
+  --sidebar: #211B20;
+  --sidebar-foreground: #F5F0F3;
+  --sidebar-primary: #E08EC3;
+  --sidebar-primary-foreground: #380D29;
+  --sidebar-accent: #2D242B;
+  --sidebar-accent-foreground: #F5F0F3;
+  --sidebar-border: #362D33;
+  --sidebar-ring: #E08EC3;
+}
+
+@layer base {
+  html {
+    @apply font-sans;
+    accent-color: var(--primary);
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  input:user-invalid,
+  textarea:user-invalid {
+    border-color: var(--destructive);
+  }
+}
+
+/* Tablas responsivas accesibles con encabezados fijos */
+.karrito-table-wrapper {
+  container-type: inline-size;
+  overflow-x: auto;
+  max-inline-size: 100%;
+}
+
+.karrito-table-wrapper thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background-color: var(--card);
+}
