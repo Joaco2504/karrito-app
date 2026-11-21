@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Custom semantic colors for Karrito beyond Material 3 defaults.
+/// Custom semantic colors for Karrito beyond Material 3 defaults (60-30-10).
 @immutable
 class KarritoColors extends ThemeExtension<KarritoColors> {
   const KarritoColors({
+    required this.accent,
+    required this.onAccent,
+    required this.accentContainer,
+    required this.onAccentContainer,
     required this.completed,
     required this.completedContainer,
     required this.onCompletedContainer,
@@ -15,6 +19,10 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
     required this.softDestructive,
   });
 
+  final Color accent;
+  final Color onAccent;
+  final Color accentContainer;
+  final Color onAccentContainer;
   final Color completed;
   final Color completedContainer;
   final Color onCompletedContainer;
@@ -26,31 +34,43 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   final Color softDestructive;
 
   static const light = KarritoColors(
-    completed: Color(0xFF2B6E4E),
-    completedContainer: Color(0xFFE4F2EA),
-    onCompletedContainer: Color(0xFF1A4732),
-    border: Color(0xFFE5DFD5),
-    textSecondary: Color(0xFF6B6268),
-    fieldSurface: Color(0xFFF5F1EA),
-    warningSurface: Color(0xFFFAF0E4),
-    warningText: Color(0xFF8C490F),
-    softDestructive: Color(0xFFC4453D),
+    accent: Color(0xFF00C2B5),
+    onAccent: Color(0xFF151515),
+    accentContainer: Color(0xFFD6F5F2),
+    onAccentContainer: Color(0xFF0C4F4A),
+    completed: Color(0xFF1E8E6E),
+    completedContainer: Color(0xFFDCEFE8),
+    onCompletedContainer: Color(0xFF115240),
+    border: Color(0xFFD8CCB4),
+    textSecondary: Color(0xFF5B5449),
+    fieldSurface: Color(0xFFF8F2E6),
+    warningSurface: Color(0xFFFAEBDC),
+    warningText: Color(0xFF7D3B08),
+    softDestructive: Color(0xFFC43E35),
   );
 
   static const dark = KarritoColors(
-    completed: Color(0xFF5EC293),
-    completedContainer: Color(0xFF1B3529),
-    onCompletedContainer: Color(0xFFB7EAD2),
-    border: Color(0xFF362D33),
-    textSecondary: Color(0xFFA89DA4),
-    fieldSurface: Color(0xFF2B2329),
-    warningSurface: Color(0xFF332316),
-    warningText: Color(0xFFF0A35E),
-    softDestructive: Color(0xFFF28B82),
+    accent: Color(0xFFFF5A12),
+    onAccent: Color(0xFF13285A),
+    accentContainer: Color(0xFF472C3D),
+    onAccentContainer: Color(0xFFFFD8C4),
+    completed: Color(0xFF38D39F),
+    completedContainer: Color(0xFF164A58),
+    onCompletedContainer: Color(0xFFBDF7E2),
+    border: Color(0xFF2E4E99),
+    textSecondary: Color(0xFFB5C2DF),
+    fieldSurface: Color(0xFF22418A),
+    warningSurface: Color(0xFF3F2B3E),
+    warningText: Color(0xFFFFB78A),
+    softDestructive: Color(0xFFFF8A80),
   );
 
   @override
   KarritoColors copyWith({
+    Color? accent,
+    Color? onAccent,
+    Color? accentContainer,
+    Color? onAccentContainer,
     Color? completed,
     Color? completedContainer,
     Color? onCompletedContainer,
@@ -62,6 +82,10 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
     Color? softDestructive,
   }) {
     return KarritoColors(
+      accent: accent ?? this.accent,
+      onAccent: onAccent ?? this.onAccent,
+      accentContainer: accentContainer ?? this.accentContainer,
+      onAccentContainer: onAccentContainer ?? this.onAccentContainer,
       completed: completed ?? this.completed,
       completedContainer: completedContainer ?? this.completedContainer,
       onCompletedContainer: onCompletedContainer ?? this.onCompletedContainer,
@@ -78,6 +102,14 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   KarritoColors lerp(ThemeExtension<KarritoColors>? other, double t) {
     if (other is! KarritoColors) return this;
     return KarritoColors(
+      accent: Color.lerp(accent, other.accent, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      accentContainer: Color.lerp(accentContainer, other.accentContainer, t)!,
+      onAccentContainer: Color.lerp(
+        onAccentContainer,
+        other.onAccentContainer,
+        t,
+      )!,
       completed: Color.lerp(completed, other.completed, t)!,
       completedContainer: Color.lerp(
         completedContainer,
@@ -99,51 +131,53 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   }
 }
 
-/// Material 3 Light & Dark themes for Karrito using exact `.agents/memory.md`
-/// palette and native system typography (100% offline-capable).
+/// Material 3 Light & Dark themes for Karrito using the official 60-30-10
+/// palette documented in `.agents/memory.md` and `karrito-ui-selectors`.
 class AppTheme {
   AppTheme._();
 
-  // Exact Light palette
-  static const Color lightBackground = Color(0xFFFAF7F2);
+  // Official 60-30-10 Light palette
+  static const Color lightBackground = Color(0xFFEEE3CC);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightPrimary = Color(0xFF4E1A3D);
-  static const Color lightSecondary = Color(0xFFC86D1F);
-  static const Color lightCompleted = Color(0xFF2B6E4E);
-  static const Color lightTextPrimary = Color(0xFF1F1A1D);
-  static const Color lightTextSecondary = Color(0xFF6B6268);
-  static const Color lightBorder = Color(0xFFE5DFD5);
-  static const Color lightSwitchTrackOff = Color(0xFFEDE7DF);
-  static const Color lightSwitchBorderOff = Color(0xFFD0C7BC);
+  static const Color lightFieldSurface = Color(0xFFF8F2E6);
+  static const Color lightPrimary = Color(0xFF151515);
+  static const Color lightAccent = Color(0xFF00C2B5);
+  static const Color lightCompleted = Color(0xFF1E8E6E);
+  static const Color lightTextPrimary = Color(0xFF151515);
+  static const Color lightTextSecondary = Color(0xFF5B5449);
+  static const Color lightBorder = Color(0xFFD8CCB4);
+  static const Color lightSwitchTrackOff = Color(0xFFE4D8C1);
+  static const Color lightSwitchBorderOff = Color(0xFFC6B79B);
 
-  // Exact Dark palette
-  static const Color darkBackground = Color(0xFF141013);
-  static const Color darkSurface = Color(0xFF211B20);
-  static const Color darkPrimary = Color(0xFFE08EC3);
-  static const Color darkSecondary = Color(0xFFF0A35E);
-  static const Color darkCompleted = Color(0xFF5EC293);
-  static const Color darkTextPrimary = Color(0xFFF5F0F3);
-  static const Color darkTextSecondary = Color(0xFFA89DA4);
-  static const Color darkBorder = Color(0xFF362D33);
-  static const Color darkSwitchTrackOff = Color(0xFF2B2329);
-  static const Color darkSwitchBorderOff = Color(0xFF4A3F46);
-  static const Color darkSwitchThumbOff = Color(0xFFD6CCD2);
+  // Official 60-30-10 Dark palette
+  static const Color darkBackground = Color(0xFF13285A);
+  static const Color darkSurface = Color(0xFF1B3573);
+  static const Color darkFieldSurface = Color(0xFF22418A);
+  static const Color darkPrimary = Color(0xFFFF5A12);
+  static const Color darkSecondary = Color(0xFFECE6DC);
+  static const Color darkCompleted = Color(0xFF38D39F);
+  static const Color darkTextPrimary = Color(0xFFECE6DC);
+  static const Color darkTextSecondary = Color(0xFFB5C2DF);
+  static const Color darkBorder = Color(0xFF2E4E99);
+  static const Color darkSwitchTrackOff = Color(0xFF22418A);
+  static const Color darkSwitchBorderOff = Color(0xFF4163B5);
+  static const Color darkSwitchThumbOff = Color(0xFFECE6DC);
 
   static ThemeData light() {
     const colorScheme = ColorScheme(
       brightness: Brightness.light,
       primary: lightPrimary,
       onPrimary: Color(0xFFFFFFFF),
-      primaryContainer: Color(0xFFF3E2ED),
-      onPrimaryContainer: lightPrimary,
-      secondary: lightSecondary,
-      onSecondary: Color(0xFFFFFFFF),
-      secondaryContainer: Color(0xFFFAE8D6),
-      onSecondaryContainer: Color(0xFF5A2B04),
+      primaryContainer: Color(0xFFD6F5F2),
+      onPrimaryContainer: Color(0xFF0C4F4A),
+      secondary: lightAccent,
+      onSecondary: lightPrimary,
+      secondaryContainer: Color(0xFFD6F5F2),
+      onSecondaryContainer: Color(0xFF0C4F4A),
       tertiary: lightCompleted,
       onTertiary: Color(0xFFFFFFFF),
-      tertiaryContainer: Color(0xFFE4F2EA),
-      onTertiaryContainer: Color(0xFF1A4732),
+      tertiaryContainer: Color(0xFFDCEFE8),
+      onTertiaryContainer: Color(0xFF115240),
       error: Color(0xFFB3261E),
       onError: Color(0xFFFFFFFF),
       errorContainer: Color(0xFFF9DEDC),
@@ -152,13 +186,13 @@ class AppTheme {
       onSurface: lightTextPrimary,
       onSurfaceVariant: lightTextSecondary,
       surfaceContainerLowest: Color(0xFFFFFFFF),
-      surfaceContainerLow: Color(0xFFF5F1EA),
-      surfaceContainer: Color(0xFFEFEAE2),
-      surfaceContainerHigh: Color(0xFFE9E3D9),
-      surfaceContainerHighest: Color(0xFFE5DFD5),
+      surfaceContainerLow: lightFieldSurface,
+      surfaceContainer: Color(0xFFF2E9D7),
+      surfaceContainerHigh: Color(0xFFEAE0CB),
+      surfaceContainerHighest: lightBorder,
       outline: lightBorder,
       outlineVariant: lightBorder,
-      shadow: Color(0x1A1F1A1D),
+      shadow: Color(0x1A151515),
     );
 
     return _buildTheme(
@@ -179,32 +213,32 @@ class AppTheme {
     const colorScheme = ColorScheme(
       brightness: Brightness.dark,
       primary: darkPrimary,
-      onPrimary: Color(0xFF380D29),
-      primaryContainer: Color(0xFF4E1A3D),
-      onPrimaryContainer: Color(0xFFFADDF0),
-      secondary: darkSecondary,
-      onSecondary: Color(0xFF452002),
-      secondaryContainer: Color(0xFF5A2D08),
-      onSecondaryContainer: Color(0xFFFFDFC4),
+      onPrimary: darkBackground,
+      primaryContainer: Color(0xFF472C3D),
+      onPrimaryContainer: Color(0xFFFFD8C4),
+      secondary: darkPrimary,
+      onSecondary: darkBackground,
+      secondaryContainer: Color(0xFF284896),
+      onSecondaryContainer: darkTextPrimary,
       tertiary: darkCompleted,
-      onTertiary: Color(0xFF0A3321),
-      tertiaryContainer: Color(0xFF1B3529),
-      onTertiaryContainer: Color(0xFFB7EAD2),
-      error: Color(0xFFF2B8B5),
-      onError: Color(0xFF601410),
-      errorContainer: Color(0xFF8C1D18),
-      onErrorContainer: Color(0xFFF9DEDC),
+      onTertiary: Color(0xFF082E22),
+      tertiaryContainer: Color(0xFF164A58),
+      onTertiaryContainer: Color(0xFFBDF7E2),
+      error: Color(0xFFFF8A80),
+      onError: Color(0xFF4A0D0A),
+      errorContainer: Color(0xFF6B1E25),
+      onErrorContainer: Color(0xFFFFDAD6),
       surface: darkSurface,
       onSurface: darkTextPrimary,
       onSurfaceVariant: darkTextSecondary,
-      surfaceContainerLowest: Color(0xFF141013),
-      surfaceContainerLow: Color(0xFF1D171C),
-      surfaceContainer: Color(0xFF211B20),
-      surfaceContainerHigh: Color(0xFF2B2329),
-      surfaceContainerHighest: Color(0xFF362D33),
+      surfaceContainerLowest: darkBackground,
+      surfaceContainerLow: Color(0xFF18316B),
+      surfaceContainer: darkSurface,
+      surfaceContainerHigh: darkFieldSurface,
+      surfaceContainerHighest: darkBorder,
       outline: darkBorder,
       outlineVariant: darkBorder,
-      shadow: Color(0x40000000),
+      shadow: Color(0x5208122B),
     );
 
     return _buildTheme(
@@ -287,7 +321,7 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return colorScheme.primary;
+            return karritoColors.accent;
           }
           return switchTrackOff;
         }),
@@ -305,10 +339,36 @@ class AppTheme {
         }),
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return colorScheme.onPrimary;
+            return karritoColors.onAccent;
           }
           return switchThumbOff;
         }),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll<Size>(Size(0, 44)),
+          shape: WidgetStatePropertyAll<OutlinedBorder>(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          side: WidgetStatePropertyAll<BorderSide>(
+            BorderSide(color: borderColor, width: 1),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return karritoColors.accent;
+            }
+            return karritoColors.fieldSurface;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return karritoColors.onAccent;
+            }
+            return textPrimary;
+          }),
+          textStyle: const WidgetStatePropertyAll<TextStyle>(
+            TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -331,7 +391,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
+          borderSide: BorderSide(color: karritoColors.accent, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -344,18 +404,21 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           minimumSize: const Size(0, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: textPrimary,
           minimumSize: const Size(0, 48),
-          side: BorderSide(color: borderColor),
+          side: BorderSide(color: borderColor, width: 1.1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -363,13 +426,26 @@ class AppTheme {
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: colorScheme.brightness == Brightness.dark
+              ? karritoColors.accent
+              : karritoColors.onAccentContainer,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: karritoColors.accent,
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       chipTheme: base.chipTheme.copyWith(
+        backgroundColor: cardColor,
+        selectedColor: karritoColors.accent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: borderColor),
         ),
       ),

@@ -5,7 +5,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/services/share_code_helper.dart';
+import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
+import 'karrito_toast.dart';
 
 enum ShareOptionChoice { text, live, openSettings }
 
@@ -301,46 +303,52 @@ class LiveShareCodeSheet {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: shareCode));
-                        if (sheetContext.mounted) {
-                          ScaffoldMessenger.of(sheetContext).showSnackBar(
-                            const SnackBar(
-                              content: Text(AppStrings.codeCopiedNotice),
-                            ),
+                    child: KarritoBounceButton(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: shareCode),
                           );
-                        }
-                      },
-                      icon: const Icon(Icons.copy_rounded, size: 18),
-                      label: const Text(
-                        AppStrings.copyCodeButton,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
+                          if (sheetContext.mounted) {
+                            KarritoToast.show(
+                              sheetContext,
+                              message: AppStrings.codeCopiedNotice,
+                              type: KarritoToastType.success,
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        label: const Text(
+                          AppStrings.copyCodeButton,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        await SharePlus.instance.share(
-                          ShareParams(
-                            text: AppStrings.liveInviteMessage(
-                              listTitle,
-                              shareCode,
+                    child: KarritoBounceButton(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              text: AppStrings.liveInviteMessage(
+                                listTitle,
+                                shareCode,
+                              ),
+                              subject: '$listTitle - Karrito',
                             ),
-                            subject: '$listTitle - Karrito',
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.share_rounded, size: 18),
-                      label: const Text(
-                        AppStrings.sendInviteButton,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
+                          );
+                        },
+                        icon: const Icon(Icons.share_rounded, size: 18),
+                        label: const Text(
+                          AppStrings.sendInviteButton,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ),
@@ -468,18 +476,21 @@ class _JoinSharedListSheetState extends State<JoinSharedListSheet> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(AppStrings.joinSubmitButton),
+                child: KarritoBounceButton(
+                  enabled: !_isLoading,
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child: _isLoading
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          )
+                        : const Text(AppStrings.joinSubmitButton),
+                  ),
                 ),
               ),
             ],

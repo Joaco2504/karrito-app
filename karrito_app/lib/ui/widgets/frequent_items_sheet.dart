@@ -7,6 +7,7 @@ import '../../data/local/app_database.dart';
 import '../../domain/services/item_text_parser.dart';
 import '../../providers/shopping_providers.dart';
 import 'karrito_selector_field.dart';
+import 'karrito_toast.dart';
 
 class FrequentItemsSheet extends ConsumerStatefulWidget {
   const FrequentItemsSheet({
@@ -59,7 +60,6 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
     final learnedAsync = ref.watch(learnedItemsProvider);
     final allLearned = learnedAsync.value ?? const <LearnedItemEntity>[];
@@ -219,11 +219,18 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                       child: InkWell(
                         onTap: () async {
                           await widget.onAddFrequent(item);
-                          if (mounted) {
+                          if (context.mounted) {
+                            final notice = AppStrings.addedFromFrequentNotice(
+                              title,
+                            );
                             setState(() {
-                              _inlineNotice =
-                                  AppStrings.addedFromFrequentNotice(title);
+                              _inlineNotice = notice;
                             });
+                            KarritoToast.show(
+                              context,
+                              message: notice,
+                              type: KarritoToastType.success,
+                            );
                           }
                         },
                         child: ConstrainedBox(
@@ -269,7 +276,7 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                 ),
                                 Icon(
                                   Icons.add_circle_outline_rounded,
-                                  color: colorScheme.primary,
+                                  color: karritoColors.accent,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 6),

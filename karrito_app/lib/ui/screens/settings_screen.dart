@@ -5,14 +5,22 @@ import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
 import 'onboarding_screen.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  int? _openFaqIndex;
+
+  @override
+  Widget build(BuildContext context) {
     final prefsAsync = ref.watch(preferencesProvider);
     final prefs = prefsAsync.value;
     final uiState = ref.watch(shoppingControllerProvider);
@@ -75,28 +83,34 @@ class SettingsScreen extends ConsumerWidget {
                                 AppStrings.guestAccountSubtitle,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: karritoColors.textSecondary,
-                                  height: 1.35,
+                                  height: 1.38,
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              FilledButton.icon(
-                                onPressed: uiState.isLinkingGoogle
-                                    ? null
-                                    : controller.linkGoogleAccount,
-                                icon: uiState.isLinkingGoogle
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
+                              KarritoBounceButton(
+                                enabled: !uiState.isLinkingGoogle,
+                                child: FilledButton.icon(
+                                  onPressed: uiState.isLinkingGoogle
+                                      ? null
+                                      : controller.linkGoogleAccount,
+                                  icon: uiState.isLinkingGoogle
+                                      ? SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: colorScheme.onPrimary,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.login_rounded,
+                                          size: 18,
                                         ),
-                                      )
-                                    : const Icon(Icons.login_rounded, size: 18),
-                                label: Text(
-                                  uiState.isLinkingGoogle
-                                      ? AppStrings.linkingGoogleLabel
-                                      : AppStrings.linkGoogleButton,
+                                  label: Text(
+                                    uiState.isLinkingGoogle
+                                        ? AppStrings.linkingGoogleLabel
+                                        : AppStrings.linkGoogleButton,
+                                  ),
                                 ),
                               ),
                             ],
@@ -107,11 +121,11 @@ class SettingsScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   Container(
-                                    width: 36,
-                                    height: 36,
+                                    width: 38,
+                                    height: 38,
                                     decoration: BoxDecoration(
                                       color: karritoColors.completedContainer,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(11),
                                     ),
                                     child: Icon(
                                       Icons.cloud_done_outlined,
@@ -148,25 +162,33 @@ class SettingsScreen extends ConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 14),
-                              OutlinedButton.icon(
-                                onPressed: uiState.isSyncing
-                                    ? null
-                                    : () => controller.syncNow(
-                                        userTriggered: true,
-                                      ),
-                                icon: uiState.isSyncing
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                              KarritoBounceButton(
+                                enabled: !uiState.isSyncing,
+                                child: OutlinedButton.icon(
+                                  onPressed: uiState.isSyncing
+                                      ? null
+                                      : () => controller.syncNow(
+                                          userTriggered: true,
                                         ),
-                                      )
-                                    : const Icon(Icons.sync_rounded, size: 18),
-                                label: Text(
-                                  uiState.isSyncing
-                                      ? AppStrings.syncingNowLabel
-                                      : AppStrings.syncNowButton,
+                                  icon: uiState.isSyncing
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: karritoColors.accent,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.sync_rounded,
+                                          size: 18,
+                                          color: karritoColors.accent,
+                                        ),
+                                  label: Text(
+                                    uiState.isSyncing
+                                        ? AppStrings.syncingNowLabel
+                                        : AppStrings.syncNowButton,
+                                  ),
                                 ),
                               ),
                             ],
@@ -236,8 +258,11 @@ class SettingsScreen extends ConsumerWidget {
                         value: keepScreenOn,
                         onChanged: (val) =>
                             controller.setKeepScreenOn(val, notify: false),
-                        secondary: const Icon(
+                        secondary: Icon(
                           Icons.stay_current_portrait_rounded,
+                          color: keepScreenOn
+                              ? karritoColors.accent
+                              : karritoColors.textSecondary,
                         ),
                         title: const Text(AppStrings.settingsKeepScreenOnTitle),
                         subtitle: const Text(
@@ -246,19 +271,27 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.menu_book_outlined),
+                        leading: Icon(
+                          Icons.menu_book_outlined,
+                          color: karritoColors.textSecondary,
+                        ),
                         title: const Text(AppStrings.settingsGuideTitle),
                         subtitle: const Text(AppStrings.settingsGuideSubtitle),
-                        trailing: OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    const OnboardingScreen(isReviewMode: true),
-                              ),
-                            );
-                          },
-                          child: const Text(AppStrings.settingsViewGuideButton),
+                        trailing: KarritoBounceButton(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const OnboardingScreen(
+                                    isReviewMode: true,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              AppStrings.settingsViewGuideButton,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -272,47 +305,128 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      for (
-                        var i = 0;
-                        i < AppStrings.faqEntries.length;
-                        i++
-                      ) ...[
-                        if (i > 0) const Divider(height: 1),
-                        ExpansionTile(
-                          shape: const Border(),
-                          collapsedShape: const Border(),
-                          title: Text(
-                            AppStrings.faqEntries[i].question,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          childrenPadding: const EdgeInsets.fromLTRB(
-                            16,
-                            0,
-                            16,
-                            14,
-                          ),
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                AppStrings.faqEntries[i].answer,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
+                for (var i = 0; i < AppStrings.faqEntries.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _FaqAccordionCard(
+                    question: AppStrings.faqEntries[i].question,
+                    answer: AppStrings.faqEntries[i].answer,
+                    isOpen: _openFaqIndex == i,
+                    onTap: () {
+                      setState(() {
+                        _openFaqIndex = _openFaqIndex == i ? null : i;
+                      });
+                    },
                   ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FaqAccordionCard extends StatelessWidget {
+  const _FaqAccordionCard({
+    required this.question,
+    required this.answer,
+    required this.isOpen,
+    required this.onTap,
+  });
+
+  final String question;
+  final String answer;
+  final bool isOpen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final karritoColors = theme.extension<KarritoColors>()!;
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final duration = disableAnimations
+        ? Duration.zero
+        : const Duration(milliseconds: 220);
+
+    return AnimatedContainer(
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isOpen ? karritoColors.accent : karritoColors.border,
+          width: isOpen ? 1.5 : 1.0,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: duration,
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isOpen
+                            ? karritoColors.accent
+                            : karritoColors.border,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        question,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: isOpen ? 0.5 : 0.0,
+                      duration: duration,
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 22,
+                        color: isOpen
+                            ? karritoColors.accent
+                            : karritoColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.only(top: 12, left: 20, right: 4),
+                    child: Text(
+                      answer,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: karritoColors.textSecondary,
+                        height: 1.48,
+                      ),
+                    ),
+                  ),
+                  crossFadeState: isOpen
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: duration,
+                  sizeCurve: Curves.easeInOutCubic,
                 ),
               ],
             ),

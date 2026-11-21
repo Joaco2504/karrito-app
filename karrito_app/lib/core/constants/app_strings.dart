@@ -14,15 +14,24 @@ class AppStrings {
   static const String onboardingSubtitle =
       'Elegí tu localidad para empezar. Después podés cambiarla en Ajustes.';
   static const String cityLabel = 'Localidad';
-  static const String onboardingCard1Title = 'Cargá todo junto';
+  static const String onboardingCard1Title = 'Volcá todo mezclado';
   static const String onboardingCard1Body =
-      'Escribí o pegá lo que necesitás en un renglón, aunque mezcles comida con cosas de ferretería.';
-  static const String onboardingCard2Title = 'Separá por comercio';
+      'Escribí o pegá lo que necesitás en un renglón, aunque juntes comida, remedios y tornillos.';
+  static const String onboardingCard1Example =
+      '2 kg de papa, leche, 10 tornillos, ibuprofeno';
+  static const String onboardingCard2Title = 'Separá por comercio y pasillo';
   static const String onboardingCard2Body =
-      'Karrito agrupa cada producto en su rubro y lo ordena según los pasillos habituales.';
-  static const String onboardingCard3Title = 'Tachá en la góndola';
+      'Karrito agrupa cada producto en su rubro y lo ordena según los pasillos reales de tu local.';
+  static const String onboardingCard2Example =
+      'Supermercado: Verdulería y Lácteos  ·  Ferretería: Fijaciones';
+  static const String onboardingCard3Title = 'Tachá en el súper sin señal';
   static const String onboardingCard3Body =
-      'Tocá un ítem para marcarlo como listo. Si algo quedó mal ubicado, mantenelo apretado y corregilo.';
+      'Tus listas quedan guardadas en el teléfono. Tachá en la góndola aunque se corte internet y sincronizá al volver.';
+  static const String onboardingCard3Example =
+      'Funciona offline con pantalla siempre encendida';
+  static const String onboardingNextButton = 'Siguiente';
+  static const String onboardingBackButton = 'Anterior';
+  static const String onboardingSkipButton = 'Saltar';
   static const String startShoppingButton = 'Empezar lista';
   static const String saveGuideButton = 'Volver a la app';
 
@@ -176,6 +185,8 @@ class AppStrings {
   static const String syncingNowLabel = 'Sincronizando...';
   static const String googleLinkedNotice =
       'Cuenta vinculada. Ya respaldamos tus listas, pasillos y frecuentes.';
+  static const String googleLinkedSyncPendingNotice =
+      'Cuenta vinculada con Google. Tocá Sincronizar ahora cuando mejore la señal para subir el respaldo.';
   static const String googleOfflineError =
       'No pudimos vincular tu cuenta porque no hay conexión a internet. Probá cuando vuelva la señal.';
   static const String googleTokenError =
@@ -225,7 +236,7 @@ class AppStrings {
   static const String settingsTitle = 'Ajustes';
   static const String settingsGeneralSection = 'Preferencias';
   static const String settingsAppearanceLabel = 'Tema de la app';
-  static const String themeSystemLabel = 'Según el teléfono';
+  static const String themeSystemLabel = 'Sistema';
   static const String themeLightLabel = 'Claro';
   static const String themeDarkLabel = 'Oscuro';
   static const String settingsKeepScreenOnTitle = 'Mantener pantalla encendida';

@@ -39,18 +39,219 @@ abstract interface class SyncService {
   Future<void> unsubscribeChannel(RealtimeChannel? channel);
 }
 
+/// Thin remote persistence abstraction so [SupabaseSyncService] can run
+/// against either the real `karrito` schema in Supabase or an in-memory fake
+/// in unit tests.
+abstract interface class KarritoSyncRemote {
+  Future<void> upsertUserProfile(Map<String, dynamic> row);
+  Future<void> updateUserCity(String uid, String city, {String? email});
+  Future<List<Map<String, dynamic>>> fetchShoppingLists();
+  Future<void> upsertShoppingList(Map<String, dynamic> row);
+  Future<void> updateShoppingList(String listId, Map<String, dynamic> values);
+  Future<void> deleteShoppingList(String listId);
+  Future<void> deleteListMembership(String listId, String uid);
+  Future<List<Map<String, dynamic>>> fetchListItems();
+  Future<void> upsertListItem(Map<String, dynamic> row);
+  Future<void> deleteListItem(String itemId);
+  Future<List<Map<String, dynamic>>> fetchAislePreferences(String uid);
+  Future<void> upsertAislePreferences(
+    List<Map<String, dynamic>> rows, {
+    required String onConflict,
+  });
+  Future<List<Map<String, dynamic>>> fetchLearnedItems(String uid);
+  Future<void> upsertLearnedItems(
+    List<Map<String, dynamic>> rows, {
+    required String onConflict,
+  });
+  Future<void> deleteLearnedItem(String uid, String normalizedName);
+}
+
+class _SupabaseSyncRemote implements KarritoSyncRemote {
+  const _SupabaseSyncRemote(this._client);
+
+  final SupabaseClient _client;
+
+  @override
+  Future<void> upsertUserProfile(Map<String, dynamic> row) async {
+    await _client.from('users_profile').upsert(row, onConflict: 'id');
+  }
+
+  @override
+  Future<void> updateUserCity(String uid, String city, {String? email}) async {
+    await _client
+        .from('users_profile')
+        .update(<String, dynamic>{
+          'city': city,
+          if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+        })
+        .eq('id', uid);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchShoppingLists() async {
+    final rows = await _client
+        .from('shopping_lists')
+        .select(
+          'id, owner_id, title, is_shared, share_code, created_at, updated_at',
+        );
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  @override
+  Future<void> upsertShoppingList(Map<String, dynamic> row) async {
+    await _client.from('shopping_lists').upsert(row, onConflict: 'id');
+  }
+
+  @override
+  Future<void> updateShoppingList(
+    String listId,
+    Map<String, dynamic> values,
+  ) async {
+    await _client.from('shopping_lists').update(values).eq('id', listId);
+  }
+
+  @override
+  Future<void> deleteShoppingList(String listId) async {
+    await _client.from('shopping_lists').delete().eq('id', listId);
+  }
+
+  @override
+  Future<void> deleteListMembership(String listId, String uid) async {
+    await _client
+        .from('list_members')
+        .delete()
+        .eq('list_id', listId)
+        .eq('user_id', uid);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchListItems() async {
+    final rows = await _client.from('list_items').select();
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  @override
+  Future<void> upsertListItem(Map<String, dynamic> row) async {
+    await _client.from('list_items').upsert(row, onConflict: 'id');
+  }
+
+  @override
+  Future<void> deleteListItem(String itemId) async {
+    await _client.from('list_items').delete().eq('id', itemId);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchAislePreferences(String uid) async {
+    final rows = await _client
+        .from('aisle_preferences')
+        .select('store_category, aisle_name, sort_order, updated_at')
+        .eq('user_id', uid);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  @override
+  Future<void> upsertAislePreferences(
+    List<Map<String, dynamic>> rows, {
+    required String onConflict,
+  }) async {
+    await _client
+        .from('aisle_preferences')
+        .upsert(rows, onConflict: onConflict);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchLearnedItems(String uid) async {
+    final rows = await _client
+        .from('learned_items')
+        .select(
+          'normalized_name, preferred_store, preferred_aisle, use_count, updated_at',
+        )
+        .eq('user_id', uid);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
+  @override
+  Future<void> upsertLearnedItems(
+    List<Map<String, dynamic>> rows, {
+    required String onConflict,
+  }) async {
+    await _client.from('learned_items').upsert(rows, onConflict: onConflict);
+  }
+
+  @override
+  Future<void> deleteLearnedItem(String uid, String normalizedName) async {
+    await _client
+        .from('learned_items')
+        .delete()
+        .eq('user_id', uid)
+        .eq('normalized_name', normalizedName);
+  }
+}
+
 class SupabaseSyncService implements SyncService {
   SupabaseSyncService({
     required this._db,
-    required this._client,
+    required SupabaseClient? client,
     required this._authService,
-  });
+    KarritoSyncRemote? remote,
+  }) : _client = client,
+       _remote = remote ?? _SupabaseSyncRemote(client!);
+
+  static const String aislePreferencesOnConflict =
+      'user_id,store_category,aisle_name';
+  static const String learnedItemsOnConflict = 'user_id,normalized_name';
 
   final AppDatabase _db;
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
   final AuthService _authService;
+  final KarritoSyncRemote _remote;
 
   bool _isSyncing = false;
+
+  static Map<String, dynamic> buildUserProfileUpsertPayload({
+    required String uid,
+    String? email,
+    required String city,
+  }) {
+    final trimmedEmail = email?.trim();
+    return <String, dynamic>{
+      'id': uid,
+      'city': city,
+      if (trimmedEmail != null && trimmedEmail.isNotEmpty)
+        'email': trimmedEmail,
+    };
+  }
+
+  /// Always assigns `owner_id = currentUid` for non-joined local lists so a
+  /// stale anonymous guest UID never violates `shopping_lists_insert` RLS.
+  static Map<String, dynamic> buildShoppingListUpsertPayload({
+    required ShoppingListEntity list,
+    required String currentUid,
+  }) {
+    return <String, dynamic>{
+      'id': list.id,
+      'owner_id': currentUid,
+      'title': list.title,
+      'is_shared': list.isShared,
+      'share_code': list.shareCode,
+      'created_at': list.createdAt.toUtc().toIso8601String(),
+      'updated_at': list.updatedAt.toUtc().toIso8601String(),
+    };
+  }
+
+  static void _logPostgrestError(String step, PostgrestException e) {
+    debugPrint(
+      'Karrito sync [$step] PostgrestException: '
+      'code=${e.code} message=${e.message} details=${e.details} hint=${e.hint}',
+    );
+  }
+
+  static void _logAuthError(String step, AuthException e) {
+    debugPrint(
+      'Karrito sync [$step] AuthException: '
+      'code=${e.code} status=${e.statusCode} message=${e.message}',
+    );
+  }
 
   @override
   Future<void> syncAll() async {
@@ -62,7 +263,7 @@ class SupabaseSyncService implements SyncService {
       final uid = _authService.currentUserId;
       if (!signedIn || uid == null) return;
 
-      await _syncUserCity(uid);
+      await _ensureUserProfileAndCity(uid);
       await _pushPendingDeletions(uid);
       await _syncLists(uid);
       await _syncItems();
@@ -72,6 +273,12 @@ class SupabaseSyncService implements SyncService {
       debugPrint('Karrito sync skipped (offline): $e');
     } on TimeoutException catch (e) {
       debugPrint('Karrito sync timeout: $e');
+    } on PostgrestException catch (e) {
+      _logPostgrestError('syncAll', e);
+      rethrow;
+    } on AuthException catch (e) {
+      _logAuthError('syncAll', e);
+      rethrow;
     } catch (e) {
       debugPrint('Karrito sync error: $e');
       rethrow;
@@ -82,6 +289,11 @@ class SupabaseSyncService implements SyncService {
 
   @override
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list) async {
+    final client = _client;
+    if (client == null) {
+      throw const ShoppingActionException(AppStrings.syncFailedError);
+    }
+
     final signedIn = await _authService.ensureSignedInSilently();
     final uid = _authService.currentUserId;
     if (!signedIn || uid == null) {
@@ -89,7 +301,9 @@ class SupabaseSyncService implements SyncService {
     }
 
     try {
-      final profile = await _client
+      await _ensureUserProfileAndCity(uid);
+
+      final profile = await client
           .from('users_profile')
           .select('plan_tier')
           .eq('id', uid)
@@ -113,7 +327,7 @@ class SupabaseSyncService implements SyncService {
       for (var attempt = 0; attempt < 4; attempt++) {
         final code = ShareCodeHelper.generateCode();
         try {
-          await _client
+          await client
               .from('shopping_lists')
               .update(<String, dynamic>{
                 'is_shared': true,
@@ -126,7 +340,7 @@ class SupabaseSyncService implements SyncService {
             _db.localLists,
           )..where((t) => t.id.equals(list.id))).write(
             LocalListsCompanion(
-              ownerId: Value(list.ownerId ?? uid),
+              ownerId: Value(uid),
               isShared: const Value(true),
               shareCode: Value(code),
               updatedAt: Value(DateTime.now()),
@@ -149,7 +363,10 @@ class SupabaseSyncService implements SyncService {
     } on SocketException {
       throw const ShoppingActionException(AppStrings.liveOfflineError);
     } on PostgrestException catch (e) {
-      debugPrint('Karrito enableLiveShare PostgrestException: ${e.message}');
+      _logPostgrestError('enableLiveShare', e);
+      throw const ShoppingActionException(AppStrings.syncFailedError);
+    } on AuthException catch (e) {
+      _logAuthError('enableLiveShare', e);
       throw const ShoppingActionException(AppStrings.syncFailedError);
     } catch (e) {
       final lower = e.toString().toLowerCase();
@@ -164,6 +381,11 @@ class SupabaseSyncService implements SyncService {
 
   @override
   Future<JoinedListResult> joinSharedListByCode(String rawCode) async {
+    final client = _client;
+    if (client == null) {
+      throw const ShoppingActionException(AppStrings.syncFailedError);
+    }
+
     final code = ShareCodeHelper.normalizeAndValidate(rawCode);
     if (code == null) {
       throw const ShoppingActionException(AppStrings.invalidShareCodeError);
@@ -176,13 +398,15 @@ class SupabaseSyncService implements SyncService {
     }
 
     try {
-      final rawListId = await _client.rpc<dynamic>(
+      await _ensureUserProfileAndCity(uid);
+
+      final rawListId = await client.rpc<dynamic>(
         'join_shared_list',
         params: <String, dynamic>{'p_share_code': code},
       );
       final listId = rawListId.toString();
 
-      final listRow = await _client
+      final listRow = await client
           .from('shopping_lists')
           .select(
             'id, owner_id, title, is_shared, share_code, created_at, updated_at',
@@ -190,7 +414,7 @@ class SupabaseSyncService implements SyncService {
           .eq('id', listId)
           .single();
 
-      final remoteItems = await _client
+      final remoteItems = await client
           .from('list_items')
           .select()
           .eq('list_id', listId);
@@ -255,10 +479,14 @@ class SupabaseSyncService implements SyncService {
     } on ShoppingActionException {
       rethrow;
     } on PostgrestException catch (e) {
+      _logPostgrestError('joinSharedListByCode', e);
       final msg = e.message.trim();
       if (msg.isNotEmpty) {
         throw ShoppingActionException(msg);
       }
+      throw const ShoppingActionException(AppStrings.syncFailedError);
+    } on AuthException catch (e) {
+      _logAuthError('joinSharedListByCode', e);
       throw const ShoppingActionException(AppStrings.syncFailedError);
     } on SocketException {
       throw const ShoppingActionException(AppStrings.liveOfflineError);
@@ -275,8 +503,10 @@ class SupabaseSyncService implements SyncService {
 
   @override
   RealtimeChannel? subscribeToSharedList(String listId) {
+    final client = _client;
+    if (client == null) return null;
     try {
-      final channel = _client.channel('karrito_live_list_$listId');
+      final channel = client.channel('karrito_live_list_$listId');
       channel
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
@@ -301,9 +531,10 @@ class SupabaseSyncService implements SyncService {
 
   @override
   Future<void> unsubscribeChannel(RealtimeChannel? channel) async {
-    if (channel == null) return;
+    final client = _client;
+    if (channel == null || client == null) return;
     try {
-      await _client.removeChannel(channel);
+      await client.removeChannel(channel);
     } catch (e) {
       debugPrint('Karrito Realtime unsubscribe ignored: $e');
     }
@@ -313,19 +544,33 @@ class SupabaseSyncService implements SyncService {
   // Internal sync routines
   // ---------------------------------------------------------------------------
 
-  Future<void> _syncUserCity(String uid) async {
+  /// Ensures the authenticated user's row exists in `karrito.users_profile`
+  /// before any `shopping_lists`, `aisle_preferences`, or `learned_items`
+  /// upsert runs (prevents Postgres FK 23503 for pre-existing `auth.users`).
+  Future<void> _ensureUserProfileAndCity(String uid) async {
     final prefs = await (_db.select(
       _db.localPreferences,
     )..where((t) => t.id.equals(1))).getSingleOrNull();
-    if (prefs == null) return;
+    final city = prefs?.city ?? StoreHierarchy.defaultCity;
+    final email = _authService.currentEmail;
+
+    final payload = buildUserProfileUpsertPayload(
+      uid: uid,
+      email: email,
+      city: city,
+    );
 
     try {
-      await _client
-          .from('users_profile')
-          .update(<String, dynamic>{'city': prefs.city})
-          .eq('id', uid);
-    } catch (e) {
-      debugPrint('Karrito city sync skipped: $e');
+      await _remote.upsertUserProfile(payload);
+    } on PostgrestException catch (e) {
+      _logPostgrestError('ensureUserProfile.upsert', e);
+      // Fallback to UPDATE if the row already exists and INSERT RLS was strict.
+      try {
+        await _remote.updateUserCity(uid, city, email: email);
+      } on PostgrestException catch (updateErr) {
+        _logPostgrestError('ensureUserProfile.updateFallback', updateErr);
+        rethrow;
+      }
     }
   }
 
@@ -335,34 +580,22 @@ class SupabaseSyncService implements SyncService {
       try {
         switch (deletion.entityType) {
           case 'item':
-            await _client
-                .from('list_items')
-                .delete()
-                .eq('id', deletion.entityKey);
+            await _remote.deleteListItem(deletion.entityKey);
           case 'list':
             if (deletion.isLeaveOnly) {
-              await _client
-                  .from('list_members')
-                  .delete()
-                  .eq('list_id', deletion.entityKey)
-                  .eq('user_id', uid);
+              await _remote.deleteListMembership(deletion.entityKey, uid);
             } else {
-              await _client
-                  .from('shopping_lists')
-                  .delete()
-                  .eq('id', deletion.entityKey);
+              await _remote.deleteShoppingList(deletion.entityKey);
             }
           case 'learned':
-            await _client
-                .from('learned_items')
-                .delete()
-                .eq('user_id', uid)
-                .eq('normalized_name', deletion.entityKey);
+            await _remote.deleteLearnedItem(uid, deletion.entityKey);
         }
 
         await (_db.delete(
           _db.localPendingDeletions,
         )..where((t) => t.id.equals(deletion.id))).go();
+      } on PostgrestException catch (e) {
+        _logPostgrestError('pushPendingDeletions(${deletion.entityType})', e);
       } catch (e) {
         debugPrint('Karrito deletion push deferred (${deletion.id}): $e');
       }
@@ -377,11 +610,7 @@ class SupabaseSyncService implements SyncService {
             .map((e) => e.entityKey)
             .toSet();
 
-    final remoteRows = await _client
-        .from('shopping_lists')
-        .select(
-          'id, owner_id, title, is_shared, share_code, created_at, updated_at',
-        );
+    final remoteRows = await _remote.fetchShoppingLists();
     final remoteById = <String, Map<String, dynamic>>{
       for (final r in remoteRows)
         if (r['id'] != null) r['id'].toString(): r,
@@ -449,34 +678,30 @@ class SupabaseSyncService implements SyncService {
   }
 
   Future<void> _pushSingleList(ShoppingListEntity list, String uid) async {
-    if (list.isJoinedRemote) {
-      await _client
-          .from('shopping_lists')
-          .update(<String, dynamic>{
-            'title': list.title,
-            'updated_at': list.updatedAt.toUtc().toIso8601String(),
-          })
-          .eq('id', list.id);
-    } else {
-      await _client.from('shopping_lists').upsert(<String, dynamic>{
-        'id': list.id,
-        'owner_id': list.ownerId ?? uid,
-        'title': list.title,
-        'is_shared': list.isShared,
-        'share_code': list.shareCode,
-        'created_at': list.createdAt.toUtc().toIso8601String(),
-        'updated_at': list.updatedAt.toUtc().toIso8601String(),
-      }, onConflict: 'id');
-    }
+    try {
+      if (list.isJoinedRemote) {
+        await _remote.updateShoppingList(list.id, <String, dynamic>{
+          'title': list.title,
+          'updated_at': list.updatedAt.toUtc().toIso8601String(),
+        });
+      } else {
+        await _remote.upsertShoppingList(
+          buildShoppingListUpsertPayload(list: list, currentUid: uid),
+        );
+      }
 
-    await (_db.update(
-      _db.localLists,
-    )..where((t) => t.id.equals(list.id))).write(
-      LocalListsCompanion(
-        ownerId: Value(list.ownerId ?? (list.isJoinedRemote ? null : uid)),
-        syncStatus: const Value('synced'),
-      ),
-    );
+      await (_db.update(
+        _db.localLists,
+      )..where((t) => t.id.equals(list.id))).write(
+        LocalListsCompanion(
+          ownerId: Value(list.isJoinedRemote ? list.ownerId : uid),
+          syncStatus: const Value('synced'),
+        ),
+      );
+    } on PostgrestException catch (e) {
+      _logPostgrestError('pushSingleList(${list.id})', e);
+      rethrow;
+    }
   }
 
   Future<void> _syncItems() async {
@@ -489,9 +714,13 @@ class SupabaseSyncService implements SyncService {
 
     final lists = await _db.select(_db.localLists).get();
     final activeListIds = lists.map((l) => l.id).toSet();
+    final syncedListIds = lists
+        .where((l) => l.syncStatus == 'synced')
+        .map((l) => l.id)
+        .toSet();
     if (activeListIds.isEmpty) return;
 
-    final remoteRows = await _client.from('list_items').select();
+    final remoteRows = await _remote.fetchListItems();
     final remoteById = <String, Map<String, dynamic>>{
       for (final r in remoteRows)
         if (r['id'] != null && activeListIds.contains(r['list_id']?.toString()))
@@ -557,6 +786,7 @@ class SupabaseSyncService implements SyncService {
       if (local.syncStatus == 'pending_ai') continue;
 
       if (local.syncStatus == 'pending') {
+        if (!syncedListIds.contains(local.listId)) continue;
         await _pushSingleItem(local);
       } else if (local.syncStatus == 'synced') {
         await (_db.delete(
@@ -567,29 +797,31 @@ class SupabaseSyncService implements SyncService {
   }
 
   Future<void> _pushSingleItem(ShoppingItemEntity item) async {
-    await _client.from('list_items').upsert(<String, dynamic>{
-      'id': item.id,
-      'list_id': item.listId,
-      'raw_text': item.rawText,
-      'clean_name': item.cleanName,
-      'quantity': item.quantity,
-      'unit': item.unit,
-      'store_category': item.storeCategory,
-      'aisle_name': item.aisleName,
-      'is_checked': item.isChecked,
-      'position': item.position,
-      'updated_at': item.updatedAt.toUtc().toIso8601String(),
-    }, onConflict: 'id');
+    try {
+      await _remote.upsertListItem(<String, dynamic>{
+        'id': item.id,
+        'list_id': item.listId,
+        'raw_text': item.rawText,
+        'clean_name': item.cleanName,
+        'quantity': item.quantity,
+        'unit': item.unit,
+        'store_category': item.storeCategory,
+        'aisle_name': item.aisleName,
+        'is_checked': item.isChecked,
+        'position': item.position,
+        'updated_at': item.updatedAt.toUtc().toIso8601String(),
+      });
 
-    await (_db.update(_db.localItems)..where((t) => t.id.equals(item.id)))
-        .write(const LocalItemsCompanion(syncStatus: Value('synced')));
+      await (_db.update(_db.localItems)..where((t) => t.id.equals(item.id)))
+          .write(const LocalItemsCompanion(syncStatus: Value('synced')));
+    } on PostgrestException catch (e) {
+      _logPostgrestError('pushSingleItem(${item.id})', e);
+      rethrow;
+    }
   }
 
   Future<void> _syncAislePreferences(String uid) async {
-    final remoteRows = await _client
-        .from('aisle_preferences')
-        .select('store_category, aisle_name, sort_order, updated_at')
-        .eq('user_id', uid);
+    final remoteRows = await _remote.fetchAislePreferences(uid);
 
     final remoteByKey = <(String, String), Map<String, dynamic>>{
       for (final row in remoteRows)
@@ -654,9 +886,15 @@ class SupabaseSyncService implements SyncService {
     }
 
     if (toPush.isNotEmpty) {
-      await _client
-          .from('aisle_preferences')
-          .upsert(toPush, onConflict: 'user_id,store_category,aisle_name');
+      try {
+        await _remote.upsertAislePreferences(
+          toPush,
+          onConflict: aislePreferencesOnConflict,
+        );
+      } on PostgrestException catch (e) {
+        _logPostgrestError('syncAislePreferences.upsert', e);
+        rethrow;
+      }
 
       await _db.transaction(() async {
         for (final row in toPush) {
@@ -681,12 +919,7 @@ class SupabaseSyncService implements SyncService {
             .map((e) => e.entityKey)
             .toSet();
 
-    final remoteRows = await _client
-        .from('learned_items')
-        .select(
-          'normalized_name, preferred_store, preferred_aisle, use_count, updated_at',
-        )
-        .eq('user_id', uid);
+    final remoteRows = await _remote.fetchLearnedItems(uid);
 
     final remoteByName = <String, Map<String, dynamic>>{
       for (final row in remoteRows)
@@ -765,9 +998,15 @@ class SupabaseSyncService implements SyncService {
     }
 
     if (toPush.isNotEmpty) {
-      await _client
-          .from('learned_items')
-          .upsert(toPush, onConflict: 'user_id,normalized_name');
+      try {
+        await _remote.upsertLearnedItems(
+          toPush,
+          onConflict: learnedItemsOnConflict,
+        );
+      } on PostgrestException catch (e) {
+        _logPostgrestError('syncLearnedItems.upsert', e);
+        rethrow;
+      }
 
       await _db.transaction(() async {
         for (final row in toPush) {
@@ -799,23 +1038,16 @@ class SupabaseSyncService implements SyncService {
 
       final record = payload.newRecord;
       final itemId = record['id']?.toString();
-      if (itemId == null) return;
+      if (itemId == null || itemId.isEmpty) return;
 
-      final pendingDelete =
-          await (_db.select(_db.localPendingDeletions)..where(
-                (t) => t.entityType.equals('item') & t.entityKey.equals(itemId),
-              ))
-              .getSingleOrNull();
-      if (pendingDelete != null) return;
-
-      final remoteUpdated = _parseDate(record['updated_at']);
-      final local = await (_db.select(
+      final existing = await (_db.select(
         _db.localItems,
       )..where((t) => t.id.equals(itemId))).getSingleOrNull();
+      final remoteUpdatedAt = _parseDate(record['updated_at']);
 
-      if (local != null &&
-          local.syncStatus == 'pending' &&
-          local.updatedAt.toUtc().isAfter(remoteUpdated.toUtc())) {
+      if (existing != null &&
+          existing.syncStatus == 'pending' &&
+          existing.updatedAt.toUtc().isAfter(remoteUpdatedAt.toUtc())) {
         return;
       }
 
@@ -842,7 +1074,7 @@ class SupabaseSyncService implements SyncService {
               aisleName: aisle,
               isChecked: Value(record['is_checked'] as bool? ?? false),
               position: Value((record['position'] as num?)?.toInt() ?? 0),
-              updatedAt: remoteUpdated,
+              updatedAt: remoteUpdatedAt,
               syncStatus: const Value('synced'),
             ),
           );
@@ -851,21 +1083,20 @@ class SupabaseSyncService implements SyncService {
     }
   }
 
-  DateTime _parseDate(dynamic raw) {
-    if (raw is DateTime) return raw.toLocal();
-    if (raw is String && raw.isNotEmpty) {
-      return DateTime.tryParse(raw)?.toLocal() ?? DateTime.now();
+  static DateTime _parseDate(dynamic raw) {
+    if (raw is DateTime) return raw;
+    if (raw is String) {
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) return parsed;
     }
     return DateTime.now();
   }
 
-  double _parseDouble(dynamic raw, {double fallback = 1.0}) {
-    if (raw is num) {
-      final v = raw.toDouble();
-      return v > 0 ? v : fallback;
+  static double _parseDouble(dynamic raw, {required double fallback}) {
+    if (raw is num) return raw.toDouble();
+    if (raw is String) {
+      return double.tryParse(raw.replaceAll(',', '.')) ?? fallback;
     }
-    final parsed = double.tryParse(raw?.toString() ?? '');
-    if (parsed != null && parsed > 0) return parsed;
     return fallback;
   }
 }

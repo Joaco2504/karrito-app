@@ -5,6 +5,7 @@ import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
+import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
 
 class EditItemResult {
@@ -342,33 +343,37 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: _confirmDelete,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      side: BorderSide(color: karritoColors.border, width: 1),
-                      foregroundColor: karritoColors.softDestructive,
-                    ),
-                    child: const Text(
-                      AppStrings.removeShortButton,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  child: KarritoBounceButton(
+                    child: OutlinedButton(
+                      onPressed: _confirmDelete,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        side: BorderSide(color: karritoColors.border, width: 1),
+                        foregroundColor: karritoColors.softDestructive,
+                      ),
+                      child: const Text(
+                        AppStrings.removeShortButton,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: _submitSave,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    child: const Text(
-                      AppStrings.saveShortButton,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  child: KarritoBounceButton(
+                    child: FilledButton(
+                      onPressed: _submitSave,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      child: const Text(
+                        AppStrings.saveShortButton,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),

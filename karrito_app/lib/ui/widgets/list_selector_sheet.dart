@@ -219,8 +219,17 @@ class ListSelectorSheet extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
                     color: isSelected
-                        ? colorScheme.primaryContainer.withValues(alpha: 0.45)
+                        ? karritoColors.accentContainer.withValues(alpha: 0.45)
                         : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: isSelected
+                            ? karritoColors.accent
+                            : karritoColors.border,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -230,7 +239,7 @@ class ListSelectorSheet extends StatelessWidget {
                             ? Icons.radio_button_checked_rounded
                             : Icons.radio_button_off_rounded,
                         color: isSelected
-                            ? colorScheme.primary
+                            ? karritoColors.accent
                             : colorScheme.onSurfaceVariant,
                       ),
                       title: Row(

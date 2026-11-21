@@ -16,6 +16,7 @@ import 'package:karrito_app/data/services/wakelock_service.dart';
 import 'package:karrito_app/main.dart';
 import 'package:karrito_app/providers/core_providers.dart';
 import 'package:karrito_app/ui/widgets/aisle_reorder_sheet.dart';
+import 'package:karrito_app/ui/widgets/karrito_toast.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _TestAuthService implements AuthService {
@@ -147,7 +148,7 @@ class _TestAiClassifier implements AiClassifierService {
 
 void main() {
   testWidgets(
-    'Phase 3 flows: onboarding, quick theme toggle, aisle reorder, frequents, live join, and Google linking',
+    'Phase 3.1 flows: animated onboarding, 60-30-10 theme, toast, FAQ accordion, Sistema label, and Google linking',
     (WidgetTester tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       final auth = _TestAuthService();
@@ -156,6 +157,7 @@ void main() {
       var dbClosed = false;
 
       addTearDown(() async {
+        KarritoToast.dismissCurrent();
         auth.dispose();
         if (!dbClosed) {
           dbClosed = true;
@@ -179,12 +181,22 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // First-run onboarding visible with Andalgalá preselected in KarritoSelectorField.
+      // First-run animated onboarding visible with step 1 and Andalgalá preselected.
       expect(find.text(AppStrings.onboardingHeadline), findsOneWidget);
+      expect(find.text(AppStrings.onboardingCard1Title), findsOneWidget);
       expect(find.text('Andalgalá'), findsOneWidget);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
 
-      // Select Belén via modal bottom sheet.
+      // Step through onboarding steps 1 -> 2 -> 3.
+      await tester.tap(find.text(AppStrings.onboardingNextButton));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.onboardingCard2Title), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.onboardingNextButton));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.onboardingCard3Title), findsOneWidget);
+
+      // Select Belén via modal bottom sheet before entering app.
       await tester.tap(find.text('Andalgalá'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Belén'));
@@ -204,6 +216,7 @@ void main() {
         db.localPreferences,
       )..where((t) => t.id.equals(1))).getSingle();
       expect(prefsAfterToggle.themeMode, 'dark');
+      expect(prefsAfterToggle.onboardingCompleted, isTrue);
 
       // Add mixed items via smart input bar.
       await tester.enterText(
@@ -281,29 +294,59 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Asado compartido'), findsOneWidget);
 
-      // Open Settings -> check dark mode synced & link Google account card.
+      // Open Settings -> check "Sistema" label, FAQ accordion, & link Google account.
       await tester.tap(find.byTooltip(AppStrings.settingsTooltip));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.guestAccountTitle), findsOneWidget);
+      expect(find.text('Sistema'), findsOneWidget);
+      expect(find.text('Según el teléfono'), findsNothing);
 
       await tester.tap(find.text(AppStrings.linkGoogleButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       expect(find.text(AppStrings.linkedAccountTitle), findsOneWidget);
       expect(find.text('vecino@catamarca.test'), findsOneWidget);
+      expect(find.text(AppStrings.googleLinkedNotice), findsOneWidget);
 
-      // Verify SwitchThemeData colors remain explicit in both Light and Dark themes.
-      final lightSwitch = AppTheme.light().switchTheme;
-      final darkSwitch = AppTheme.dark().switchTheme;
+      // Scroll to FAQ accordion and expand the first entry.
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.faqEntries.first.question),
+        200,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.faqEntries.first.question));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.faqEntries.first.answer), findsOneWidget);
+
+      // Verify 60-30-10 official theme and SwitchThemeData colors in Light and Dark.
+      final lightTheme = AppTheme.light();
+      final darkTheme = AppTheme.dark();
+      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFEEE3CC));
+      expect(darkTheme.scaffoldBackgroundColor, const Color(0xFF13285A));
       expect(
-        lightSwitch.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFFEDE7DF),
+        lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
+        const Color(0xFFE4D8C1),
       );
       expect(
-        darkSwitch.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFF2B2329),
+        lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{
+          WidgetState.selected,
+        }),
+        const Color(0xFF00C2B5),
+      );
+      expect(
+        darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
+        const Color(0xFF22418A),
+      );
+      expect(
+        darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{
+          WidgetState.selected,
+        }),
+        const Color(0xFFFF5A12),
       );
 
-      // Clean unmount & flush Drift's StreamQueryStore timer.
+      // Flush pending toast auto-dismiss timer and unmount cleanly.
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       dbClosed = true;

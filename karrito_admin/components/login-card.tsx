@@ -87,7 +87,7 @@ export function LoginCard({ errorCode }: LoginCardProps) {
     <Card className="w-full max-w-md rounded-2xl border border-border bg-card shadow-sm">
       <CardHeader className="gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
             <ShoppingCartIcon className="size-5" aria-hidden="true" />
           </div>
           <div className="flex flex-col">

@@ -38,6 +38,35 @@ class AuthService {
   String? get currentEmail => _client.auth.currentUser?.email;
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
+  /// Returns `true` when [linkIdentityWithIdToken] rejected linking because
+  /// the Google identity already belongs to an existing Supabase user or
+  /// manual linking is blocked, so falling back to [signInWithIdToken] is safe.
+  static bool isLinkFallbackException(AuthException e) {
+    final code = (e.code ?? '').trim().toLowerCase();
+    final status = (e.statusCode ?? '').trim();
+    final message = e.message.toLowerCase();
+
+    const fallbackCodes = <String>{
+      'identity_already_exists',
+      'email_exists',
+      'user_already_exists',
+      'provider_already_linked',
+      'manual_linking_disabled',
+      'conflict',
+    };
+
+    if (fallbackCodes.contains(code)) return true;
+    if (status == '400' || status == '409' || status == '422') return true;
+
+    return message.contains('already') ||
+        message.contains('exists') ||
+        message.contains('identity') ||
+        message.contains('linked') ||
+        message.contains('manual') ||
+        message.contains('duplicate') ||
+        message.contains('conflict');
+  }
+
   /// Signs in anonymously if no session is present. Never throws on network
   /// errors so the offline-first UI stays responsive without signal.
   Future<bool> ensureSignedInSilently() async {
@@ -55,9 +84,28 @@ class AuthService {
       }
       final response = await _client.auth.signInAnonymously();
       return response.session != null;
+    } on AuthException catch (e) {
+      debugPrint(
+        'Karrito AuthService silent sign-in AuthException: '
+        'code=${e.code} status=${e.statusCode} message=${e.message}',
+      );
+      return _client.auth.currentSession != null;
     } catch (error) {
       debugPrint('Karrito AuthService silent sign-in skipped: $error');
       return _client.auth.currentSession != null;
+    }
+  }
+
+  Future<void> _ensureGoogleInitialized() async {
+    _googleInitFuture ??= GoogleSignIn.instance.initialize(
+      serverClientId: SupabaseConfig.googleWebClientId,
+    );
+    try {
+      await _googleInitFuture;
+    } catch (error) {
+      // Clear cached failed future so the next user attempt can retry cleanly.
+      _googleInitFuture = null;
+      rethrow;
     }
   }
 
@@ -67,45 +115,52 @@ class AuthService {
   /// Returns `null` if the user cancels the picker.
   Future<GoogleLinkOutcome?> linkOrSignInWithGoogle() async {
     try {
-      _googleInitFuture ??= GoogleSignIn.instance.initialize(
-        serverClientId: SupabaseConfig.googleWebClientId,
-      );
-      await _googleInitFuture;
+      await _ensureGoogleInitialized();
 
       final googleUser = await GoogleSignIn.instance.authenticate();
       final idToken = googleUser.authentication.idToken;
       if (idToken == null || idToken.isEmpty) {
+        debugPrint(
+          'Karrito AuthService: Google returned null/empty idToken for ${googleUser.email}',
+        );
         throw const AuthActionException(AppStrings.googleTokenError);
       }
 
       await ensureSignedInSilently();
-      final previousUid = _client.auth.currentUser?.id;
+      final previousUser = _client.auth.currentUser;
+      final previousUid = previousUser?.id;
       var switchedUid = false;
 
-      if (_client.auth.currentUser?.isAnonymous == true) {
+      if (previousUser != null && previousUser.isAnonymous) {
         try {
           await _client.auth.linkIdentityWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
           );
+          debugPrint(
+            'Karrito AuthService: linkIdentityWithIdToken succeeded for uid=${_client.auth.currentUser?.id}',
+          );
         } on AuthException catch (e) {
-          final lower = e.message.toLowerCase();
-          final isExistingIdentity =
-              e.code == 'identity_already_exists' ||
-              e.statusCode == '422' ||
-              lower.contains('already') ||
-              lower.contains('exists') ||
-              lower.contains('identity');
+          debugPrint(
+            'Karrito AuthService linkIdentityWithIdToken AuthException: '
+            'code=${e.code} status=${e.statusCode} message=${e.message}',
+          );
 
-          if (!isExistingIdentity) {
+          if (!isLinkFallbackException(e)) {
             rethrow;
           }
 
+          // Account already exists in auth.users: sign in directly and flag
+          // `switchedUid` so local Drift lists/preferences are migrated cleanly.
           await _client.auth.signInWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
           );
           switchedUid = _client.auth.currentUser?.id != previousUid;
+          debugPrint(
+            'Karrito AuthService: fallback signInWithIdToken succeeded '
+            'uid=${_client.auth.currentUser?.id} switchedUid=$switchedUid',
+          );
         }
       } else {
         await _client.auth.signInWithIdToken(
@@ -113,6 +168,10 @@ class AuthService {
           idToken: idToken,
         );
         switchedUid = _client.auth.currentUser?.id != previousUid;
+        debugPrint(
+          'Karrito AuthService: direct signInWithIdToken succeeded '
+          'uid=${_client.auth.currentUser?.id} switchedUid=$switchedUid',
+        );
       }
 
       final newUser = _client.auth.currentUser;
@@ -130,12 +189,27 @@ class AuthService {
           e.code == GoogleSignInExceptionCode.interrupted) {
         return null;
       }
-      debugPrint('Karrito GoogleSignInException: ${e.code} ${e.description}');
+      debugPrint(
+        'Karrito GoogleSignInException: code=${e.code} '
+        'description=${e.description} details=${e.details}',
+      );
       throw const AuthActionException(AppStrings.googleTokenError);
     } on AuthActionException {
       rethrow;
     } on AuthException catch (e) {
-      debugPrint('Karrito Supabase Google AuthException: ${e.message}');
+      debugPrint(
+        'Karrito Supabase Google AuthException: '
+        'code=${e.code} status=${e.statusCode} message=${e.message}',
+      );
+      // Avoid a false error if the session actually linked before a secondary exception.
+      final activeUser = _client.auth.currentUser;
+      if (activeUser != null && !activeUser.isAnonymous) {
+        return GoogleLinkOutcome(
+          userId: activeUser.id,
+          email: activeUser.email,
+          switchedUid: false,
+        );
+      }
       throw const AuthActionException(AppStrings.googleTokenError);
     } catch (e) {
       debugPrint('Karrito unexpected Google sign-in error: $e');

@@ -14,6 +14,7 @@ import 'providers/core_providers.dart';
 import 'providers/shopping_providers.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/shopping_list_screen.dart';
+import 'ui/widgets/karrito_toast.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,7 @@ class KarritoApp extends ConsumerStatefulWidget {
 }
 
 class _KarritoAppState extends ConsumerState<KarritoApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool? _lastOnline;
   bool? _lastKeepScreenOn;
   RealtimeChannel? _realtimeChannel;
@@ -59,6 +61,7 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
 
   @override
   void dispose() {
+    KarritoToast.dismissCurrent();
     final channel = _realtimeChannel;
     final sync = _syncService;
     _realtimeChannel = null;
@@ -139,8 +142,35 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
     }
   }
 
+  KarritoToastType _resolveToastType(ShoppingUiState state) {
+    if (state.isError) return KarritoToastType.error;
+    final msg = state.feedbackMessage ?? '';
+    if (msg == AppStrings.savedOfflineNotice ||
+        msg == AppStrings.wakelockEnabledNotice ||
+        msg == AppStrings.wakelockDisabledNotice ||
+        msg == AppStrings.googleLinkedSyncPendingNotice) {
+      return KarritoToastType.info;
+    }
+    return KarritoToastType.success;
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<ShoppingUiState>(shoppingControllerProvider, (previous, next) {
+      if (next.messageVersion != previous?.messageVersion &&
+          next.feedbackMessage != null &&
+          mounted) {
+        final overlay = _navigatorKey.currentState?.overlay;
+        if (overlay != null) {
+          KarritoToast.showInOverlay(
+            overlay,
+            message: next.feedbackMessage!,
+            type: _resolveToastType(next),
+          );
+        }
+      }
+    });
+
     ref.listen<bool>(isOnlineProvider, (_, next) {
       _handleOnlineState(next);
       _updateRealtimeSubscription(
@@ -171,11 +201,14 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
     final prefs = prefsAsync.value;
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _resolveThemeMode(prefs?.themeMode),
+      themeAnimationDuration: const Duration(milliseconds: 280),
+      themeAnimationCurve: Curves.easeInOutCubic,
       locale: const Locale('es', 'AR'),
       supportedLocales: const <Locale>[Locale('es', 'AR'), Locale('es')],
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[

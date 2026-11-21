@@ -21,7 +21,7 @@ export default function PrivacidadPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-xs">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
               <ShoppingCartIcon className="size-4" aria-hidden="true" />
             </div>
             <div className="flex flex-col">

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
+import 'karrito_bounce_button.dart';
 
 class AisleReorderSheet extends StatefulWidget {
   const AisleReorderSheet({
@@ -171,25 +172,29 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text(
-                      AppStrings.cancelButton,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  child: KarritoBounceButton(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        AppStrings.cancelButton,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(_aisles),
-                    child: const Text(
-                      AppStrings.saveOrderButton,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                  child: KarritoBounceButton(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(_aisles),
+                      child: const Text(
+                        AppStrings.saveOrderButton,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ),

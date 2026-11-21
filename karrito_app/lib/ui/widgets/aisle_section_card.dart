@@ -25,8 +25,10 @@ class AisleSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final karritoColors = Theme.of(context).extension<KarritoColors>()!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final karritoColors = theme.extension<KarritoColors>()!;
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
     final sortedItems = List<ShoppingItemEntity>.from(items)
       ..sort((a, b) {
@@ -48,17 +50,20 @@ class AisleSectionCard extends StatelessWidget {
         children: [
           InkWell(
             onTap: onToggleExpand,
-            child: Container(
+            child: AnimatedContainer(
+              duration: disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               color: allDone
-                  ? karritoColors.completedContainer.withValues(alpha: 0.5)
-                  : colorScheme.surfaceContainerLow.withValues(alpha: 0.55),
+                  ? karritoColors.completedContainer.withValues(alpha: 0.65)
+                  : karritoColors.fieldSurface.withValues(alpha: 0.72),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       aisleName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: allDone
                             ? karritoColors.onCompletedContainer
@@ -66,7 +71,10 @@ class AisleSectionCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
+                  AnimatedContainer(
+                    duration: disableAnimations
+                        ? Duration.zero
+                        : const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 9,
                       vertical: 3,
@@ -74,7 +82,7 @@ class AisleSectionCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: allDone
                           ? karritoColors.completed
-                          : colorScheme.primaryContainer,
+                          : karritoColors.accentContainer,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -84,28 +92,35 @@ class AisleSectionCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
                         color: allDone
-                            ? Colors.white
-                            : colorScheme.onPrimaryContainer,
+                            ? colorScheme.onTertiary
+                            : karritoColors.onAccentContainer,
                       ),
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Icon(
-                    isExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    color: colorScheme.onSurfaceVariant,
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0.0,
+                    duration: disableAnimations
+                        ? Duration.zero
+                        : const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          if (isExpanded)
-            Column(
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
               children: [
                 for (var i = 0; i < sortedItems.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
                   _ShoppingItemTile(
+                    key: ValueKey<String>(sortedItems[i].id),
                     item: sortedItems[i],
                     onTap: () => onToggleItem(sortedItems[i]),
                     onEdit: () => onEditItem(sortedItems[i]),
@@ -113,6 +128,14 @@ class AisleSectionCard extends StatelessWidget {
                 ],
               ],
             ),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: disableAnimations
+                ? Duration.zero
+                : const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeInOutCubic,
+          ),
         ],
       ),
     );
@@ -124,6 +147,7 @@ class _ShoppingItemTile extends StatelessWidget {
     required this.item,
     required this.onTap,
     required this.onEdit,
+    super.key,
   });
 
   final ShoppingItemEntity item;
@@ -132,24 +156,31 @@ class _ShoppingItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final karritoColors = Theme.of(context).extension<KarritoColors>()!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final karritoColors = theme.extension<KarritoColors>()!;
     final isChecked = item.isChecked;
     final isPendingOffline = item.syncStatus == 'pending_ai';
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final animDuration = disableAnimations
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
 
     return InkWell(
       onTap: onTap,
       onLongPress: onEdit,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: animDuration,
+        curve: Curves.easeOutCubic,
         color: isChecked
-            ? karritoColors.completedContainer.withValues(alpha: 0.42)
+            ? karritoColors.completedContainer.withValues(alpha: 0.45)
             : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: animDuration,
+              curve: Curves.easeOutBack,
               width: 24,
               height: 24,
               decoration: BoxDecoration(
@@ -158,41 +189,50 @@ class _ShoppingItemTile extends StatelessWidget {
                 border: Border.all(
                   color: isChecked
                       ? karritoColors.completed
-                      : colorScheme.outlineVariant,
+                      : karritoColors.border,
                   width: 2,
                 ),
               ),
-              child: isChecked
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    )
-                  : null,
+              child: AnimatedSwitcher(
+                duration: animDuration,
+                transitionBuilder: (child, animation) =>
+                    ScaleTransition(scale: animation, child: child),
+                child: isChecked
+                    ? Icon(
+                        Icons.check_rounded,
+                        key: const ValueKey<bool>(true),
+                        size: 15,
+                        color: colorScheme.onTertiary,
+                      )
+                    : const SizedBox.shrink(key: ValueKey<bool>(false)),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.cleanName,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      decoration: isChecked
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      color: isChecked
-                          ? karritoColors.textSecondary
-                          : colorScheme.onSurface,
-                    ),
+                  AnimatedDefaultTextStyle(
+                    duration: animDuration,
+                    style:
+                        theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          decoration: isChecked
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          color: isChecked
+                              ? karritoColors.textSecondary
+                              : colorScheme.onSurface,
+                        ) ??
+                        const TextStyle(),
+                    child: Text(item.cleanName),
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
                       Text(
                         '${ShareService.formatQuantity(item.quantity)} ${item.unit}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: karritoColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),

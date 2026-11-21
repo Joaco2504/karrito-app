@@ -305,7 +305,8 @@ class ShoppingController extends Notifier<ShoppingUiState> {
       if (userTriggered) {
         _emitFeedback(AppStrings.syncCompletedNotice);
       }
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Karrito syncNow failed: $error');
       if (userTriggered) {
         _emitFeedback(AppStrings.syncFailedError, isError: true);
       }
@@ -323,23 +324,39 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
     state = state.copyWith(isLinkingGoogle: true);
     try {
-      final outcome = await ref
-          .read(authServiceProvider)
-          .linkOrSignInWithGoogle();
-      if (outcome == null) {
+      GoogleLinkOutcome? outcome;
+      try {
+        outcome = await ref.read(authServiceProvider).linkOrSignInWithGoogle();
+        if (outcome == null) {
+          return;
+        }
+
+        // Immediately refresh UI so the linked account shows up even if sync fails.
+        ref.read(accountStatusProvider.notifier).refresh();
+
+        if (outcome.switchedUid) {
+          await _repo.prepareLocalDataForAccountSwitch(outcome.userId);
+        }
+      } on AuthActionException catch (e) {
+        _emitFeedback(e.message, isError: true);
+        return;
+      } catch (error) {
+        debugPrint('Karrito linkGoogleAccount auth error: $error');
+        _emitFeedback(AppStrings.googleTokenError, isError: true);
         return;
       }
 
-      if (outcome.switchedUid) {
-        await _repo.prepareLocalDataForAccountSwitch(outcome.userId);
+      try {
+        await _sync.syncAll();
+        ref.read(accountStatusProvider.notifier).refresh();
+        _emitFeedback(AppStrings.googleLinkedNotice);
+      } catch (syncError) {
+        debugPrint(
+          'Karrito linkGoogleAccount post-link sync deferred: $syncError',
+        );
+        ref.read(accountStatusProvider.notifier).refresh();
+        _emitFeedback(AppStrings.googleLinkedSyncPendingNotice);
       }
-      await _sync.syncAll();
-      ref.read(accountStatusProvider.notifier).refresh();
-      _emitFeedback(AppStrings.googleLinkedNotice);
-    } on AuthActionException catch (e) {
-      _emitFeedback(e.message, isError: true);
-    } catch (_) {
-      _emitFeedback(AppStrings.googleTokenError, isError: true);
     } finally {
       state = state.copyWith(isLinkingGoogle: false);
     }

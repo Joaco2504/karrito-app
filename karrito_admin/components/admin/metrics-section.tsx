@@ -66,7 +66,7 @@ export function MetricsSection({
                 {formatNumberAR(metrics.totalUsers)}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
               <UsersIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -98,7 +98,7 @@ export function MetricsSection({
                 )}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent/15 text-brand-accent">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
               <MegaphoneIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -134,7 +134,7 @@ export function MetricsSection({
                 {formatNumberAR(metrics.aiLoadsToday)}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent/20 text-foreground">
               <SparklesIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -247,7 +247,7 @@ export function MetricsSection({
               className="min-h-[46px] w-full justify-between rounded-[14px] px-4"
             >
               <span className="flex items-center gap-2.5">
-                <UsersIcon className="size-4 text-primary" />
+                <UsersIcon className="size-4 text-accent-foreground" />
                 Cambiar planes o suspender usuarios
               </span>
               <ArrowRightIcon className="size-4 text-muted-foreground" />
@@ -260,7 +260,7 @@ export function MetricsSection({
               className="min-h-[46px] w-full justify-between rounded-[14px] px-4"
             >
               <span className="flex items-center gap-2.5">
-                <SlidersHorizontalIcon className="size-4 text-primary" />
+                <SlidersHorizontalIcon className="size-4 text-accent-foreground" />
                 Ajustar topes de IA y listas activas
               </span>
               <ArrowRightIcon className="size-4 text-muted-foreground" />

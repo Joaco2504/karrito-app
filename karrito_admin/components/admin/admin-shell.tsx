@@ -60,7 +60,7 @@ export function AdminShell({
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur-xs">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
               <ShoppingCartIcon className="size-5" aria-hidden="true" />
             </div>
             <div className="flex flex-col">
@@ -136,7 +136,7 @@ export function AdminShell({
             <TabsList className="h-auto w-full justify-start gap-1 rounded-[14px] border border-border bg-card p-1 sm:w-fit">
               <TabsTrigger
                 value="resumen"
-                className="min-h-[40px] rounded-[10px] px-3.5 data-active:bg-primary data-active:text-primary-foreground"
+                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <BarChart3Icon data-icon="inline-start" />
                 Métricas
@@ -144,7 +144,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="publicidad"
-                className="min-h-[40px] rounded-[10px] px-3.5 data-active:bg-primary data-active:text-primary-foreground"
+                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <MegaphoneIcon data-icon="inline-start" />
                 Publicidad local
@@ -158,7 +158,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="usuarios"
-                className="min-h-[40px] rounded-[10px] px-3.5 data-active:bg-primary data-active:text-primary-foreground"
+                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <UsersIcon data-icon="inline-start" />
                 Usuarios
@@ -172,7 +172,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="configuracion"
-                className="min-h-[40px] rounded-[10px] px-3.5 data-active:bg-primary data-active:text-primary-foreground"
+                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <SlidersHorizontalIcon data-icon="inline-start" />
                 Configuración
