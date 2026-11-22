@@ -793,11 +793,17 @@ class SupabaseSyncService implements SyncService {
       }
     }
 
-    // Push local-only pending lists OR (on full sync only) prune remotely deleted lists.
+    // Push local-only pending lists (or any owned list missing the active UID)
+    // OR (on full sync only) prune remotely deleted lists.
     for (final local in localLists) {
       if (remoteById.containsKey(local.id)) continue;
 
-      if (local.syncStatus == 'pending' && !local.isJoinedRemote) {
+      final needsOwnerRepair =
+          !local.isJoinedRemote &&
+          (local.ownerId == null || local.ownerId != uid);
+
+      if ((local.syncStatus == 'pending' || needsOwnerRepair) &&
+          !local.isJoinedRemote) {
         await _pushSingleList(local, uid);
       } else if (!isDeltaSync && local.syncStatus == 'synced') {
         final remaining = await _db.select(_db.localLists).get();

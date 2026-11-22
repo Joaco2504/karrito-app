@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+
+<html lang="es-AR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-tertiary-fixed": "#111f00",
+          "surface-container": "#f2ebff",
+          "surface-container-lowest": "#ffffff",
+          "on-tertiary": "#ffffff",
+          "on-surface": "#1d1a28",
+          "primary": "#531cb3",
+          "surface-bright": "#fdf7ff",
+          "on-error": "#ffffff",
+          "tertiary-fixed-dim": "#92db00",
+          "surface": "#fdf7ff",
+          "primary-fixed": "#e9ddff",
+          "outline": "#7b7485",
+          "inverse-surface": "#322e3e",
+          "tertiary": "#203500",
+          "error-container": "#ffdad6",
+          "on-background": "#1d1a28",
+          "secondary": "#fc6036",
+          "primary-container": "#3a008c",
+          "surface-dim": "#ded7eb",
+          "outline-variant": "#cbc3d6",
+          "on-secondary-fixed": "#3c0800",
+          "tertiary-container": "#314d00",
+          "on-error-container": "#93000a",
+          "on-secondary": "#ffffff",
+          "surface-variant": "#e6dff4",
+          "on-primary-fixed": "#23005b",
+          "on-surface-variant": "#4a4454",
+          "error": "#ba1a1a",
+          "surface-container-high": "#ece5fa",
+          "on-secondary-container": "#591100",
+          "inverse-primary": "#d1bcff",
+          "surface-container-low": "#f8f1ff",
+          "secondary-fixed": "#ffdbd2",
+          "on-tertiary-container": "#84c500",
+          "secondary-container": "#fc6036",
+          "tertiary-fixed": "#abf926",
+          "on-primary-fixed-variant": "#551fb5",
+          "on-primary": "#ffffff",
+          "on-secondary-fixed-variant": "#881f00",
+          "inverse-on-surface": "#f5eeff",
+          "surface-tint": "#6d3fce",
+          "surface-container-highest": "#e6dff4",
+          "on-tertiary-fixed-variant": "#324f00",
+          "primary-fixed-dim": "#d1bcff",
+          "secondary-fixed-dim": "#ffb4a1",
+          "background": "#fdf7ff",
+          "on-primary-container": "#bfa4ff"
+        },
+        "borderRadius": {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-md": "1rem",
+          "space-lg": "1.5rem",
+          "space-sm": "0.5rem",
+          "margin-mobile": "1rem",
+          "gutter-mobile": "0.75rem",
+          "margin": "1.5rem",
+          "gutter": "1rem",
+          "space-xs": "0.25rem",
+          "space-xl": "2.25rem"
+        },
+        "fontFamily": {
+          "headline-lg": ["Plus Jakarta Sans"],
+          "label-lg": ["Plus Jakarta Sans"],
+          "label-sm": ["Plus Jakarta Sans"],
+          "headline-sm": ["Plus Jakarta Sans"],
+          "display-lg": ["Plus Jakarta Sans"],
+          "body-md": ["Plus Jakarta Sans"],
+          "title-md": ["Plus Jakarta Sans"],
+          "body-lg": ["Plus Jakarta Sans"],
+          "label-md": ["Plus Jakarta Sans"],
+          "headline-md": ["Plus Jakarta Sans"],
+          "display-lg-mobile": ["Plus Jakarta Sans"],
+          "body-sm": ["Plus Jakarta Sans"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"]
+        },
+        "fontSize": {
+          "headline-lg": ["2rem", {"lineHeight": "2.5rem", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "label-lg": ["0.875rem", {"lineHeight": "1.125rem", "letterSpacing": "0.01em", "fontWeight": "700"}],
+          "label-sm": ["0.6875rem", {"lineHeight": "0.875rem", "letterSpacing": "0.03em", "fontWeight": "600"}],
+          "headline-sm": ["1.125rem", {"lineHeight": "1.5rem", "fontWeight": "600"}],
+          "display-lg": ["3.5rem", {"lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "800"}],
+          "body-md": ["0.9375rem", {"lineHeight": "1.4375rem", "fontWeight": "400"}],
+          "title-md": ["1rem", {"lineHeight": "1.375rem", "fontWeight": "600"}],
+          "body-lg": ["1.0625rem", {"lineHeight": "1.625rem", "fontWeight": "400"}],
+          "label-md": ["0.75rem", {"lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "700"}],
+          "headline-md": ["1.375rem", {"lineHeight": "1.875rem", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+          "display-lg-mobile": ["2.5rem", {"lineHeight": "3rem", "letterSpacing": "-0.025em", "fontWeight": "800"}],
+          "body-sm": ["0.8125rem", {"lineHeight": "1.25rem", "fontWeight": "400"}],
+          "headline-lg-mobile": ["1.625rem", {"lineHeight": "2.125rem", "letterSpacing": "-0.015em", "fontWeight": "700"}]
+        }
+      }
+    }
+  }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen pt-safe pb-safe selection:bg-primary-fixed-dim selection:text-on-primary-fixed"><main class="flex-1 flex flex-col relative w-full px-margin bg-surface"><div class="flex flex-col w-full pb-6 selection:bg-primary-fixed-dim selection:text-on-primary-fixed select-none">
+<!-- Top Bar / Skip Action -->
+<div class="flex items-center justify-between py-2 mb-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm shadow-primary/20">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">shopping_cart</span>
+</div>
+<span class="font-headline-md text-headline-md tracking-tight text-on-surface">Karrito</span>
+</div>
+<button class="px-3 py-1.5 rounded-full text-outline font-label-md text-label-md active:bg-surface-container transition-colors" id="skipBtn">
+      Saltar
+    </button>
+</div>
+<!-- Progress Bar Indicators (Material 3 style) -->
+<div class="flex items-center justify-center gap-2 my-3 px-4">
+<button aria-label="Paso 1" class="step-indicator h-1.5 rounded-full transition-all duration-300 bg-primary w-10 shadow-sm" data-step="0" type="button"></button>
+<button aria-label="Paso 2" class="step-indicator h-1.5 rounded-full transition-all duration-300 bg-surface-variant w-3" data-step="1" type="button"></button>
+<button aria-label="Paso 3" class="step-indicator h-1.5 rounded-full transition-all duration-300 bg-surface-variant w-3" data-step="2" type="button"></button>
+</div>
+<!-- Interactive Carousel Viewport -->
+<div class="relative w-full overflow-hidden my-2">
+<div class="flex transition-transform duration-500 ease-out w-full" id="carouselTrack">
+<!-- Slide 1: Pegá lo que venga -->
+<div class="w-full flex-shrink-0 flex flex-col items-center px-1">
+<!-- Visual Presentation Card -->
+<div class="w-full bg-surface-container-low rounded-lg p-5 flex flex-col items-center relative overflow-hidden shadow-sm border border-outline-variant/30">
+<div class="w-full flex justify-between items-center mb-4">
+<span class="px-2.5 py-1 rounded-full bg-surface-container-highest text-primary font-label-md text-label-md flex items-center gap-1.5 font-bold">
+<span class="material-symbols-outlined text-sm text-primary">auto_fix_high</span>
+              Magia IA instantánea
+            </span>
+<span class="font-label-md text-label-md text-outline">1 / 3</span>
+</div>
+<!-- Chat to Organized List Mockup -->
+<div class="w-full space-y-3 my-1">
+<!-- Simulated raw WhatsApp bubble -->
+<div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm border border-outline-variant/20 flex items-start gap-2.5">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-sm">chat</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="font-label-md text-label-md text-outline">Pegaste del chat:</p>
+<p class="font-body-md text-body-md text-on-surface italic truncate">"Comprá 1kg yerba playadito, lavandina, 2 leches y pan criollo"</p>
+</div>
+</div>
+<!-- Arrow Indicator -->
+<div class="flex justify-center -my-1">
+<div class="w-7 h-7 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-sm font-bold">arrow_downward</span>
+</div>
+</div>
+<!-- Simulated parsed list tiles -->
+<div class="grid grid-cols-2 gap-2 w-full">
+<div class="bg-surface-container-lowest p-2.5 rounded-2xl flex items-center gap-2 shadow-sm border border-outline-variant/20">
+<div class="w-6 h-6 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Yerba mate</p>
+<p class="font-label-md text-label-md text-outline truncate">1 kg • Almacén</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-2xl flex items-center gap-2 shadow-sm border border-outline-variant/20">
+<div class="w-6 h-6 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">bakery_dining</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Pan criollo</p>
+<p class="font-label-md text-label-md text-outline truncate">Panadería</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Feature Context Image -->
+<div class="w-full mt-4 h-28 rounded-2xl overflow-hidden shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="Close up warm lifestyle photography of an Argentine person holding a modern smartphone in a bright Buenos Aires supermarket aisle, selecting fresh goods with a wooden grocery cart nearby, soft natural daylight and emerald accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWPleDt6xFYrKbB4z2_YDedMy4xrfbKFM_OxIoL2o1pAzIHw-KMBFW5WNd09En3stqkxnOtTaI7c4m4_V0J2o1ej6Q2EQQR9AnqPpRBu0D0KN-Kxdeo5E62MhiS7r5hR4nPmBUWa00wJT7gnmax9sYyFKAdIi5UC8bfp5yqU7CwwlrVH5UMVlMcp4QkQ9zfwPUXMKsaMbuamTCBEGkYQnxKV7sPiNZXAMIUX0wCwSy"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/85 via-transparent to-transparent flex items-end p-2.5">
+<span class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-primary">done_all</span> Cero tipeo manual
+              </span>
+</div>
+</div>
+</div>
+<!-- Slide Texts -->
+<div class="text-center mt-5 px-3">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight">
+            Pegá lo que venga, Karrito lo ordena.
+          </h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">
+            Copiá audios o mensajes desordenados de WhatsApp, pegalos sin filtro y mirá cómo se organizan solos en segundos.
+          </p>
+</div>
+</div>
+<!-- Slide 2: Voz y Foto -->
+<div class="w-full flex-shrink-0 flex flex-col items-center px-1">
+<!-- Visual Presentation Card -->
+<div class="w-full bg-surface-container-low rounded-lg p-5 flex flex-col items-center relative overflow-hidden shadow-sm border border-outline-variant/30">
+<div class="w-full flex justify-between items-center mb-3">
+<span class="px-2.5 py-1 rounded-full bg-secondary text-on-secondary font-label-md text-label-md flex items-center gap-1 font-bold shadow-sm">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+              FUNCIONES PRO
+            </span>
+<span class="font-label-md text-label-md text-outline">2 / 3</span>
+</div>
+<!-- Interactive Action Chips & Visuals -->
+<div class="w-full grid grid-cols-2 gap-3 my-1">
+<!-- Voice Dictation Card -->
+<div class="bg-surface-container-lowest p-3.5 rounded-2xl flex flex-col items-center text-center shadow-sm border border-outline-variant/20 relative overflow-hidden">
+<div class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center mb-2 shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">mic</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Dictado por voz</span>
+<p class="font-label-md text-label-md text-outline mt-0.5">"2kg de asado y carbón"</p>
+<div class="mt-2 flex items-center gap-1 bg-primary-fixed px-2 py-0.5 rounded-full text-on-primary-fixed font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-xs">graphic_eq</span> Listo
+              </div>
+</div>
+<!-- OCR Scanner Card -->
+<div class="bg-surface-container-lowest p-3.5 rounded-2xl flex flex-col items-center text-center shadow-sm border border-outline-variant/20 relative overflow-hidden">
+<div class="w-12 h-12 rounded-full bg-secondary text-on-secondary flex items-center justify-center mb-2 shadow-md shadow-secondary/25">
+<span class="material-symbols-outlined text-2xl">document_scanner</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Foto al papelito</span>
+<p class="font-label-md text-label-md text-outline mt-0.5">Ticket o nota a mano</p>
+<div class="mt-2 flex items-center gap-1 bg-secondary-fixed px-2 py-0.5 rounded-full text-on-secondary-fixed font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-xs">camera_alt</span> Escaneo IA
+              </div>
+</div>
+</div>
+<!-- Lifestyle Visual Accent -->
+<div class="w-full mt-3 h-28 rounded-2xl overflow-hidden shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="A handwritten grocery note on kraft paper lying on a marble kitchen countertop in an Argentine home with fresh lemons and mate gourd nearby, warm golden afternoon light, sharp focused details" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3olTdArv2-mu68g11zHxi78V7pfCogIsU8Iov7u5t-h_jeNIMyl2nl2JhjO7sByEI0SvZamzw4ajaqyg7JcQdbrOzsu81QyL-lgWI7Xf3mDbITUWrlM3PBqWHauSpq2Rxyl5Du5woXJlT0hlhk2Slfnwd7qszeu6kpmgKlPF60-7pcnFL9Up-6iawrZjbvuSk1y-NmMwURIF_8PRELVc6oD6dMgDmj5uRQdLmwt_O"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/85 via-transparent to-transparent flex items-end p-2.5">
+<span class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-secondary">bolt</span> Lee hasta la letra de mamá
+              </span>
+</div>
+</div>
+</div>
+<!-- Slide Texts -->
+<div class="text-center mt-5 px-3">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight">
+            Cargá por voz o sacale foto al papelito.
+          </h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">
+            Hablale mientras manejás o escaneá la listita manuscrita de la heladera. Karrito digitaliza todo de un toque.
+          </p>
+</div>
+</div>
+<!-- Slide 3: Pasillo por Pasillo -->
+<div class="w-full flex-shrink-0 flex flex-col items-center px-1">
+<!-- Visual Presentation Card -->
+<div class="w-full bg-surface-container-low rounded-lg p-5 flex flex-col items-center relative overflow-hidden shadow-sm border border-outline-variant/30">
+<div class="w-full flex justify-between items-center mb-3">
+<span class="px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md flex items-center gap-1 font-bold">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">route</span>
+              AHORRÁ TIEMPO
+            </span>
+<span class="font-label-md text-label-md text-outline">3 / 3</span>
+</div>
+<!-- Aisle Breakdown Mockup -->
+<div class="w-full space-y-2 my-1">
+<!-- Pasillo 1: Verdulería -->
+<div class="bg-surface-container-lowest p-2.5 rounded-2xl shadow-sm border border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">nutrition</span>
+</div>
+<div class="truncate">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Pasillo 1 • Verdulería</p>
+<p class="font-label-md text-label-md text-outline">Papas, Tomates redondos</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary shrink-0">2 ítems</span>
+</div>
+<!-- Pasillo 2: Lácteos & Fríos -->
+<div class="bg-surface-container-lowest p-2.5 rounded-2xl shadow-sm border border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">water_drop</span>
+</div>
+<div class="truncate">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Pasillo 2 • Lácteos</p>
+<p class="font-label-md text-label-md text-outline">Queso cremoso, Leche entera</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary shrink-0">2 ítems</span>
+</div>
+<!-- Pasillo 3: Limpieza -->
+<div class="bg-surface-container-lowest p-2.5 rounded-2xl shadow-sm border border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-sm">cleaning_services</span>
+</div>
+<div class="truncate">
+<p class="font-label-lg text-label-lg text-on-surface truncate">Pasillo 3 • Limpieza</p>
+<p class="font-label-md text-label-md text-outline">Detergente concentrado</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-secondary shrink-0">1 ítem</span>
+</div>
+</div>
+<!-- Feature Visual -->
+<div class="w-full mt-3 h-20 rounded-2xl overflow-hidden shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="Neat and well organized supermarket produce section in Buenos Aires with colorful pyramids of fresh fruits and vegetables under warm lighting, modern retail aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdt0lKycytsXOWb-ncnBpm0iXVhDQ14z-qrirAhJvN845p7Hn_hYmCQBL-Q5CQkdtoZ5mx6JqGPYyk2vbj5HApT8IONjRt3yTdKXWEYCOFWQDizRTJW6dohqs0ZP0LkLrmkij1o9GKqJO9dtsOw6ZG8qJPDHk8wwai_zUs4jO4Hb0iC3dArhblT-FkUXwXXqwdvWh6_TnsD2Mbno47YTD8WLZh171q3kKjxN4jpClg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/85 via-transparent to-transparent flex items-end p-2.5">
+<span class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-primary">check_circle</span> No das vueltas de más
+              </span>
+</div>
+</div>
+</div>
+<!-- Slide Texts -->
+<div class="text-center mt-5 px-3">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-tight">
+            Comprá volando por pasillo.
+          </h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">
+            Te agrupa los productos según cómo están distribuidas las góndolas en tu súper del barrio: Verdulería, Lácteos y Limpieza.
+          </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Navigation Dots & Quick Slide Swipe Hint -->
+<div class="flex justify-center items-center gap-4 my-2">
+<button aria-label="Anterior" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant active:scale-95 transition-all opacity-40" disabled="" id="prevBtn">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium" id="stepCounter">Paso 1 de 3</span>
+</div>
+<button aria-label="Siguiente" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant active:scale-95 transition-all" id="nextBtn">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+<!-- Action Deck (Fixed Bottom Anchor ergonomics) -->
+<div class="w-full flex flex-col gap-3 mt-4">
+<!-- Primary CTA (Violeta Eléctrico Profundo #531CB3) -->
+<button class="w-full h-14 bg-primary text-on-primary rounded-2xl flex items-center justify-center gap-2.5 font-title-md text-title-md shadow-lg shadow-primary/25 active:scale-[0.98] transition-all" id="startBtn">
+<span>Empezar a armar mi lista</span>
+<span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+<!-- Secondary Sync Option -->
+<button class="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-on-surface-variant font-label-lg text-label-lg active:bg-surface-container transition-colors" type="button">
+<svg class="w-4 h-4" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span>¿Ya tenés cuenta? Sincronizar con Google</span>
+</button>
+<!-- Trust Microcopy -->
+<div class="flex items-center justify-center gap-1.5 text-center">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<p class="font-label-md text-label-md text-outline">
+        Sin registros obligatorios ni vueltas.
+      </p>
+</div>
+</div>
+</div>
+<script>
+  (function () {
+    let currentStep = 0;
+    const totalSteps = 3;
+    const track = document.getElementById('carouselTrack');
+    const indicators = document.querySelectorAll('.step-indicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const counter = document.getElementById('stepCounter');
+    const startBtn = document.getElementById('startBtn');
+    const skipBtn = document.getElementById('skipBtn');
+
+    function updateStep(index) {
+      currentStep = Math.max(0, Math.min(index, totalSteps - 1));
+      
+      // Move track
+      track.style.transform = `translateX(-${currentStep * 100}%)`;
+
+      // Update pills
+      indicators.forEach((indicator, idx) => {
+        if (idx === currentStep) {
+          indicator.classList.remove('bg-surface-variant', 'w-3');
+          indicator.classList.add('bg-primary', 'w-10');
+        } else {
+          indicator.classList.remove('bg-primary', 'w-10');
+          indicator.classList.add('bg-surface-variant', 'w-3');
+        }
+      });
+
+      // Update counter
+      counter.textContent = `Paso ${currentStep + 1} de ${totalSteps}`;
+
+      // Update chevron states
+      if (currentStep === 0) {
+        prevBtn.classList.add('opacity-40');
+        prevBtn.disabled = true;
+      } else {
+        prevBtn.classList.remove('opacity-40');
+        prevBtn.disabled = false;
+      }
+
+      if (currentStep === totalSteps - 1) {
+        nextBtn.classList.add('opacity-40');
+        nextBtn.disabled = true;
+      } else {
+        nextBtn.classList.remove('opacity-40');
+        nextBtn.disabled = false;
+      }
+    }
+
+    // Touch Swipe handling for genuine mobile ergonomics
+    let startX = 0;
+    let endX = 0;
+
+    track.parentElement.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    track.parentElement.addEventListener('touchend', (e) => {
+      endX = e.changedTouches[0].clientX;
+      const diff = startX - endX;
+      if (Math.abs(diff) > 45) {
+        if (diff > 0 && currentStep < totalSteps - 1) {
+          updateStep(currentStep + 1);
+        } else if (diff < 0 && currentStep > 0) {
+          updateStep(currentStep - 1);
+        }
+      }
+    }, { passive: true });
+
+    // Buttons
+    nextBtn.addEventListener('click', () => updateStep(currentStep + 1));
+    prevBtn.addEventListener('click', () => updateStep(currentStep - 1));
+
+    indicators.forEach((btn, idx) => {
+      btn.addEventListener('click', () => updateStep(idx));
+    });
+
+    const triggerStart = () => {
+      startBtn.innerHTML = `
+        <span class="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+        <span>Entrando a Karrito...</span>
+      `;
+      startBtn.classList.add('opacity-90');
+      setTimeout(() => {
+        startBtn.innerHTML = `
+          <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+          <span>¡Todo listo, che!</span>
+        `;
+      }, 700);
+    };
+
+    startBtn.addEventListener('click', triggerStart);
+    skipBtn.addEventListener('click', triggerStart);
+  })();
+</script></main></body></html>

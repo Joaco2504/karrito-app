@@ -11,6 +11,7 @@ import 'package:karrito_app/data/local/app_database.dart';
 import 'package:karrito_app/data/models/procesar_lista_response.dart';
 import 'package:karrito_app/data/services/ai_classifier_service.dart';
 import 'package:karrito_app/data/services/auth_service.dart';
+import 'package:karrito_app/data/services/sound_service.dart';
 import 'package:karrito_app/data/services/sync_service.dart';
 import 'package:karrito_app/data/services/wakelock_service.dart';
 import 'package:karrito_app/main.dart';
@@ -61,6 +62,18 @@ class _TestAuthService implements AuthService {
 class _TestWakelockService implements WakelockService {
   @override
   Future<void> setEnabled(bool enabled) async {}
+}
+
+class _TestSoundFeedbackService implements SoundFeedbackService {
+  int playCalls = 0;
+
+  @override
+  Future<void> playItemCheckedFeedback() async {
+    playCalls++;
+  }
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _TestSyncService implements SyncService {
@@ -154,6 +167,7 @@ void main() {
       final auth = _TestAuthService();
       final ai = _TestAiClassifier();
       final sync = _TestSyncService(db);
+      final sound = _TestSoundFeedbackService();
       var dbClosed = false;
 
       addTearDown(() async {
@@ -171,6 +185,7 @@ void main() {
             appDatabaseProvider.overrideWithValue(db),
             authServiceProvider.overrideWithValue(auth),
             wakelockServiceProvider.overrideWithValue(_TestWakelockService()),
+            soundFeedbackServiceProvider.overrideWithValue(sound),
             aiClassifierServiceProvider.overrideWithValue(ai),
             syncServiceProvider.overrideWithValue(sync),
             isOnlineProvider.overrideWithValue(true),
@@ -246,9 +261,18 @@ void main() {
       await tester.tap(find.text('Leche').last);
       await tester.pumpAndSettle();
       expect(ai.callCount, aiCallsAfterInput);
-      await tester.tap(find.text(AppStrings.doneButton));
+      await tester.tap(find.text(AppStrings.frequentDoneButton));
       await tester.pumpAndSettle();
       expect(find.text('Supermercado (3/3)'), findsOneWidget);
+
+      // Checking an item triggers SoundFeedbackService; unchecking stays silent.
+      expect(sound.playCalls, 0);
+      await tester.tap(find.text('Papa').first);
+      await tester.pumpAndSettle();
+      expect(sound.playCalls, 1);
+      await tester.tap(find.text('Papa').first);
+      await tester.pumpAndSettle();
+      expect(sound.playCalls, 1);
 
       // Open EditItemBottomSheet via long-press on Papa.
       await tester.longPress(find.text('Papa').first);
@@ -308,6 +332,14 @@ void main() {
       expect(find.text('vecino@catamarca.test'), findsOneWidget);
       expect(find.text(AppStrings.googleLinkedNotice), findsOneWidget);
 
+      // Verify "Sonido al tachar" toggle exists in Settings and persists to Drift v4.
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.settingsSoundOnCheckTitle),
+        200,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.settingsSoundOnCheckTitle), findsOneWidget);
+
       // Scroll to FAQ accordion and expand the first entry.
       await tester.scrollUntilVisible(
         find.text(AppStrings.faqEntries.first.question),
@@ -318,14 +350,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.faqEntries.first.answer), findsOneWidget);
 
-      // Verify Electric Mercado official theme and SwitchThemeData colors in Light and Dark.
+      // Verify Electric Mercado 1 & 2 official theme and SwitchThemeData colors in Light and Dark.
       final lightTheme = AppTheme.light();
       final darkTheme = AppTheme.dark();
-      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFF9F8F6));
-      expect(darkTheme.scaffoldBackgroundColor, const Color(0xFF0F0B1A));
+      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFFDF7FF));
+      expect(darkTheme.scaffoldBackgroundColor, const Color(0xFF12111A));
       expect(
         lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFFE4DDF2),
+        const Color(0xFFE6DFF4),
       );
       expect(
         lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{
@@ -335,13 +367,13 @@ void main() {
       );
       expect(
         darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFF251D38),
+        const Color(0xFF252234),
       );
       expect(
         darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{
           WidgetState.selected,
         }),
-        const Color(0xFF7438F5),
+        const Color(0xFF8B5CF6),
       );
 
       // Flush pending toast auto-dismiss timer and unmount cleanly.

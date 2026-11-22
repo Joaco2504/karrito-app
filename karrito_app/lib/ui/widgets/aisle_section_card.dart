@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
 
@@ -30,6 +33,7 @@ class AisleSectionCard extends StatelessWidget {
     final karritoColors = theme.extension<KarritoColors>()!;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final isDark = theme.brightness == Brightness.dark;
+    final visual = StoreVisuals.forAisle(aisleName);
 
     final sortedItems = List<ShoppingItemEntity>.from(items)
       ..sort((a, b) {
@@ -48,14 +52,14 @@ class AisleSectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: allDone
             ? karritoColors.completedContainer.withValues(
-                alpha: isDark ? 0.55 : 0.65,
+                alpha: isDark ? 0.55 : 0.72,
               )
-            : (isDark ? colorScheme.surface : karritoColors.fieldSurface),
-        borderRadius: BorderRadius.circular(24),
+            : karritoColors.aisleCardSurface,
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: allDone
               ? karritoColors.completed.withValues(alpha: 0.35)
-              : karritoColors.border.withValues(alpha: 0.75),
+              : karritoColors.border.withValues(alpha: isDark ? 0.85 : 0.75),
           width: 1,
         ),
         boxShadow: [
@@ -75,17 +79,24 @@ class AisleSectionCard extends StatelessWidget {
             child: InkWell(
               onTap: onToggleExpand,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 13, 12, 11),
+                padding: const EdgeInsets.fromLTRB(14, 13, 12, 11),
                 child: Row(
                   children: [
                     Container(
-                      width: 9,
-                      height: 9,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: allDone
                             ? karritoColors.lime
-                            : karritoColors.accentSoft,
+                            : visual.color.withValues(
+                                alpha: isDark ? 0.22 : 0.16,
+                              ),
+                      ),
+                      child: Icon(
+                        allDone ? Icons.check_rounded : visual.icon,
+                        size: 17,
+                        color: allDone ? karritoColors.onLime : visual.color,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -93,9 +104,9 @@ class AisleSectionCard extends StatelessWidget {
                       child: Text(
                         aisleName,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          fontSize: 15,
+                          fontSize: 15.5,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.1,
+                          letterSpacing: -0.15,
                           color: allDone
                               ? karritoColors.onCompletedContainer
                               : colorScheme.onSurface,
@@ -152,7 +163,7 @@ class AisleSectionCard extends StatelessWidget {
               child: Column(
                 children: [
                   for (var i = 0; i < sortedItems.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 6),
+                    if (i > 0) const SizedBox(height: 8),
                     _ShoppingItemTile(
                       key: ValueKey<String>(sortedItems[i].id),
                       item: sortedItems[i],
@@ -177,7 +188,7 @@ class AisleSectionCard extends StatelessWidget {
   }
 }
 
-class _ShoppingItemTile extends StatelessWidget {
+class _ShoppingItemTile extends StatefulWidget {
   const _ShoppingItemTile({
     required this.item,
     required this.onTap,
@@ -190,143 +201,306 @@ class _ShoppingItemTile extends StatelessWidget {
   final VoidCallback onEdit;
 
   @override
+  State<_ShoppingItemTile> createState() => _ShoppingItemTileState();
+}
+
+class _ShoppingItemTileState extends State<_ShoppingItemTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _burstController;
+  late final Animation<double> _popScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _burstController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _popScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.78,
+          end: 1.24,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.24,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 55,
+      ),
+    ]).animate(_burstController);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShoppingItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.item.isChecked && widget.item.isChecked) {
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _burstController.forward(from: 0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _burstController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
     final isDark = theme.brightness == Brightness.dark;
-    final isChecked = item.isChecked;
-    final isPendingOffline = item.syncStatus == 'pending_ai';
+    final isChecked = widget.item.isChecked;
+    final isPendingOffline = widget.item.syncStatus == 'pending_ai';
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final animDuration = disableAnimations
         ? Duration.zero
         : const Duration(milliseconds: 200);
 
     final tileBg = isChecked
-        ? (isDark
-              ? karritoColors.completedContainer.withValues(alpha: 0.65)
-              : karritoColors.completedContainer.withValues(alpha: 0.6))
+        ? karritoColors.checkedTileSurface
         : (isDark ? karritoColors.fieldSurface : colorScheme.surface);
 
-    return Material(
-      color: tileBg,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: isChecked
-              ? karritoColors.completed.withValues(alpha: 0.28)
-              : karritoColors.border.withValues(alpha: isDark ? 0.55 : 0.45),
-          width: 1,
-        ),
+    final tileBorder = isChecked
+        ? karritoColors.checkedTileBorder
+        : karritoColors.border.withValues(alpha: isDark ? 0.65 : 0.45);
+
+    return AnimatedContainer(
+      duration: animDuration,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: tileBorder, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onEdit,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-          child: Row(
-            children: [
-              AnimatedContainer(
-                duration: animDuration,
-                curve: Curves.easeOutBack,
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isChecked ? karritoColors.lime : Colors.transparent,
-                  border: Border.all(
-                    color: isChecked
-                        ? karritoColors.completed
-                        : karritoColors.accentSoft.withValues(alpha: 0.65),
-                    width: 2,
-                  ),
-                ),
-                child: AnimatedSwitcher(
-                  duration: animDuration,
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: isChecked
-                      ? Icon(
-                          Icons.check_rounded,
-                          key: const ValueKey<bool>(true),
-                          size: 16,
-                          color: karritoColors.onLime,
-                        )
-                      : const SizedBox.shrink(key: ValueKey<bool>(false)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimatedDefaultTextStyle(
-                      duration: animDuration,
-                      style:
-                          theme.textTheme.bodyLarge?.copyWith(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w600,
-                            decoration: isChecked
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onLongPress: widget.onEdit,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 11, 6, 11),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      if (!disableAnimations)
+                        AnimatedBuilder(
+                          animation: _burstController,
+                          builder: (context, _) {
+                            if (!_burstController.isAnimating) {
+                              return const SizedBox.shrink();
+                            }
+                            return CustomPaint(
+                              size: const Size(30, 30),
+                              painter: _CheckSparklePainter(
+                                progress: _burstController.value,
+                                primaryColor: karritoColors.accent,
+                                limeColor: karritoColors.lime,
+                                papayaColor: karritoColors.cta,
+                              ),
+                            );
+                          },
+                        ),
+                      AnimatedBuilder(
+                        animation: _popScale,
+                        builder: (context, child) {
+                          final scale = _burstController.isAnimating
+                              ? _popScale.value
+                              : 1.0;
+                          return Transform.scale(scale: scale, child: child);
+                        },
+                        child: AnimatedContainer(
+                          duration: animDuration,
+                          curve: Curves.easeOutCubic,
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
                             color: isChecked
-                                ? karritoColors.textSecondary
-                                : colorScheme.onSurface,
-                          ) ??
-                          const TextStyle(),
-                      child: Text(item.cleanName),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          '${ShareService.formatQuantity(item.quantity)} ${item.unit}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: karritoColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                                ? karritoColors.accent
+                                : Colors.transparent,
+                            border: Border.all(
+                              color: isChecked
+                                  ? karritoColors.accent
+                                  : karritoColors.textSecondary.withValues(
+                                      alpha: 0.55,
+                                    ),
+                              width: 2,
+                            ),
+                            boxShadow: isChecked && isDark
+                                ? [
+                                    BoxShadow(
+                                      color: karritoColors.accent.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      blurRadius: 8,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: AnimatedSwitcher(
+                            duration: animDuration,
+                            transitionBuilder: (child, animation) =>
+                                ScaleTransition(scale: animation, child: child),
+                            child: isChecked
+                                ? Icon(
+                                    Icons.check_rounded,
+                                    key: const ValueKey<bool>(true),
+                                    size: 16,
+                                    color: karritoColors.onAccent,
+                                  )
+                                : const SizedBox.shrink(
+                                    key: ValueKey<bool>(false),
+                                  ),
                           ),
                         ),
-                        if (isPendingOffline) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: karritoColors.ctaContainer,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              AppStrings.pendingOfflineBadge,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: karritoColors.onCtaContainer,
-                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: animDuration,
+                        style:
+                            theme.textTheme.bodyLarge?.copyWith(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              decoration: isChecked
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              decorationThickness: 2,
+                              color: isChecked
+                                  ? karritoColors.textSecondary.withValues(
+                                      alpha: 0.72,
+                                    )
+                                  : colorScheme.onSurface,
+                            ) ??
+                            const TextStyle(),
+                        child: Text(widget.item.cleanName),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            '${ShareService.formatQuantity(widget.item.quantity)} ${widget.item.unit}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isChecked
+                                  ? karritoColors.textSecondary.withValues(
+                                      alpha: 0.65,
+                                    )
+                                  : karritoColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
+                          if (isPendingOffline) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: karritoColors.cta,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                AppStrings.pendingOfflineBadge,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: karritoColors.onCta,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.edit_outlined,
-                  size: 19,
-                  color: karritoColors.textSecondary,
+                IconButton(
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 19,
+                    color: karritoColors.textSecondary,
+                  ),
+                  tooltip: AppStrings.editItemTitle,
+                  onPressed: widget.onEdit,
                 ),
-                tooltip: AppStrings.editItemTitle,
-                onPressed: onEdit,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+}
+
+class _CheckSparklePainter extends CustomPainter {
+  const _CheckSparklePainter({
+    required this.progress,
+    required this.primaryColor,
+    required this.limeColor,
+    required this.papayaColor,
+  });
+
+  final double progress;
+  final Color primaryColor;
+  final Color limeColor;
+  final Color papayaColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final colors = <Color>[
+      primaryColor,
+      limeColor,
+      papayaColor,
+      primaryColor,
+      limeColor,
+      papayaColor,
+      limeColor,
+    ];
+    final eased = Curves.easeOutCubic.transform(progress);
+    final opacity = (1.0 - progress).clamp(0.0, 1.0);
+    final radius = 12.0 + (16.0 * eased);
+    final dotSize = 3.2 * (1.0 - (progress * 0.6));
+
+    for (var i = 0; i < colors.length; i++) {
+      final angle = (2 * math.pi * i) / colors.length - (math.pi / 2);
+      final pos = Offset(
+        center.dx + math.cos(angle) * radius,
+        center.dy + math.sin(angle) * radius,
+      );
+      final paint = Paint()
+        ..color = colors[i].withValues(alpha: opacity)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(pos, dotSize, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CheckSparklePainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

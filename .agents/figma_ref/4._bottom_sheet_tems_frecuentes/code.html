@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html lang="es-AR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "on-tertiary-fixed": "#111f00",
+          "surface-container": "#f2ebff",
+          "surface-container-lowest": "#ffffff",
+          "on-tertiary": "#ffffff",
+          "on-surface": "#1d1a28",
+          "primary": "#531cb3",
+          "surface-bright": "#fdf7ff",
+          "on-error": "#ffffff",
+          "tertiary-fixed-dim": "#92db00",
+          "surface": "#fdf7ff",
+          "primary-fixed": "#e9ddff",
+          "outline": "#7b7485",
+          "inverse-surface": "#322e3e",
+          "tertiary": "#203500",
+          "error-container": "#ffdad6",
+          "on-background": "#1d1a28",
+          "secondary": "#fc6036",
+          "primary-container": "#531cb3",
+          "surface-dim": "#ded7eb",
+          "outline-variant": "#cbc3d6",
+          "on-secondary-fixed": "#3c0800",
+          "tertiary-container": "#314d00",
+          "on-error-container": "#93000a",
+          "on-secondary": "#ffffff",
+          "surface-variant": "#e6dff4",
+          "on-primary-fixed": "#23005b",
+          "on-surface-variant": "#4a4454",
+          "error": "#ba1a1a",
+          "surface-container-high": "#ece5fa",
+          "on-secondary-container": "#591100",
+          "inverse-primary": "#d1bcff",
+          "surface-container-low": "#f8f1ff",
+          "secondary-fixed": "#ffdbd2",
+          "on-tertiary-container": "#84c500",
+          "secondary-container": "#fc6036",
+          "tertiary-fixed": "#abf926",
+          "on-primary-fixed-variant": "#551fb5",
+          "on-primary": "#ffffff",
+          "on-secondary-fixed-variant": "#881f00",
+          "inverse-on-surface": "#f5eeff",
+          "surface-tint": "#6d3fce",
+          "surface-container-highest": "#e6dff4",
+          "on-tertiary-fixed-variant": "#324f00",
+          "primary-fixed-dim": "#d1bcff",
+          "secondary-fixed-dim": "#ffb4a1",
+          "background": "#fdf7ff",
+          "on-primary-container": "#bfa4ff"
+        },
+        "borderRadius": {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-md": "1rem",
+          "space-lg": "1.5rem",
+          "space-sm": "0.5rem",
+          "margin-mobile": "1rem",
+          "gutter-mobile": "0.75rem",
+          "margin": "1rem",
+          "gutter": "1rem",
+          "space-xs": "0.25rem",
+          "space-xl": "2.25rem"
+        },
+        "fontFamily": {
+          "headline-lg": ["Plus Jakarta Sans"],
+          "label-lg": ["Plus Jakarta Sans"],
+          "label-sm": ["Plus Jakarta Sans"],
+          "headline-sm": ["Plus Jakarta Sans"],
+          "display-lg": ["Plus Jakarta Sans"],
+          "body-md": ["Plus Jakarta Sans"],
+          "title-md": ["Plus Jakarta Sans"],
+          "body-lg": ["Plus Jakarta Sans"],
+          "label-md": ["Plus Jakarta Sans"],
+          "headline-md": ["Plus Jakarta Sans"],
+          "display-lg-mobile": ["Plus Jakarta Sans"],
+          "body-sm": ["Plus Jakarta Sans"],
+          "headline-lg-mobile": ["Plus Jakarta Sans"]
+        },
+        "fontSize": {
+          "headline-lg": ["2rem", {"lineHeight": "2.5rem", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "label-lg": ["0.875rem", {"lineHeight": "1.125rem", "letterSpacing": "0.01em", "fontWeight": "700"}],
+          "label-sm": ["0.6875rem", {"lineHeight": "0.875rem", "letterSpacing": "0.03em", "fontWeight": "600"}],
+          "headline-sm": ["1.125rem", {"lineHeight": "1.5rem", "fontWeight": "600"}],
+          "display-lg": ["3.5rem", {"lineHeight": "4rem", "letterSpacing": "-0.03em", "fontWeight": "800"}],
+          "body-md": ["0.9375rem", {"lineHeight": "1.4375rem", "fontWeight": "400"}],
+          "title-md": ["1rem", {"lineHeight": "1.375rem", "fontWeight": "600"}],
+          "body-lg": ["1.0625rem", {"lineHeight": "1.625rem", "fontWeight": "400"}],
+          "label-md": ["0.75rem", {"lineHeight": "1rem", "letterSpacing": "0.02em", "fontWeight": "700"}],
+          "headline-md": ["1.375rem", {"lineHeight": "1.875rem", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+          "display-lg-mobile": ["2.5rem", {"lineHeight": "3rem", "letterSpacing": "-0.025em", "fontWeight": "800"}],
+          "body-sm": ["0.8125rem", {"lineHeight": "1.25rem", "fontWeight": "400"}],
+          "headline-lg-mobile": ["1.625rem", {"lineHeight": "2.125rem", "letterSpacing": "-0.015em", "fontWeight": "700"}]
+        }
+      }
+    }
+  };
+</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(83,28,179,0.06)]"><div class="px-margin h-6 pt-1 flex items-center justify-between text-on-surface-variant font-label-md text-label-md select-none"><span>10:42</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[16px]">battery_full</span></div></div><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0"><img alt="Karrito Logo" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida/ALJJyrC-c-ksvmt-IjUGwKyEqK7emgSIm3ykonyKVuaLGWP1tSUPNOG8tkUm1BJZzHhR_o7bCgt5a__-ffkM-cHymE-kV9BPnNavQCVhYEHIf3xTwQz0FfnK-_t5Cy3dpr2JmqZt8JNhRiCvutJ-ZEu04s4PsnrHEEqMFgD6A50kSjXM0ieMHDsiW8FNa3LyNhShRulGXGN8elywJ0NIzoYXwBM2C-dA_XWhu6nv7ie6iV-4Pw"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-title-md text-title-md text-on-surface font-bold tracking-tight truncate">Karrito</span><span class="px-1.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-md text-[10px] uppercase font-bold tracking-wide">AR</span></div><span class="font-label-md text-label-md text-on-surface-variant truncate">Mi Lista</span></div></div><div class="flex items-center gap-space-xs flex-shrink-0"><button aria-label="Buscar o escanear" class="w-12 h-12 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors"><span class="material-symbols-outlined">qr_code_scanner</span></button><button aria-label="Perfil de usuario" class="w-12 h-12 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity"><img alt="Profile" class="w-8 h-8 rounded-full object-cover shadow-[0_2px_6px_rgba(83,28,179,0.15)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeJwA54-L3QPbg69qp3_qbnmgZnofkMg14H9CgicKEM0-IQfVmjRKMxP989WmUSAAjDFMEP1wOp2y8tZWKg0NKMsOCG6rLCJMMrpGjblhC21yqo8gi_Wt6L5GXk8ePUXJTsqANDskaTKoWn2eVNE-mn9Lx9oHtEeJwcD1F0jVzpOJHyBCU9UQ9oF1qS1p_PcVWjwYw9lLwdQn5pQdYwlaPbi27QJZqa3HxyTvV8utk"/></button></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 px-margin bg-surface"><div class="flex flex-col w-full relative">
+<!-- Simulación del fondo atenuado de la app detrás del Bottom Sheet -->
+<div aria-hidden="true" class="space-y-space-md opacity-35 filter blur-[1px] select-none pointer-events-none pb-12">
+<div class="flex items-center justify-between bg-surface-container-low p-space-md rounded-2xl shadow-sm border border-surface-variant/40">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<div>
+<span class="font-title-md text-title-md font-bold text-on-surface">Mi Lista Actual</span>
+<p class="font-label-md text-label-md text-on-surface-variant">4 productos cargados</p>
+</div>
+</div>
+<span class="font-title-md text-title-md font-bold text-primary">$ 14.850</span>
+</div>
+<!-- Muestra de ítems de fondo desenfocados -->
+<div class="space-y-space-xs">
+<div class="h-16 bg-surface-container-lowest rounded-2xl p-space-sm flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-6 h-6 rounded-full bg-surface-container-high"></div>
+<div class="w-32 h-4 bg-surface-container-high rounded-full"></div>
+</div>
+<div class="w-16 h-4 bg-surface-container-high rounded-full"></div>
+</div>
+<div class="h-16 bg-surface-container-lowest rounded-2xl p-space-sm flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-6 h-6 rounded-full bg-surface-container-high"></div>
+<div class="w-24 h-4 bg-surface-container-high rounded-full"></div>
+</div>
+<div class="w-12 h-4 bg-surface-container-high rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Fondo de oscurecimiento (Scrim táctil) -->
+<div class="fixed inset-0 bg-inverse-surface/40 z-20 backdrop-blur-[2px] transition-opacity duration-300"></div>
+<!-- Bottom Sheet Expandido de Ítems Frecuentes -->
+<section class="fixed inset-x-0 bottom-0 z-30 flex flex-col max-h-[751px] bg-surface-container-lowest rounded-t-3xl shadow-2xl border-t border-surface-variant/50 overflow-hidden animate-[slideUp_0.35s_cubic-bezier(0.16,1,0.3,1)]">
+<!-- Grab handle táctil Material 3 -->
+<div class="w-full flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
+<div class="w-10 h-1.5 rounded-full bg-outline-variant/70"></div>
+</div>
+<!-- Cabecera amigable con Voseo y tono argentino -->
+<div class="px-margin pt-2 pb-space-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[24px]">history</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Tus compras habituales</h2>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md font-bold tracking-tight shadow-sm">1 Tap</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Tocá para sumar al changuito sin esperar a la IA.</p>
+</div>
+<!-- Barra de búsqueda interna -->
+<div class="px-margin pt-1 pb-space-xs">
+<div class="relative flex items-center w-full">
+<span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full h-12 pl-11 pr-4 bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md rounded-2xl border border-outline-variant/30 focus:outline-none focus:border-primary focus:bg-surface-container-lowest transition-all" id="frequent-search" placeholder="Buscar entre lo que siempre comprás..." type="text"/>
+</div>
+</div>
+<!-- Chips de categorías deslizables horizontalmente -->
+<div class="px-margin py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+<button class="category-chip active flex-shrink-0 h-[38px] px-4 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-primary/20" data-category="todos">
+<span class="material-symbols-outlined text-[18px]">apps</span>
+<span>Todos</span>
+</button>
+<button class="category-chip flex-shrink-0 h-[38px] px-4 rounded-full bg-surface-container-low text-on-surface-variant font-label-lg text-label-lg font-bold flex items-center gap-1.5 hover:bg-surface-container transition-all active:scale-95 border border-outline-variant/30" data-category="verduleria">
+<span class="material-symbols-outlined text-[18px]">nutrition</span>
+<span>Verdulería</span>
+</button>
+<button class="category-chip flex-shrink-0 h-[38px] px-4 rounded-full bg-surface-container-low text-on-surface-variant font-label-lg text-label-lg font-bold flex items-center gap-1.5 hover:bg-surface-container transition-all active:scale-95 border border-outline-variant/30" data-category="lacteos">
+<span class="material-symbols-outlined text-[18px]">water_drop</span>
+<span>Lácteos</span>
+</button>
+<button class="category-chip flex-shrink-0 h-[38px] px-4 rounded-full bg-surface-container-low text-on-surface-variant font-label-lg text-label-lg font-bold flex items-center gap-1.5 hover:bg-surface-container transition-all active:scale-95 border border-outline-variant/30" data-category="almacen">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+<span>Almacén</span>
+</button>
+<button class="category-chip flex-shrink-0 h-[38px] px-4 rounded-full bg-surface-container-low text-on-surface-variant font-label-lg text-label-lg font-bold flex items-center gap-1.5 hover:bg-surface-container transition-all active:scale-95 border border-outline-variant/30" data-category="limpieza">
+<span class="material-symbols-outlined text-[18px]">sanitizer</span>
+<span>Limpieza</span>
+</button>
+</div>
+<!-- Lista de productos frecuentes (Scrollable) -->
+<div class="px-margin flex-1 overflow-y-auto space-y-2.5 pb-28 pt-1" id="frequent-items-list">
+<!-- Ítem 1: Yerba Mate -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="almacen" data-name="yerba mate playadito">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Traditional yellow Argentine yerba mate packet resting on a kitchen table with warm morning light, close up shot, vibrant and appetizing grocery product photo." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCumhNsH-cjSLPwLo-O11nW1TC-q7qsLSBIwwyI7XTwi93Bc99jXkPqrP3ANDN-XRgmgGWObfx5fcKJI8X4D6VR2rtLsilHrNaviClnD-1FD9Wo2l03mnM_7AkF9Pvzmgm-HiAlMWlArhbVVqVDHwPO0xP7_WmdOgrsjiwKHyAYsQ9WNYaiE22FlssouKMJ-CeRolqYZ0XVb-uiA7tke_IC09JNy_zVs2XUqP5AgfuX"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Yerba mate Playadito 1kg</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 14 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+<!-- Ítem 2: Leche entera sachet (Ya agregada) -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest border-2 border-primary/25 shadow-sm transition-all" data-category="lacteos" data-name="leche entera sachet">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Fresh milk sachet on a clean kitchen counter, soft daylight, fresh cold dairy grocery packaging in Argentina." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEHAV7CftQTtyxceITkI-V6nMrLJdYZSYWDu2AD7Fl320iWT_lguQfk5npNcYG7aXLV5Jq-c9CPUNfsf5VgGaPguydI8uDt1ijqeJ6YQJKhty8bpwIyugMfYEms27Xql-ii4_7mtWhhTxKngGowzZnNpG7AChXN53GcplyxuCnWpiz1ZAmyT1MM9M7B5wtVBi44JnRzN7ZWhP8Jp4pA0ZZ_xlJBxMPWhSm8YCW-7zA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Leche entera sachet</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 12 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn added flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Agregado</span>
+</button>
+</div>
+<!-- Ítem 3: Pan francés / miñón -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="almacen" data-name="pan frances mignon">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Crusty fresh artisanal French bread rolls in a rustic bakery basket, golden brown crisp crust, warm bakery lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvAQ_35hAfc4V7PRnqG4B3pZzy0kugwiffBuU683Cj4qMSFyFYDyKG9MzNaZxtqntqEqwBp66_pqHKNGcIcAbKF0aFEQx0oiP1qrQpDNZWuLR2ZKw7S-WnDES79fkV8tR3TEpCQxAol5U1lrySTWdKUtcV7BGRWhxnfdyhFa-VxzzNzCuFTRhi3rRSr0kBhka-C1BfSXXEGdP2GBDmd6x-1-bU2A5eE5OP2SGFFrlC"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Pan francés / miñón</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 10 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+<!-- Ítem 4: Aceite de girasol 1.5L -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="almacen" data-name="aceite girasol">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Clear bottle of golden sunflower cooking oil, warm luminous pantry background, culinary ingredient product view." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA44ZSEAphxY5hBUPE8P15g_2KzElmiLIfzCDexEa-m3vZfr9XTcVkUlBdPXJ_rZXb8PaGjiCIzb7FSdtO5KuZlTBh1ClbzXo4hTJhDJph1wJ9TNRMnQtg8rqvgZNbeVc06KRzeNQPkO17aZap0ZfPkIKWrUhzBJ7bIkrdUZQdCvsFw41IHRY2VaPWzooH1t_20kbnS2Nrog_lbnBVLpVbQUDGWdPWDu9NbFDBZ0kuZ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Aceite de girasol 1.5L</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 8 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+<!-- Ítem 5: Huevos de campo x12 -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="verduleria" data-name="huevos campo">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Dozen fresh brown farm eggs in an open cardboard carton, natural studio lighting with rustic wooden tabletop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGOFtSg-oYF0yHJNdpVNfGLGVGfDxPalyySfgfOFPS_CTad4U6vXIdPWqxq9ly-Kvx9yB837DUW26RRnAvT_3PtR36pGEEEGdIiaZAOo8ynjH2toGf0ggwtUI4AsP6vHQTzx5mtXWphSO5Z27RaA3ToEWIGScxs8u0rd_wzxwzPDW9fMw3wIZ2S82gXdbvxxMKbI64pfuyFrTMwwkJVOh9NyZdBTtcXXI611p6vX4z"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Huevos de campo x12</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 7 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+<!-- Ítem 6: Papel higiénico x4 rollos -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="limpieza" data-name="papel higienico">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Pack of four white soft toilet paper rolls wrapped in clean clear packaging, bright domestic household lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJH_myq37IbDI5C48xmgzL6o5FNMpwqzhbYcNNcEtmvkGMdoRCxwjxE2ZPL-TCDr6yHfjPL_fSLDevEFIXbjpiYoWtQgZHNrITNiBbY79aHQRMgvJTaUGp-D-iumGazYoAUFLytAk2j8E6KA0uWdKxd82hcAR4FgimhkE5msVVA8LLa7JlC1isZR2OivHoH87SvuJ_rCUM_CsR7xTYH9XVGIsDw0fjLJomPUJnQAg-"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Papel higiénico x4 rollos</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 6 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+<!-- Ítem 7: Café molido suave 250g -->
+<div class="product-item flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all border border-outline-variant/20 shadow-sm" data-category="almacen" data-name="cafe molido suave">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container flex items-center justify-center ring-1 ring-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="A pouch of aromatic ground coffee next to a ceramic cup with roasted coffee beans scattered on a warm wooden counter." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3Ttj9fdDPsca9OYfd4lVBtuXzSINtXktZ4fXkhIxFgN-ma1O_amws5LaLzAmhrw0g0iJGqO0FQQc80wja8OYg1lcwKWTNtDyIt_2rwf6K9jhiiYExnQItoXxJMmoFCaDBdmKRQ01EeDt89kOIV1Vbu60HsKSsN3quBgaZtXKX323SdJSHf0zUyZhYwXm0Jrv_ZafuSZL0wwwaozEu-H1jLRQSTcAKEcdIWVcddfje"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface truncate">Café molido suave 250g</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[14px] text-secondary">repeat</span>
+<span>Comprado 5 veces</span>
+</div>
+</div>
+</div>
+<button class="toggle-add-btn flex-shrink-0 min-h-[44px] px-3.5 py-1.5 rounded-full bg-primary text-on-primary hover:bg-[#3a008c] font-label-lg text-label-lg font-bold flex items-center gap-1 shadow-md shadow-primary/20 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Sumar</span>
+</button>
+</div>
+</div>
+<!-- Botón Inferior Flotante de Cierre con Contador (Violeta Eléctrico #531CB3 con badge Lima/Naranja) -->
+<div class="absolute bottom-0 inset-x-0 p-margin bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest to-transparent pt-6">
+<button class="w-full h-14 rounded-2xl bg-primary text-on-primary flex items-center justify-between px-space-md shadow-xl shadow-primary/30 active:scale-[0.98] transition-transform hover:bg-[#3a008c]" id="close-sheet-btn">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[22px]">check</span>
+<span class="font-title-md text-title-md font-bold">Listo, volver a la lista</span>
+</div>
+<div class="flex items-center gap-1.5 bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full font-label-md text-label-md font-extrabold shadow-sm">
+<span class="material-symbols-outlined text-[16px]">shopping_bag</span>
+<span id="counter-text">1 agregado hoy</span>
+</div>
+</button>
+</div>
+</section>
+</div>
+<script>
+  (function() {
+    let addedCount = 1; // Ya hay 1 agregado inicialmente (Leche)
+    const counterText = document.getElementById('counter-text');
+    const searchInput = document.getElementById('frequent-search');
+    const categoryChips = document.querySelectorAll('.category-chip');
+    const productItems = document.querySelectorAll('.product-item');
+
+    function updateCounter() {
+      if (addedCount === 1) {
+        counterText.textContent = '1 agregado hoy';
+      } else {
+        counterText.textContent = `${addedCount} ítems agregados hoy`;
+      }
+    }
+
+    // Toggle de agregar/quitar ítems con animación táctil
+    document.querySelectorAll('.toggle-add-btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isAdded = this.classList.contains('added');
+        const parentRow = this.closest('.product-item');
+
+        if (!isAdded) {
+          this.classList.add('added', 'bg-primary-fixed', 'text-on-primary-fixed');
+          this.classList.remove('bg-primary', 'text-on-primary', 'hover:bg-[#3a008c]', 'shadow-md', 'shadow-primary/20');
+          this.innerHTML = '<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: \'FILL\' 1;">check_circle</span><span>Agregado</span>';
+          parentRow.classList.add('bg-surface-container-lowest', 'border-2', 'border-primary/25');
+          parentRow.classList.remove('bg-surface-container-low', 'border-outline-variant/20');
+          addedCount++;
+        } else {
+          this.classList.remove('added', 'bg-primary-fixed', 'text-on-primary-fixed');
+          this.classList.add('bg-primary', 'text-on-primary', 'hover:bg-[#3a008c]', 'shadow-md', 'shadow-primary/20');
+          this.innerHTML = '<span class="material-symbols-outlined text-[18px]">add</span><span>Sumar</span>';
+          parentRow.classList.remove('bg-surface-container-lowest', 'border-2', 'border-primary/25');
+          parentRow.classList.add('bg-surface-container-low', 'border-outline-variant/20');
+          addedCount = Math.max(0, addedCount - 1);
+        }
+        updateCounter();
+      });
+    });
+
+    // Filtros por Categoría
+    categoryChips.forEach(chip => {
+      chip.addEventListener('click', function() {
+        categoryChips.forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary', 'shadow-md', 'shadow-primary/20');
+          c.classList.add('bg-surface-container-low', 'text-on-surface-variant', 'border', 'border-outline-variant/30');
+        });
+        this.classList.remove('bg-surface-container-low', 'text-on-surface-variant', 'border', 'border-outline-variant/30');
+        this.classList.add('bg-primary', 'text-on-primary', 'shadow-md', 'shadow-primary/20');
+
+        const selectedCat = this.getAttribute('data-category');
+        productItems.forEach(item => {
+          const itemCat = item.getAttribute('data-category');
+          if (selectedCat === 'todos' || itemCat === selectedCat) {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Filtro por Búsqueda rápida
+    searchInput.addEventListener('input', function(e) {
+      const term = e.target.value.toLowerCase().trim();
+      productItems.forEach(item => {
+        const name = item.getAttribute('data-name');
+        if (name.includes(term)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(83,28,179,0.06)]" data-active-classes="text-primary font-bold"><div class="flex justify-around items-center h-20 px-space-sm max-w-md mx-auto"><a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-space-xs rounded-2xl transition-colors active:scale-95 text-primary font-bold" data-path="mi-lista" href="#"><span class="material-symbols-outlined text-[26px]">shopping_basket</span><span class="font-label-md text-label-md mt-0.5">Mi Lista</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-space-xs rounded-2xl text-on-surface-variant transition-colors hover:text-on-surface active:scale-95" data-path="precios-y-ofertas" href="#"><span class="material-symbols-outlined text-[26px]">sell</span><span class="font-label-md text-label-md mt-0.5">Ofertas</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-space-xs rounded-2xl text-on-surface-variant transition-colors hover:text-on-surface active:scale-95" data-path="despensa-y-stock" href="#"><span class="material-symbols-outlined text-[26px]">kitchen</span><span class="font-label-md text-label-md mt-0.5">Despensa</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-space-xs rounded-2xl text-on-surface-variant transition-colors hover:text-on-surface active:scale-95" data-path="historial-y-gastos" href="#"><span class="material-symbols-outlined text-[26px]">analytics</span><span class="font-label-md text-label-md mt-0.5">Gastos</span></a></div></nav></body></html>

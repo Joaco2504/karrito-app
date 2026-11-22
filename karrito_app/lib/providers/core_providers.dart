@@ -6,6 +6,7 @@ import '../data/local/app_database.dart';
 import '../data/repositories/shopping_repository.dart';
 import '../data/services/ai_classifier_service.dart';
 import '../data/services/auth_service.dart';
+import '../data/services/sound_service.dart';
 import '../data/services/sync_service.dart';
 import '../data/services/wakelock_service.dart';
 
@@ -32,6 +33,14 @@ final aiClassifierServiceProvider = Provider<AiClassifierService>((ref) {
 
 final wakelockServiceProvider = Provider<WakelockService>((ref) {
   return PlatformWakelockService();
+});
+
+final soundFeedbackServiceProvider = Provider<SoundFeedbackService>((ref) {
+  final service = AudioplayersSoundService();
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
 });
 
 final shoppingRepositoryProvider = Provider<ShoppingRepository>((ref) {

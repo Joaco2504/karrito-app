@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../domain/services/item_text_parser.dart';
 import '../../providers/shopping_providers.dart';
+import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
 import 'karrito_toast.dart';
 
@@ -42,9 +44,10 @@ class FrequentItemsSheet extends ConsumerStatefulWidget {
 
 class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _addedKeysThisSession = <String>{};
+  int _sessionAddedCount = 0;
   String _query = '';
   String? _selectedStoreFilter;
-  String? _inlineNotice;
 
   @override
   void dispose() {
@@ -63,6 +66,7 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     final learnedAsync = ref.watch(learnedItemsProvider);
     final allLearned = learnedAsync.value ?? const <LearnedItemEntity>[];
 
@@ -92,12 +96,12 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
     }).toList();
 
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.80;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.84;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 4, 16, 18 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 2, 16, 18 + bottomInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,32 +109,79 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      AppStrings.frequentItemsTitle,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: karritoColors.accentContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.history_rounded,
+                      size: 21,
+                      color: karritoColors.accentSoft,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                AppStrings.frequentItemsTitle,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: karritoColors.lime,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                '1 toque',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: karritoColors.onLime,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          AppStrings.frequentItemsSubtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: karritoColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: karritoColors.lime,
-                      borderRadius: BorderRadius.circular(999),
+                  ),
+                  IconButton(
+                    tooltip: AppStrings.doneButton,
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(
+                      backgroundColor: karritoColors.fieldSurface,
                     ),
-                    child: Text(
-                      '1 toque',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: karritoColors.onLime,
-                      ),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 19,
+                      color: karritoColors.textSecondary,
                     ),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
@@ -210,6 +261,13 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
+                          avatar: Icon(
+                            StoreVisuals.forStore(store).icon,
+                            size: 15,
+                            color: effectiveStoreFilter == store
+                                ? karritoColors.onAccent
+                                : karritoColors.textSecondary,
+                          ),
                           label: Text(
                             store,
                             style: TextStyle(
@@ -229,46 +287,6 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                               setState(() => _selectedStoreFilter = store),
                         ),
                       ),
-                  ],
-                ),
-              ),
-            ],
-            if (_inlineNotice != null) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: karritoColors.completedContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: karritoColors.lime,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_rounded,
-                        size: 14,
-                        color: karritoColors.onLime,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _inlineNotice!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: karritoColors.onCompletedContainer,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -324,13 +342,27 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                     final item = filtered[index];
                     final title = _displayTitle(item);
                     final countLabel = item.useCount == 1
-                        ? '1 vez'
-                        : '${item.useCount} veces';
+                        ? 'Comprado 1 vez'
+                        : 'Comprado ${item.useCount} veces';
+                    final wasAdded = _addedKeysThisSession.contains(
+                      item.normalizedName,
+                    );
+                    final aisleVisual = StoreVisuals.forAisle(
+                      item.preferredAisle,
+                    );
+
                     return Material(
-                      color: karritoColors.fieldSurface,
+                      color: wasAdded
+                          ? karritoColors.checkedTileSurface
+                          : karritoColors.fieldSurface,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: karritoColors.border, width: 1),
+                        borderRadius: BorderRadius.circular(22),
+                        side: BorderSide(
+                          color: wasAdded
+                              ? karritoColors.accentSoft.withValues(alpha: 0.6)
+                              : karritoColors.border,
+                          width: 1,
+                        ),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
@@ -341,7 +373,8 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                               title,
                             );
                             setState(() {
-                              _inlineNotice = notice;
+                              _addedKeysThisSession.add(item.normalizedName);
+                              _sessionAddedCount++;
                             });
                             KarritoToast.show(
                               context,
@@ -351,11 +384,27 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                           }
                         },
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 58),
+                          constraints: const BoxConstraints(minHeight: 64),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
                             child: Row(
                               children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: aisleVisual.color.withValues(
+                                      alpha: isDark ? 0.22 : 0.16,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    aisleVisual.icon,
+                                    size: 20,
+                                    color: aisleVisual.color,
+                                  ),
+                                ),
+                                const SizedBox(width: 11),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -363,19 +412,35 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                     children: [
                                       Text(
                                         title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: theme.textTheme.bodyLarge
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w700,
+                                              fontWeight: FontWeight.w800,
                                             ),
                                       ),
                                       const SizedBox(height: 2),
-                                      Text(
-                                        '${item.preferredStore} · ${item.preferredAisle} · $countLabel',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color:
-                                                  karritoColors.textSecondary,
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.repeat_rounded,
+                                            size: 13,
+                                            color: karritoColors.cta,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              '$countLabel · ${item.preferredAisle}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: karritoColors
+                                                        .textSecondary,
+                                                  ),
                                             ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -385,37 +450,48 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                   visualDensity: VisualDensity.compact,
                                   icon: Icon(
                                     Icons.delete_outline_rounded,
-                                    size: 19,
+                                    size: 18,
                                     color: karritoColors.textSecondary,
                                   ),
                                   onPressed: () async {
                                     await widget.onRemoveFrequent(item);
                                   },
                                 ),
-                                Container(
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
+                                    horizontal: 11,
+                                    vertical: 7,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: karritoColors.accent,
+                                    color: wasAdded
+                                        ? karritoColors.accentContainer
+                                        : karritoColors.accent,
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        Icons.add_rounded,
-                                        size: 16,
-                                        color: karritoColors.onAccent,
+                                        wasAdded
+                                            ? Icons.check_rounded
+                                            : Icons.add_rounded,
+                                        size: 15,
+                                        color: wasAdded
+                                            ? karritoColors.onAccentContainer
+                                            : karritoColors.onAccent,
                                       ),
-                                      const SizedBox(width: 2),
+                                      const SizedBox(width: 3),
                                       Text(
-                                        'Sumar',
+                                        wasAdded
+                                            ? AppStrings.frequentAddedBadge
+                                            : 'Sumar',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w800,
-                                          color: karritoColors.onAccent,
+                                          color: wasAdded
+                                              ? karritoColors.onAccentContainer
+                                              : karritoColors.onAccent,
                                         ),
                                       ),
                                     ],
@@ -430,10 +506,55 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                   },
                 ),
               ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(AppStrings.doneButton),
+            const SizedBox(height: 14),
+            KarritoBounceButton(
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_rounded, size: 19),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _sessionAddedCount > 0
+                            ? AppStrings.frequentDoneButton
+                            : AppStrings.doneButton,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (_sessionAddedCount > 0) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: karritoColors.lime,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          AppStrings.frequentSessionCount(_sessionAddedCount),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: karritoColors.onLime,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ],
         ),

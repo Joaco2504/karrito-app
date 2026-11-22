@@ -29,6 +29,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
 
     final currentCity =
         (prefs != null && StoreHierarchy.cities.contains(prefs.city))
@@ -36,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         : StoreHierarchy.defaultCity;
     final currentTheme = prefs?.themeMode ?? 'system';
     final keepScreenOn = prefs?.keepScreenOn ?? true;
+    final soundEnabled = prefs?.soundEnabled ?? true;
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.settingsTitle)),
@@ -44,177 +46,384 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
               children: [
-                Text(
-                  AppStrings.cloudBackupSection,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                // Profile & Cloud Sync Hero Card (matches Figma 9._ajustes_y_configuraci_n)
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colorScheme.surface
+                        : karritoColors.aisleCardSurface,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: karritoColors.border, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: karritoColors.shadowTint,
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 10),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: account.isAnonymous
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: karritoColors.accentContainer,
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Icon(
-                                      Icons.cloud_off_outlined,
-                                      color: karritoColors.accentSoft,
-                                      size: 20,
-                                    ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -24,
+                        bottom: -24,
+                        child: Container(
+                          width: 112,
+                          height: 112,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: karritoColors.accent.withValues(
+                              alpha: isDark ? 0.16 : 0.08,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: account.isAnonymous
+                                        ? karritoColors.accentContainer
+                                        : karritoColors.lime,
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      AppStrings.guestAccountTitle,
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                AppStrings.guestAccountSubtitle,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: karritoColors.textSecondary,
-                                  height: 1.4,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              KarritoBounceButton(
-                                enabled: !uiState.isLinkingGoogle,
-                                child: FilledButton.icon(
-                                  onPressed: uiState.isLinkingGoogle
-                                      ? null
-                                      : controller.linkGoogleAccount,
-                                  icon: uiState.isLinkingGoogle
-                                      ? SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: colorScheme.onPrimary,
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.login_rounded,
-                                          size: 18,
-                                        ),
-                                  label: Text(
-                                    uiState.isLinkingGoogle
-                                        ? AppStrings.linkingGoogleLabel
-                                        : AppStrings.linkGoogleButton,
+                                  child: Icon(
+                                    account.isAnonymous
+                                        ? Icons.person_outline_rounded
+                                        : Icons.cloud_done_outlined,
+                                    color: account.isAnonymous
+                                        ? karritoColors.accentSoft
+                                        : karritoColors.onLime,
+                                    size: 24,
                                   ),
                                 ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      color: karritoColors.lime,
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Icon(
-                                      Icons.cloud_done_outlined,
-                                      color: karritoColors.onLime,
-                                      size: 21,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppStrings.linkedAccountTitle,
-                                          style: theme.textTheme.titleSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                        ),
-                                        if (account.email != null &&
-                                            account.email!.isNotEmpty)
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        children: [
                                           Text(
-                                            account.email!,
-                                            style: theme.textTheme.bodySmall
+                                            account.isAnonymous
+                                                ? AppStrings.guestAccountTitle
+                                                : AppStrings.linkedAccountTitle,
+                                            style: theme.textTheme.titleMedium
                                                 ?.copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                          ),
+                                          if (account.isAnonymous)
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    karritoColors.fieldSurface,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                AppStrings.settingsLocalBadge,
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w700,
                                                   color: karritoColors
                                                       .textSecondary,
                                                 ),
-                                          ),
-                                      ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        account.isAnonymous
+                                            ? AppStrings.cloudBackupSection
+                                            : (account.email ??
+                                                  AppStrings
+                                                      .linkedAccountTitle),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  karritoColors.textSecondary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: account.isAnonymous
+                                        ? karritoColors.ctaContainer
+                                        : karritoColors.completedContainer,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: account.isAnonymous
+                                          ? karritoColors.cta.withValues(
+                                              alpha: 0.35,
+                                            )
+                                          : karritoColors.completed.withValues(
+                                              alpha: 0.35,
+                                            ),
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              KarritoBounceButton(
-                                enabled: !uiState.isSyncing,
-                                child: OutlinedButton.icon(
-                                  onPressed: uiState.isSyncing
-                                      ? null
-                                      : () => controller.syncNow(
-                                          userTriggered: true,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: account.isAnonymous
+                                              ? karritoColors.cta
+                                              : karritoColors.completed,
                                         ),
-                                  icon: uiState.isSyncing
-                                      ? SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: karritoColors.accentSoft,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.sync_rounded,
-                                          size: 18,
-                                          color: karritoColors.accentSoft,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        account.isAnonymous
+                                            ? AppStrings.settingsNoBackupBadge
+                                            : AppStrings.settingsBackedUpBadge,
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: account.isAnonymous
+                                              ? karritoColors.onCtaContainer
+                                              : karritoColors
+                                                    .onCompletedContainer,
                                         ),
-                                  label: Text(
-                                    uiState.isSyncing
-                                        ? AppStrings.syncingNowLabel
-                                        : AppStrings.syncNowButton,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? karritoColors.fieldSurface
+                                    : colorScheme.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: karritoColors.border.withValues(
+                                    alpha: 0.8,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (account.isAnonymous) ...[
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                karritoColors.accentContainer,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.cloud_sync_rounded,
+                                            size: 17,
+                                            color: karritoColors.accentSoft,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            AppStrings.guestAccountSubtitle,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme.onSurface,
+                                                  height: 1.35,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+                                    KarritoBounceButton(
+                                      enabled: !uiState.isLinkingGoogle,
+                                      child: FilledButton.icon(
+                                        onPressed: uiState.isLinkingGoogle
+                                            ? null
+                                            : controller.linkGoogleAccount,
+                                        icon: uiState.isLinkingGoogle
+                                            ? SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color:
+                                                          colorScheme.onPrimary,
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.login_rounded,
+                                                size: 18,
+                                              ),
+                                        label: Text(
+                                          uiState.isLinkingGoogle
+                                              ? AppStrings.linkingGoogleLabel
+                                              : AppStrings.linkGoogleButton,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    KarritoBounceButton(
+                                      enabled: !uiState.isSyncing,
+                                      child: OutlinedButton.icon(
+                                        onPressed: uiState.isSyncing
+                                            ? null
+                                            : () => controller.syncNow(
+                                                userTriggered: true,
+                                              ),
+                                        icon: uiState.isSyncing
+                                            ? SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: karritoColors
+                                                          .accentSoft,
+                                                    ),
+                                              )
+                                            : Icon(
+                                                Icons.sync_rounded,
+                                                size: 18,
+                                                color: karritoColors.accentSoft,
+                                              ),
+                                        label: Text(
+                                          uiState.isSyncing
+                                              ? AppStrings.syncingNowLabel
+                                              : AppStrings.syncNowButton,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  AppStrings.settingsGeneralSection,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                const SizedBox(height: 22),
+
+                // SECTION 1: Apariencia y pantalla
+                const _SectionHeading(
+                  icon: Icons.palette_outlined,
+                  title: AppStrings.settingsAppearanceSection,
                 ),
                 const SizedBox(height: 10),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const KarritoFieldLabel(
+                          AppStrings.settingsAppearanceLabel,
+                        ),
+                        const SizedBox(height: 8),
+                        SegmentedButton<String>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment<String>(
+                              value: 'light',
+                              icon: Icon(Icons.light_mode_rounded, size: 16),
+                              label: Text(AppStrings.themeLightLabel),
+                            ),
+                            ButtonSegment<String>(
+                              value: 'dark',
+                              icon: Icon(Icons.dark_mode_rounded, size: 16),
+                              label: Text(AppStrings.themeDarkLabel),
+                            ),
+                            ButtonSegment<String>(
+                              value: 'system',
+                              icon: Icon(
+                                Icons.brightness_auto_rounded,
+                                size: 16,
+                              ),
+                              label: Text(AppStrings.themeSystemLabel),
+                            ),
+                          ],
+                          selected: <String>{currentTheme},
+                          onSelectionChanged: (selection) {
+                            if (selection.isNotEmpty) {
+                              controller.setThemeMode(selection.first);
+                            }
+                          },
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Divider(height: 1),
+                        ),
+                        _PreferenceToggleRow(
+                          icon: Icons.stay_current_portrait_rounded,
+                          iconBg: keepScreenOn
+                              ? karritoColors.ctaContainer
+                              : karritoColors.fieldSurface,
+                          iconColor: keepScreenOn
+                              ? karritoColors.cta
+                              : karritoColors.textSecondary,
+                          title: AppStrings.settingsKeepScreenOnTitle,
+                          subtitle: AppStrings.settingsKeepScreenOnSubtitle,
+                          value: keepScreenOn,
+                          showActiveBadge: true,
+                          onChanged: (val) =>
+                              controller.setKeepScreenOn(val, notify: false),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+
+                // SECTION 2: Localidad
+                const _SectionHeading(
+                  icon: Icons.storefront_outlined,
+                  title: AppStrings.settingsLocationSection,
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -226,92 +435,136 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           options: StoreHierarchy.cities,
                           onChanged: controller.setCity,
                         ),
-                        const SizedBox(height: 18),
-                        const KarritoFieldLabel(
-                          AppStrings.settingsAppearanceLabel,
-                        ),
-                        const SizedBox(height: 8),
-                        SegmentedButton<String>(
-                          showSelectedIcon: false,
-                          segments: const [
-                            ButtonSegment<String>(
-                              value: 'system',
-                              label: Text(AppStrings.themeSystemLabel),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: karritoColors.cta,
                             ),
-                            ButtonSegment<String>(
-                              value: 'light',
-                              label: Text(AppStrings.themeLightLabel),
-                            ),
-                            ButtonSegment<String>(
-                              value: 'dark',
-                              label: Text(AppStrings.themeDarkLabel),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                AppStrings.settingsCityHelper,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: karritoColors.textSecondary,
+                                  height: 1.35,
+                                ),
+                              ),
                             ),
                           ],
-                          selected: <String>{currentTheme},
-                          onSelectionChanged: (selection) {
-                            if (selection.isNotEmpty) {
-                              controller.setThemeMode(selection.first);
-                            }
-                          },
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 22),
+
+                // SECTION 3: Preferencias de compra (Sonido al tachar + Guía)
+                const _SectionHeading(
+                  icon: Icons.tune_rounded,
+                  title: AppStrings.settingsShoppingSection,
+                ),
+                const SizedBox(height: 10),
                 Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        value: keepScreenOn,
-                        onChanged: (val) =>
-                            controller.setKeepScreenOn(val, notify: false),
-                        secondary: Icon(
-                          Icons.stay_current_portrait_rounded,
-                          color: keepScreenOn
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _PreferenceToggleRow(
+                          icon: soundEnabled
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          iconBg: soundEnabled
+                              ? karritoColors.accentContainer
+                              : karritoColors.fieldSurface,
+                          iconColor: soundEnabled
                               ? karritoColors.accentSoft
                               : karritoColors.textSecondary,
+                          title: AppStrings.settingsSoundOnCheckTitle,
+                          subtitle: AppStrings.settingsSoundOnCheckSubtitle,
+                          value: soundEnabled,
+                          showActiveBadge: true,
+                          onChanged: controller.setSoundEnabled,
                         ),
-                        title: const Text(AppStrings.settingsKeepScreenOnTitle),
-                        subtitle: const Text(
-                          AppStrings.settingsKeepScreenOnSubtitle,
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Divider(height: 1),
                         ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: Icon(
-                          Icons.menu_book_outlined,
-                          color: karritoColors.accentSoft,
-                        ),
-                        title: const Text(AppStrings.settingsGuideTitle),
-                        subtitle: const Text(AppStrings.settingsGuideSubtitle),
-                        trailing: KarritoBounceButton(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const OnboardingScreen(
-                                    isReviewMode: true,
+                        Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: karritoColors.accentContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.menu_book_outlined,
+                                size: 19,
+                                color: karritoColors.accentSoft,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppStrings.settingsGuideTitle,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    AppStrings.settingsGuideSubtitle,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: karritoColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            KarritoBounceButton(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const OnboardingScreen(
+                                        isReviewMode: true,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(0, 40),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
                                   ),
                                 ),
-                              );
-                            },
-                            child: const Text(
-                              AppStrings.settingsViewGuideButton,
+                                child: const Text(
+                                  AppStrings.settingsViewGuideButton,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  AppStrings.faqSectionTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                const SizedBox(height: 22),
+
+                // SECTION 4: Preguntas frecuentes
+                const _SectionHeading(
+                  icon: Icons.quiz_outlined,
+                  title: AppStrings.faqSectionTitle,
                 ),
                 const SizedBox(height: 10),
                 for (var i = 0; i < AppStrings.faqEntries.length; i++) ...[
@@ -327,11 +580,140 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ],
+                const SizedBox(height: 24),
+                Text(
+                  AppStrings.settingsFooterNote,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: karritoColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final karritoColors = Theme.of(context).extension<KarritoColors>()!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 19, color: karritoColors.accentSoft),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+              color: karritoColors.accentSoft,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferenceToggleRow extends StatelessWidget {
+  const _PreferenceToggleRow({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+    this.showActiveBadge = false,
+  });
+
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool showActiveBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final karritoColors = theme.extension<KarritoColors>()!;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+          child: Icon(icon, size: 19, color: iconColor),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (showActiveBadge && value)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: karritoColors.lime,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        AppStrings.settingsActiveBadge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: karritoColors.onLime,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: karritoColors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Switch(value: value, onChanged: onChanged),
+      ],
     );
   }
 }
@@ -364,7 +746,7 @@ class _FaqAccordionCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: isOpen ? karritoColors.accentSoft : karritoColors.border,
           width: isOpen ? 1.5 : 1.0,
@@ -423,12 +805,19 @@ class _FaqAccordionCard extends StatelessWidget {
                   firstChild: const SizedBox.shrink(),
                   secondChild: Padding(
                     padding: const EdgeInsets.only(top: 12, left: 21, right: 4),
-                    child: Text(
-                      answer,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: karritoColors.textSecondary,
-                        height: 1.48,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Divider(height: 1),
+                        const SizedBox(height: 10),
+                        Text(
+                          answer,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: karritoColors.textSecondary,
+                            height: 1.48,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   crossFadeState: isOpen

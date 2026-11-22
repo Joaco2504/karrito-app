@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
 import 'karrito_bounce_button.dart';
@@ -174,6 +175,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     final aisleOptions = _aisleOptions(_selectedStore);
@@ -181,217 +183,390 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
       _selectedAisle = aisleOptions.first;
     }
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 22 + bottomInset),
-      child: SingleChildScrollView(
+    final storeVisual = StoreVisuals.forStore(_selectedStore);
+    final aisleVisual = StoreVisuals.forAisle(_selectedAisle);
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 2, 20, 18 + bottomInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              AppStrings.editItemTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const KarritoFieldLabel(AppStrings.itemNameLabel),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _nameController,
-              textCapitalization: TextCapitalization.sentences,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-              decoration: InputDecoration(
-                hintText: AppStrings.itemNameHint,
-                errorText: _nameError,
-              ),
-              onChanged: (_) {
-                if (_nameError != null) {
-                  setState(() => _nameError = null);
-                }
-              },
-            ),
-            const SizedBox(height: 14),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: karritoColors.accentContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    size: 21,
+                    color: karritoColors.accentSoft,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  flex: 3,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const KarritoFieldLabel(AppStrings.itemQuantityLabel),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        decoration: BoxDecoration(
-                          color: karritoColors.fieldSurface,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: karritoColors.border,
-                            width: 1,
-                          ),
+                      Text(
+                        AppStrings.editItemTitle,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 38,
-                              height: 38,
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                tooltip: 'Restar cantidad',
-                                style: IconButton.styleFrom(
-                                  backgroundColor: colorScheme.surface,
-                                  foregroundColor: colorScheme.onSurface,
-                                ),
-                                icon: const Icon(
-                                  Icons.remove_rounded,
-                                  size: 20,
-                                ),
-                                onPressed: () => _stepQuantity(-1),
-                              ),
-                            ),
-                            Expanded(
-                              child: TextField(
-                                controller: _qtyController,
-                                textAlign: TextAlign.center,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                  color: colorScheme.onSurface,
-                                ),
-                                decoration: const InputDecoration(
-                                  filled: false,
-                                  isDense: true,
-                                  constraints: BoxConstraints(minHeight: 44),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 10,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 38,
-                              height: 38,
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                tooltip: 'Sumar cantidad',
-                                style: IconButton.styleFrom(
-                                  backgroundColor: karritoColors.accent,
-                                  foregroundColor: karritoColors.onAccent,
-                                ),
-                                icon: const Icon(Icons.add_rounded, size: 20),
-                                onPressed: () => _stepQuantity(1),
-                              ),
-                            ),
-                          ],
+                      ),
+                      Text(
+                        AppStrings.editItemSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: karritoColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: KarritoSelectorField<String>(
-                    label: AppStrings.itemUnitLabel,
-                    sheetTitle: AppStrings.selectUnitTitle,
-                    value: _selectedUnit,
-                    options: _unitOptions(),
-                    onChanged: (value) {
-                      setState(() => _selectedUnit = value);
-                    },
+                IconButton(
+                  tooltip: AppStrings.cancelButton,
+                  style: IconButton.styleFrom(
+                    backgroundColor: karritoColors.fieldSurface,
                   ),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: karritoColors.textSecondary,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _quickUnits.map((unit) {
-                final active = _selectedUnit == unit;
-                return ChoiceChip(
-                  label: Text(
-                    unit,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: active
-                          ? karritoColors.onAccent
-                          : karritoColors.textSecondary,
+            const SizedBox(height: 14),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const KarritoFieldLabel(AppStrings.itemNameLabel),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: AppStrings.itemNameHint,
+                        errorText: _nameError,
+                        suffixIcon: _nameController.text.isNotEmpty
+                            ? IconButton(
+                                tooltip: 'Limpiar',
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  size: 18,
+                                  color: karritoColors.textSecondary,
+                                ),
+                                onPressed: () {
+                                  _nameController.clear();
+                                  setState(() => _nameError = null);
+                                },
+                              )
+                            : null,
+                      ),
+                      onChanged: (_) {
+                        setState(() {
+                          if (_nameError != null) _nameError = null;
+                        });
+                      },
                     ),
-                  ),
-                  selected: active,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: karritoColors.fieldSurface,
-                  selectedColor: karritoColors.accent,
-                  shape: const StadiumBorder(),
-                  side: BorderSide(
-                    color: active ? karritoColors.accent : karritoColors.border,
-                  ),
-                  onSelected: (_) => setState(() => _selectedUnit = unit),
-                );
-              }).toList(),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const KarritoFieldLabel(
+                                AppStrings.itemQuantityLabel,
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: karritoColors.fieldSurface,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: karritoColors.border,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 38,
+                                      height: 38,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        tooltip: 'Restar cantidad',
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: colorScheme.surface,
+                                          foregroundColor:
+                                              colorScheme.onSurface,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.remove_rounded,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _stepQuantity(-1),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _qtyController,
+                                        textAlign: TextAlign.center,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: theme.textTheme.bodyLarge
+                                            ?.copyWith(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800,
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                              color: colorScheme.onSurface,
+                                            ),
+                                        decoration: const InputDecoration(
+                                          filled: false,
+                                          isDense: true,
+                                          constraints: BoxConstraints(
+                                            minHeight: 44,
+                                          ),
+                                          border: InputBorder.none,
+                                          enabledBorder: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            horizontal: 2,
+                                            vertical: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 38,
+                                      height: 38,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        tooltip: 'Sumar cantidad',
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: karritoColors.accent,
+                                          foregroundColor:
+                                              karritoColors.onAccent,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.add_rounded,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _stepQuantity(1),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: KarritoSelectorField<String>(
+                            label: AppStrings.itemUnitLabel,
+                            sheetTitle: AppStrings.selectUnitTitle,
+                            value: _selectedUnit,
+                            options: _unitOptions(),
+                            onChanged: (value) {
+                              setState(() => _selectedUnit = value);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _quickUnits.map((unit) {
+                        final active = _selectedUnit == unit;
+                        return ChoiceChip(
+                          avatar: active
+                              ? Icon(
+                                  Icons.scale_rounded,
+                                  size: 14,
+                                  color: karritoColors.onAccent,
+                                )
+                              : null,
+                          label: Text(
+                            unit,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: active
+                                  ? karritoColors.onAccent
+                                  : karritoColors.textSecondary,
+                            ),
+                          ),
+                          selected: active,
+                          showCheckmark: false,
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: karritoColors.fieldSurface,
+                          selectedColor: karritoColors.accent,
+                          shape: const StadiumBorder(),
+                          side: BorderSide(
+                            color: active
+                                ? karritoColors.accent
+                                : karritoColors.border,
+                          ),
+                          onSelected: (_) =>
+                              setState(() => _selectedUnit = unit),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    KarritoSelectorField<String>(
+                      label: AppStrings.itemStoreLabel,
+                      sheetTitle: AppStrings.selectStoreTitle,
+                      leadingWidget: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: storeVisual.color.withValues(
+                            alpha: isDark ? 0.22 : 0.16,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          storeVisual.icon,
+                          size: 16,
+                          color: storeVisual.color,
+                        ),
+                      ),
+                      value: _selectedStore,
+                      options: StoreHierarchy.storeOrder,
+                      onChanged: (value) {
+                        final newAisles =
+                            StoreHierarchy.storeAisles[value] ??
+                            const <String>[];
+                        setState(() {
+                          _selectedStore = value;
+                          _selectedAisle = newAisles.isNotEmpty
+                              ? newAisles.first
+                              : 'Varios';
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    KarritoSelectorField<String>(
+                      label: AppStrings.itemAisleLabel,
+                      sheetTitle: AppStrings.selectAisleTitle,
+                      leadingWidget: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: aisleVisual.color.withValues(
+                            alpha: isDark ? 0.22 : 0.16,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          aisleVisual.icon,
+                          size: 16,
+                          color: aisleVisual.color,
+                        ),
+                      ),
+                      value: aisleOptions.contains(_selectedAisle)
+                          ? _selectedAisle
+                          : (aisleOptions.isNotEmpty
+                                ? aisleOptions.first
+                                : 'Varios'),
+                      options: aisleOptions,
+                      onChanged: (value) {
+                        setState(() => _selectedAisle = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: karritoColors.ctaContainer.withValues(
+                          alpha: isDark ? 0.75 : 0.85,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: karritoColors.cta.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: karritoColors.cta,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.lightbulb_outline_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              AppStrings.editItemLearnTip,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: karritoColors.onCtaContainer,
+                                fontWeight: FontWeight.w600,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 14),
-            KarritoSelectorField<String>(
-              label: AppStrings.itemStoreLabel,
-              sheetTitle: AppStrings.selectStoreTitle,
-              value: _selectedStore,
-              options: StoreHierarchy.storeOrder,
-              onChanged: (value) {
-                final newAisles =
-                    StoreHierarchy.storeAisles[value] ?? const <String>[];
-                setState(() {
-                  _selectedStore = value;
-                  _selectedAisle = newAisles.isNotEmpty
-                      ? newAisles.first
-                      : 'Varios';
-                });
-              },
-            ),
-            const SizedBox(height: 14),
-            KarritoSelectorField<String>(
-              label: AppStrings.itemAisleLabel,
-              sheetTitle: AppStrings.selectAisleTitle,
-              value: aisleOptions.contains(_selectedAisle)
-                  ? _selectedAisle
-                  : (aisleOptions.isNotEmpty ? aisleOptions.first : 'Varios'),
-              options: aisleOptions,
-              onChanged: (value) {
-                setState(() => _selectedAisle = value);
-              },
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
+                  flex: 4,
                   child: KarritoBounceButton(
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: _confirmDelete,
                       style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(50),
                         backgroundColor: colorScheme.errorContainer.withValues(
-                          alpha: 0.45,
+                          alpha: isDark ? 0.65 : 0.55,
                         ),
                         side: BorderSide(
                           color: karritoColors.softDestructive.withValues(
@@ -400,8 +575,10 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                           width: 1,
                         ),
                         foregroundColor: karritoColors.softDestructive,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      child: const Text(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text(
                         AppStrings.removeShortButton,
                         maxLines: 1,
                         softWrap: false,
@@ -412,13 +589,15 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
+                  flex: 7,
                   child: KarritoBounceButton(
-                    child: FilledButton(
+                    child: FilledButton.icon(
                       onPressed: _submitSave,
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(50),
                       ),
-                      child: const Text(
+                      icon: const Icon(Icons.check_circle_outline, size: 19),
+                      label: const Text(
                         AppStrings.saveShortButton,
                         maxLines: 1,
                         softWrap: false,

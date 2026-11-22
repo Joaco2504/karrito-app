@@ -2206,6 +2206,21 @@ class $LocalPreferencesTable extends LocalPreferences
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _soundEnabledMeta = const VerificationMeta(
+    'soundEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> soundEnabled = GeneratedColumn<bool>(
+    'sound_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sound_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
     'lastSyncedAt',
   );
@@ -2224,6 +2239,7 @@ class $LocalPreferencesTable extends LocalPreferences
     themeMode,
     onboardingCompleted,
     keepScreenOn,
+    soundEnabled,
     lastSyncedAt,
   ];
   @override
@@ -2271,6 +2287,15 @@ class $LocalPreferencesTable extends LocalPreferences
         ),
       );
     }
+    if (data.containsKey('sound_enabled')) {
+      context.handle(
+        _soundEnabledMeta,
+        soundEnabled.isAcceptableOrUnknown(
+          data['sound_enabled']!,
+          _soundEnabledMeta,
+        ),
+      );
+    }
     if (data.containsKey('last_synced_at')) {
       context.handle(
         _lastSyncedAtMeta,
@@ -2309,6 +2334,10 @@ class $LocalPreferencesTable extends LocalPreferences
         DriftSqlType.bool,
         data['${effectivePrefix}keep_screen_on'],
       )!,
+      soundEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sound_enabled'],
+      )!,
       lastSyncedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_synced_at'],
@@ -2329,6 +2358,7 @@ class UserPreferencesEntity extends DataClass
   final String themeMode;
   final bool onboardingCompleted;
   final bool keepScreenOn;
+  final bool soundEnabled;
   final DateTime? lastSyncedAt;
   const UserPreferencesEntity({
     required this.id,
@@ -2336,6 +2366,7 @@ class UserPreferencesEntity extends DataClass
     required this.themeMode,
     required this.onboardingCompleted,
     required this.keepScreenOn,
+    required this.soundEnabled,
     this.lastSyncedAt,
   });
   @override
@@ -2346,6 +2377,7 @@ class UserPreferencesEntity extends DataClass
     map['theme_mode'] = Variable<String>(themeMode);
     map['onboarding_completed'] = Variable<bool>(onboardingCompleted);
     map['keep_screen_on'] = Variable<bool>(keepScreenOn);
+    map['sound_enabled'] = Variable<bool>(soundEnabled);
     if (!nullToAbsent || lastSyncedAt != null) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
     }
@@ -2359,6 +2391,7 @@ class UserPreferencesEntity extends DataClass
       themeMode: Value(themeMode),
       onboardingCompleted: Value(onboardingCompleted),
       keepScreenOn: Value(keepScreenOn),
+      soundEnabled: Value(soundEnabled),
       lastSyncedAt: lastSyncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncedAt),
@@ -2378,6 +2411,7 @@ class UserPreferencesEntity extends DataClass
         json['onboardingCompleted'],
       ),
       keepScreenOn: serializer.fromJson<bool>(json['keepScreenOn']),
+      soundEnabled: serializer.fromJson<bool>(json['soundEnabled']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
@@ -2390,6 +2424,7 @@ class UserPreferencesEntity extends DataClass
       'themeMode': serializer.toJson<String>(themeMode),
       'onboardingCompleted': serializer.toJson<bool>(onboardingCompleted),
       'keepScreenOn': serializer.toJson<bool>(keepScreenOn),
+      'soundEnabled': serializer.toJson<bool>(soundEnabled),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
@@ -2400,6 +2435,7 @@ class UserPreferencesEntity extends DataClass
     String? themeMode,
     bool? onboardingCompleted,
     bool? keepScreenOn,
+    bool? soundEnabled,
     Value<DateTime?> lastSyncedAt = const Value.absent(),
   }) => UserPreferencesEntity(
     id: id ?? this.id,
@@ -2407,6 +2443,7 @@ class UserPreferencesEntity extends DataClass
     themeMode: themeMode ?? this.themeMode,
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+    soundEnabled: soundEnabled ?? this.soundEnabled,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
   );
   UserPreferencesEntity copyWithCompanion(LocalPreferencesCompanion data) {
@@ -2420,6 +2457,9 @@ class UserPreferencesEntity extends DataClass
       keepScreenOn: data.keepScreenOn.present
           ? data.keepScreenOn.value
           : this.keepScreenOn,
+      soundEnabled: data.soundEnabled.present
+          ? data.soundEnabled.value
+          : this.soundEnabled,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
@@ -2434,6 +2474,7 @@ class UserPreferencesEntity extends DataClass
           ..write('themeMode: $themeMode, ')
           ..write('onboardingCompleted: $onboardingCompleted, ')
           ..write('keepScreenOn: $keepScreenOn, ')
+          ..write('soundEnabled: $soundEnabled, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
@@ -2446,6 +2487,7 @@ class UserPreferencesEntity extends DataClass
     themeMode,
     onboardingCompleted,
     keepScreenOn,
+    soundEnabled,
     lastSyncedAt,
   );
   @override
@@ -2457,6 +2499,7 @@ class UserPreferencesEntity extends DataClass
           other.themeMode == this.themeMode &&
           other.onboardingCompleted == this.onboardingCompleted &&
           other.keepScreenOn == this.keepScreenOn &&
+          other.soundEnabled == this.soundEnabled &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
 
@@ -2466,6 +2509,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
   final Value<String> themeMode;
   final Value<bool> onboardingCompleted;
   final Value<bool> keepScreenOn;
+  final Value<bool> soundEnabled;
   final Value<DateTime?> lastSyncedAt;
   const LocalPreferencesCompanion({
     this.id = const Value.absent(),
@@ -2473,6 +2517,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.themeMode = const Value.absent(),
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
+    this.soundEnabled = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   });
   LocalPreferencesCompanion.insert({
@@ -2481,6 +2526,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.themeMode = const Value.absent(),
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
+    this.soundEnabled = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   });
   static Insertable<UserPreferencesEntity> custom({
@@ -2489,6 +2535,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Expression<String>? themeMode,
     Expression<bool>? onboardingCompleted,
     Expression<bool>? keepScreenOn,
+    Expression<bool>? soundEnabled,
     Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
@@ -2498,6 +2545,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       if (onboardingCompleted != null)
         'onboarding_completed': onboardingCompleted,
       if (keepScreenOn != null) 'keep_screen_on': keepScreenOn,
+      if (soundEnabled != null) 'sound_enabled': soundEnabled,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
@@ -2508,6 +2556,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Value<String>? themeMode,
     Value<bool>? onboardingCompleted,
     Value<bool>? keepScreenOn,
+    Value<bool>? soundEnabled,
     Value<DateTime?>? lastSyncedAt,
   }) {
     return LocalPreferencesCompanion(
@@ -2516,6 +2565,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       themeMode: themeMode ?? this.themeMode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+      soundEnabled: soundEnabled ?? this.soundEnabled,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
@@ -2538,6 +2588,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     if (keepScreenOn.present) {
       map['keep_screen_on'] = Variable<bool>(keepScreenOn.value);
     }
+    if (soundEnabled.present) {
+      map['sound_enabled'] = Variable<bool>(soundEnabled.value);
+    }
     if (lastSyncedAt.present) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
@@ -2552,6 +2605,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
           ..write('themeMode: $themeMode, ')
           ..write('onboardingCompleted: $onboardingCompleted, ')
           ..write('keepScreenOn: $keepScreenOn, ')
+          ..write('soundEnabled: $soundEnabled, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
@@ -4306,6 +4360,7 @@ typedef $$LocalPreferencesTableCreateCompanionBuilder =
       Value<String> themeMode,
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
+      Value<bool> soundEnabled,
       Value<DateTime?> lastSyncedAt,
     });
 typedef $$LocalPreferencesTableUpdateCompanionBuilder =
@@ -4315,6 +4370,7 @@ typedef $$LocalPreferencesTableUpdateCompanionBuilder =
       Value<String> themeMode,
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
+      Value<bool> soundEnabled,
       Value<DateTime?> lastSyncedAt,
     });
 
@@ -4349,6 +4405,11 @@ class $$LocalPreferencesTableFilterComposer
 
   ColumnFilters<bool> get keepScreenOn => $composableBuilder(
     column: $table.keepScreenOn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get soundEnabled => $composableBuilder(
+    column: $table.soundEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4392,6 +4453,11 @@ class $$LocalPreferencesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get soundEnabled => $composableBuilder(
+    column: $table.soundEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4423,6 +4489,11 @@ class $$LocalPreferencesTableAnnotationComposer
 
   GeneratedColumn<bool> get keepScreenOn => $composableBuilder(
     column: $table.keepScreenOn,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get soundEnabled => $composableBuilder(
+    column: $table.soundEnabled,
     builder: (column) => column,
   );
 
@@ -4474,6 +4545,7 @@ class $$LocalPreferencesTableTableManager
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
+                Value<bool> soundEnabled = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion(
                 id: id,
@@ -4481,6 +4553,7 @@ class $$LocalPreferencesTableTableManager
                 themeMode: themeMode,
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
+                soundEnabled: soundEnabled,
                 lastSyncedAt: lastSyncedAt,
               ),
           createCompanionCallback:
@@ -4490,6 +4563,7 @@ class $$LocalPreferencesTableTableManager
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
+                Value<bool> soundEnabled = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion.insert(
                 id: id,
@@ -4497,6 +4571,7 @@ class $$LocalPreferencesTableTableManager
                 themeMode: themeMode,
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
+                soundEnabled: soundEnabled,
                 lastSyncedAt: lastSyncedAt,
               ),
           withReferenceMapper: (p0) => p0

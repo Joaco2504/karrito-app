@@ -61,6 +61,7 @@ class ShoppingRepository {
             themeMode: 'system',
             onboardingCompleted: false,
             keepScreenOn: true,
+            soundEnabled: true,
           ),
     );
   }
@@ -708,6 +709,7 @@ class ShoppingRepository {
     String? themeMode,
     bool? onboardingCompleted,
     bool? keepScreenOn,
+    bool? soundEnabled,
   }) async {
     await _db
         .into(_db.localPreferences)
@@ -723,6 +725,9 @@ class ShoppingRepository {
                 : const Value.absent(),
             keepScreenOn: keepScreenOn != null
                 ? Value(keepScreenOn)
+                : const Value.absent(),
+            soundEnabled: soundEnabled != null
+                ? Value(soundEnabled)
                 : const Value.absent(),
           ),
         );

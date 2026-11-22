@@ -39,6 +39,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
     this.label,
     this.labelBuilder,
     this.leadingIcon,
+    this.leadingWidget,
     super.key,
   });
 
@@ -49,6 +50,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
   final String Function(T option)? labelBuilder;
   final IconData? leadingIcon;
+  final Widget? leadingWidget;
 
   String _formatOption(T option) {
     return labelBuilder != null ? labelBuilder!(option) : option.toString();
@@ -207,7 +209,10 @@ class KarritoSelectorField<T> extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      if (leadingIcon != null) ...[
+                      if (leadingWidget != null) ...[
+                        leadingWidget!,
+                        const SizedBox(width: 10),
+                      ] else if (leadingIcon != null) ...[
                         Icon(
                           leadingIcon,
                           size: 20,

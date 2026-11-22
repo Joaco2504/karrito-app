@@ -410,6 +410,16 @@ class ShoppingController extends Notifier<ShoppingUiState> {
   }
 
   Future<void> toggleItemChecked(ShoppingItemEntity item) async {
+    final willCheck = !item.isChecked;
+    if (willCheck) {
+      final soundEnabled =
+          ref.read(preferencesProvider).value?.soundEnabled ?? true;
+      if (soundEnabled) {
+        unawaited(
+          ref.read(soundFeedbackServiceProvider).playItemCheckedFeedback(),
+        );
+      }
+    }
     await _repo.toggleItemChecked(item);
     _triggerBackgroundSync();
   }
@@ -497,6 +507,10 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
   Future<void> reopenOnboarding() async {
     await _repo.updatePreferences(onboardingCompleted: false);
+  }
+
+  Future<void> setSoundEnabled(bool enabled) async {
+    await _repo.updatePreferences(soundEnabled: enabled);
   }
 
   Future<void> setKeepScreenOn(bool enabled, {bool notify = false}) async {

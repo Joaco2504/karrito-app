@@ -34,6 +34,8 @@ class AppStrings {
   static const String onboardingSkipButton = 'Saltar';
   static const String startShoppingButton = 'Empezar lista';
   static const String saveGuideButton = 'Volver a la app';
+  static const String onboardingFooterNote =
+      'Sin registros obligatorios ni vueltas.';
 
   // Main shopping screen
   static const String listSelectorTooltip = 'Elegir lista';
@@ -70,12 +72,21 @@ class AppStrings {
   static const String reorderAislesTitle = 'Ordenar pasillos';
   static String reorderAislesSubtitle(String store) =>
       'Arrastrá los pasillos de $store en el orden en que recorrés tu local.';
+  static const String reorderResetButton = 'Orden habitual';
+  static const String reorderMovingBadge = 'Moviendo';
+  static const String reorderNoItemsBadge = 'Sin ítems';
+  static String reorderInListBadge(int count) => '$count en lista';
+  static const String reorderTipTitle = 'Recorrido por comercio';
+  static const String reorderTipBody =
+      'Karrito recuerda este orden por separado para cada comercio sin mezclar tus locales.';
   static const String saveOrderButton = 'Guardar orden';
   static String reorderSuccessNotice(String store) =>
       'Guardamos tu orden de pasillos para $store.';
 
   // Frequent items sheet
   static const String frequentItemsTitle = 'Productos frecuentes';
+  static const String frequentItemsSubtitle =
+      'Sumá tus compras habituales en un toque sin gastar consultas.';
   static const String frequentSearchLabel = 'Buscar producto frecuente';
   static const String frequentSearchHint =
       'Escribí para filtrar tu lista habitual';
@@ -88,6 +99,10 @@ class AppStrings {
   static const String removeFrequentTooltip = 'Quitar de frecuentes';
   static String addedFromFrequentNotice(String name) =>
       'Sumamos "$name" desde tus frecuentes.';
+  static const String frequentAddedBadge = 'Agregado';
+  static const String frequentDoneButton = 'Listo, volver a la lista';
+  static String frequentSessionCount(int count) =>
+      count == 1 ? '1 agregado' : '$count agregados';
   static const String doneButton = 'Listo';
 
   // Connection & pending AI banner
@@ -241,6 +256,9 @@ class AppStrings {
 
   // Settings screen
   static const String settingsTitle = 'Ajustes';
+  static const String settingsAppearanceSection = 'Apariencia y pantalla';
+  static const String settingsLocationSection = 'Localidad';
+  static const String settingsShoppingSection = 'Preferencias de compra';
   static const String settingsGeneralSection = 'Preferencias';
   static const String settingsAppearanceLabel = 'Tema de la app';
   static const String themeSystemLabel = 'Sistema';
@@ -249,10 +267,24 @@ class AppStrings {
   static const String settingsKeepScreenOnTitle = 'Mantener pantalla encendida';
   static const String settingsKeepScreenOnSubtitle =
       'Evita que el teléfono se bloquee mientras recorrés las góndolas.';
+  static const String settingsSoundOnCheckTitle = 'Sonido al tachar';
+  static const String settingsSoundOnCheckSubtitle =
+      'Reproduce un aviso suave y vibración cuando tachás un producto.';
+  static const String settingsActiveBadge = 'Activo';
+  static const String settingsLocalBadge = 'Local';
+  static const String settingsNoBackupBadge = 'Sin respaldo';
+  static const String settingsBackedUpBadge = 'Respaldada';
+  static const String settingsCityHelper =
+      'Usamos tu localidad para adaptar la experiencia a los comercios de tu zona.';
   static const String settingsGuideTitle = 'Guía inicial';
   static const String settingsGuideSubtitle =
       'Volvé a ver cómo cargar y ordenar productos.';
   static const String settingsViewGuideButton = 'Ver guía';
+  static const String settingsFooterNote =
+      'Karrito · Pensado para hacer las compras sin vueltas.';
+  static const String editItemSubtitle = 'Corregí cantidad, comercio o pasillo';
+  static const String editItemLearnTip =
+      'Si cambiás el comercio o el pasillo, Karrito lo recuerda para tu próxima compra.';
 
   // FAQ
   static const String faqSectionTitle = 'Preguntas frecuentes';

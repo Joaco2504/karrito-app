@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Space+Grotesk:wght@500;600;700;800&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "primary-fixed": "#e9ddff",
+          "on-secondary-fixed-variant": "#881f00",
+          "outline": "#958ea0",
+          "on-primary": "#3c0091",
+          "surface-container-low": "#1c1a24",
+          "background": "#12111a",
+          "error-container": "#93000a",
+          "surface-container-lowest": "#0e0d16",
+          "on-tertiary-fixed": "#161e00",
+          "error": "#ffb4ab",
+          "primary-fixed-dim": "#d0bcff",
+          "tertiary-container": "#7c9c00",
+          "surface-container-high": "#2a2933",
+          "secondary-fixed-dim": "#ffb4a1",
+          "on-secondary-fixed": "#3c0800",
+          "surface-tint": "#d0bcff",
+          "on-secondary-container": "#ffcdc1",
+          "surface-bright": "#3a3842",
+          "surface-container-highest": "#35343e",
+          "on-surface": "#e5e0ee",
+          "on-primary-container": "#340080",
+          "on-tertiary-container": "#222e00",
+          "inverse-primary": "#6d3bd7",
+          "on-primary-fixed": "#23005c",
+          "on-error-container": "#ffdad6",
+          "surface": "#12111a",
+          "on-background": "#e5e0ee",
+          "on-primary-fixed-variant": "#5516be",
+          "on-surface-variant": "#cbc3d7",
+          "outline-variant": "#494454",
+          "secondary-fixed": "#ffdbd2",
+          "on-tertiary-fixed-variant": "#3c4d00",
+          "tertiary-fixed": "#c3f400",
+          "on-error": "#690005",
+          "surface-container": "#201e28",
+          "secondary-container": "#b22c02",
+          "primary-container": "#a078ff",
+          "inverse-on-surface": "#312f39",
+          "tertiary": "#abd600",
+          "inverse-surface": "#e5e0ee",
+          "secondary": "#ffb4a1",
+          "on-secondary": "#611300",
+          "primary": "#d0bcff",
+          "on-tertiary": "#283500",
+          "tertiary-fixed-dim": "#abd600",
+          "surface-dim": "#12111a",
+          "surface-variant": "#35343e"
+        },
+        "borderRadius": {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-sm": "0.5rem",
+          "space-md": "1rem",
+          "margin-mobile": "1rem",
+          "space-xl": "2.5rem",
+          "space-lg": "1.5rem",
+          "space-xs": "0.25rem",
+          "gutter": "1rem",
+          "gutter-mobile": "0.75rem",
+          "margin": "1.5rem"
+        },
+        "fontFamily": {
+          "headline-lg-mobile": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "title-md": [
+            "Plus Jakarta Sans", "sans-serif"
+          ],
+          "body-lg": [
+            "Plus Jakarta Sans", "sans-serif"
+          ],
+          "body-md": [
+            "Plus Jakarta Sans", "sans-serif"
+          ],
+          "title-lg": [
+            "Plus Jakarta Sans", "sans-serif"
+          ],
+          "headline-md": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "headline-sm": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "label-sm": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "label-md": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "label-lg": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "headline-lg": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "display-lg": [
+            "Space Grotesk", "sans-serif"
+          ],
+          "display-lg-mobile": [
+            "Space Grotesk", "sans-serif"
+          ]
+        },
+        "fontSize": {
+          "headline-lg-mobile": [
+            "26px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "700"
+            }
+          ],
+          "title-md": [
+            "16px",
+            {
+              "lineHeight": "22px",
+              "letterSpacing": "0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "body-sm": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "fontWeight": "400"
+            }
+          ],
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "letterSpacing": "0.015em",
+              "fontWeight": "400"
+            }
+          ],
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "0.01em",
+              "fontWeight": "400"
+            }
+          ],
+          "title-lg": [
+            "18px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "0em",
+              "fontWeight": "700"
+            }
+          ],
+          "headline-sm": [
+            "18px",
+            {
+              "lineHeight": "24px",
+              "fontWeight": "700"
+            }
+          ],
+          "headline-md": [
+            "22px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-sm": [
+            "11px",
+            {
+              "lineHeight": "14px",
+              "letterSpacing": "0.06em",
+              "fontWeight": "700"
+            }
+          ],
+          "label-md": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "700"
+            }
+          ],
+          "label-lg": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-lg": [
+            "34px",
+            {
+              "lineHeight": "40px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "700"
+            }
+          ],
+          "display-lg": [
+            "56px",
+            {
+              "lineHeight": "64px",
+              "letterSpacing": "-0.04em",
+              "fontWeight": "700"
+            }
+          ],
+          "display-lg-mobile": [
+            "40px",
+            {
+              "lineHeight": "48px",
+              "letterSpacing": "-0.03em",
+              "fontWeight": "700"
+            }
+          ]
+        }
+      },
+    },
+  }
+</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-[#12111a] text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-[#12111a]/90 backdrop-blur-xl border-b border-[#201e28]"><div class="h-16 px-space-xs flex items-center justify-between"><div class="flex items-center gap-space-xs min-w-0"><button aria-label="Volver" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-[#1f1d2c] transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[24px]">arrow_back</span></button><h1 class="font-headline-sm text-headline-sm text-on-surface font-bold truncate pr-space-xs">Detalle De Producto</h1></div><div class="flex items-center gap-space-xs"><button aria-label="Cerrar" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-[#1f1d2c] transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[22px]">close</span></button><div class="w-8 h-8 rounded-full bg-[#a078ff] flex items-center justify-center mr-space-xs shadow-md"><span class="material-symbols-outlined text-[#12111a] text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 bg-[#12111a] px-margin-mobile"><div class="flex flex-col w-full pb-safe space-y-space-md">
+<!-- Active List & Live Status Pill -->
+<div class="flex items-center justify-between pt-space-xs gap-2">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1f1d2c] border border-[#2d293f] shadow-sm">
+<span class="w-2 h-2 rounded-full bg-[#abd600] animate-ping"></span>
+<span class="font-label-md text-label-md text-[#d0bcff] font-bold uppercase tracking-wider">Súper del Mes • Con Agus</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1f1d2c] border border-[#2d293f] text-on-surface shadow-sm">
+<span class="w-2 h-2 rounded-full bg-[#10b981]"></span>
+<span class="font-label-sm text-label-sm font-bold text-on-surface">Conectados ahora</span>
+</div>
+</div>
+<!-- Hero Collaborative Card -->
+<div class="relative overflow-hidden bg-gradient-to-br from-[#2d1b54] to-[#1e1338] text-white rounded-lg p-space-md shadow-xl border border-[#432d73]/60">
+<!-- Ambient backdrop glow -->
+<div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-[#a078ff]/25 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col space-y-space-md">
+<div class="flex items-start justify-between">
+<div>
+<span class="inline-block px-2.5 py-0.5 mb-1.5 rounded-full bg-[#c3f400] text-[#161e00] font-label-sm text-label-sm font-extrabold uppercase">
+            ⚡ En vivo en la góndola
+          </span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-white">
+            Lista sincronizada
+          </h2>
+<p class="font-body-sm text-body-sm text-[#d0bcff]/85 mt-0.5">
+            Tachan juntos en paralelo sin pisarse ni duplicar compras.
+          </p>
+</div>
+<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/10">
+<span class="material-symbols-outlined text-[22px]">sync_alt</span>
+</div>
+</div>
+<!-- Room Code Tiles -->
+<div class="bg-[#171026]/80 backdrop-blur-md rounded-DEFAULT p-space-sm flex flex-col gap-space-xs border border-[#3b2a63]/40">
+<span class="font-label-sm text-label-sm text-[#d0bcff]/80 text-center">Código de sala para sumarse:</span>
+<div class="flex items-center justify-center gap-1.5 py-1">
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">K</span>
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">7</span>
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">X</span>
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">9</span>
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">B</span>
+<span class="w-10 h-12 rounded-DEFAULT bg-[#171026] text-white border border-[#4b377a] flex items-center justify-center font-headline-md text-headline-md font-extrabold shadow-md">2</span>
+</div>
+<button class="self-center mt-0.5 px-4 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[#d0bcff] font-label-sm text-label-sm font-semibold transition-all border border-white/10" id="copy-btn" onclick="navigator.clipboard?.writeText('K7X9B2'); this.innerText='¡Copiado! ✓'; setTimeout(()=&gt;this.innerText='Copiar código', 2000);">
+          Copiar código
+        </button>
+</div>
+<!-- WhatsApp Invite Trigger -->
+<div class="flex flex-col gap-2">
+<a class="w-full py-3 px-space-md rounded-full bg-[#ff6238] text-white font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#ff6238]/30 hover:brightness-110 active:scale-[0.99] transition-all" href="https://wa.me/?text=%C2%A1Che%2C%20te%20comparto%20la%20lista%20de%20Karrito%20para%20el%20s%C3%BAper!%20Sumate%20con%20este%20c%C3%B3digo%20K7X9B2" target="_blank">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">send</span>
+          Mandar invitación por WhatsApp
+        </a>
+<div class="px-space-sm py-1.5 rounded-DEFAULT bg-black/40 text-white/70 font-body-sm text-body-sm italic text-center border border-white/5">
+          “¡Che, te comparto la lista de Karrito para el súper! Sumate con el código K7X9B2”
+        </div>
+</div>
+</div>
+</div>
+<!-- Active Shoppers In Aisles -->
+<div class="flex flex-col space-y-space-xs">
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-label-md text-label-md text-on-surface-variant font-bold uppercase tracking-wide">Comprando en esta lista</span>
+<span class="font-label-sm text-label-sm text-[#abd600] font-bold">2 activos</span>
+</div>
+<div class="bg-[#1d1a29] rounded-lg p-space-md shadow-sm border border-[#2e2a3f] space-y-space-md">
+<!-- User 1 (Me) -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="w-11 h-11 rounded-full bg-[#6d3bd7] text-white flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-inner border border-[#8b5cf6]/40">
+              V
+            </div>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#10b981] ring-2 ring-[#1d1a29]"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-title-md text-title-md font-bold text-on-surface">Vos</span>
+<span class="px-2 py-0.5 rounded-full bg-[#2a263c] font-label-sm text-label-sm text-[#d0bcff] font-semibold border border-[#3f3956]">Organizador</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">En góndola de frescos y panadería</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px]">shopping_cart</span>
+</div>
+<!-- Divider -->
+<div class="h-px bg-[#2a263c] w-full"></div>
+<!-- User 2 (Partner) -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="w-11 h-11 rounded-full bg-[#ffb4a1] text-[#3c0800] font-headline-sm text-headline-sm font-bold flex items-center justify-center shadow-inner">
+              A
+            </div>
+<span class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff6238] opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#ff6238] ring-2 ring-[#1d1a29]"></span>
+</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-title-md text-title-md font-bold text-on-surface">Agus M.</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#3e201c] text-[#ffb4a1] font-label-sm text-label-sm font-bold border border-[#ff6238]/30 animate-pulse">
+                Tachando ahora...
+              </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">En la góndola de limpieza y perfumería</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[#ff6238] text-[20px]">storefront</span>
+</div>
+</div>
+</div>
+<!-- Live Activity Feed & Cart Interactions -->
+<div class="flex flex-col space-y-space-xs">
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-label-md text-label-md text-on-surface-variant font-bold uppercase tracking-wide">Actividad en directo</span>
+<span class="font-label-sm text-label-sm text-outline">Actualizado hace 10s</span>
+</div>
+<div class="bg-[#1d1a29] rounded-lg p-space-md shadow-sm border border-[#2e2a3f] space-y-3">
+<!-- Checked Item Event -->
+<div class="flex items-start gap-3 p-2.5 rounded-DEFAULT bg-[#211e30] border border-[#2d293f]">
+<div class="w-8 h-8 rounded-full bg-[#ffb4a1] text-[#3c0800] font-label-md text-label-md flex items-center justify-center font-bold shrink-0 mt-0.5">
+          A
+        </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<p class="font-body-md text-body-md text-on-surface font-semibold truncate">
+<span class="line-through text-outline">Jabón líquido 3L Skip</span>
+</p>
+<span class="font-label-sm text-label-sm text-outline font-normal shrink-0">10s</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            Agus lo sumó al carrito • Góndola Limpieza
+          </p>
+</div>
+<div class="w-6 h-6 rounded-full bg-[#6d3bd7]/30 text-[#d0bcff] flex items-center justify-center shrink-0 self-center border border-[#8b5cf6]/50 shadow-[0_0_8px_rgba(139,92,246,0.3)]">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<!-- Pending Item Live Focus -->
+<div class="flex items-start gap-3 p-2.5 rounded-DEFAULT bg-[#211e30] border border-[#2d293f]">
+<div class="w-8 h-8 rounded-full bg-[#c3f400] text-[#161e00] font-label-md text-label-md flex items-center justify-center font-bold shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<p class="font-body-md text-body-md text-on-surface font-bold truncate">
+              Picada especial 750g
+            </p>
+<span class="font-label-sm text-label-sm text-[#abd600] font-bold shrink-0">Pendiente</span>
+</div>
+<p class="font-body-sm text-body-sm text-[#d0bcff] font-medium mt-0.5 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#ff6238]"></span>
+            Agus está cerca del sector fiambrería
+          </p>
+</div>
+<button class="w-8 h-8 rounded-full bg-[#2a263c] flex items-center justify-center text-[#d0bcff] hover:bg-[#6d3bd7] hover:text-white transition-colors shrink-0 self-center border border-[#3f3956]">
+<span class="material-symbols-outlined text-[18px]">add_task</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Free vs Pro Feature Gate Banner -->
+<div class="rounded-lg p-space-md bg-gradient-to-br from-[#251842] to-[#1a132e] text-on-surface flex flex-col space-y-space-sm shadow-md border border-[#3c2866]">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-[#c3f400] text-[#161e00] font-label-sm text-label-sm font-extrabold uppercase">
+        Karrito Pro
+      </span>
+<span class="font-title-md text-title-md font-bold text-white">Sincronización milimétrica</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+      En el <span class="font-semibold text-white">Plan Gratis</span> podés compartir una lista fija por WhatsApp. La sincronización en vivo milisegundo a milisegundo en la góndola es parte de <span class="font-bold text-[#d0bcff]">Karrito Pro</span>.
+    </p>
+<div class="pt-1 flex flex-col gap-2">
+<button class="w-full py-3 px-space-md rounded-full bg-[#6d3bd7] hover:bg-[#7b46ee] text-white font-label-lg text-label-lg font-bold shadow-lg shadow-[#6d3bd7]/30 hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+        Probar Pro 7 días gratis
+      </button>
+<button class="w-full py-1 text-center font-label-sm text-label-sm text-outline hover:text-on-surface transition-colors">
+        O continuar en modo estático
+      </button>
+</div>
+</div>
+<!-- Secondary Bottom Action: Join Other Room -->
+<div class="pt-space-xs pb-space-sm flex justify-center">
+<button class="inline-flex items-center gap-2 px-space-md py-2.5 rounded-full bg-[#1f1d2c] hover:bg-[#282538] text-on-surface font-label-md text-label-md font-bold transition-all border border-[#2e2a3f]">
+<span class="material-symbols-outlined text-[18px] text-[#d0bcff]">login</span>
+      Unirme a otra lista con código
+    </button>
+</div>
+</div></main></body></html>

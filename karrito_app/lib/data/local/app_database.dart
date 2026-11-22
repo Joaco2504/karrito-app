@@ -94,6 +94,7 @@ class LocalPreferences extends Table {
   BoolColumn get onboardingCompleted =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get keepScreenOn => boolean().withDefault(const Constant(true))();
+  BoolColumn get soundEnabled => boolean().withDefault(const Constant(true))();
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   @override
@@ -129,7 +130,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -154,6 +155,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 3) {
           await m.addColumn(localPreferences, localPreferences.lastSyncedAt);
           await _createPerformanceIndexes();
+        }
+        if (from < 4) {
+          await m.addColumn(localPreferences, localPreferences.soundEnabled);
         }
       },
       beforeOpen: (details) async {
@@ -220,6 +224,7 @@ class AppDatabase extends _$AppDatabase {
         themeMode: const Value('system'),
         onboardingCompleted: const Value(false),
         keepScreenOn: const Value(true),
+        soundEnabled: const Value(true),
       ),
       mode: InsertMode.insertOrIgnore,
     );

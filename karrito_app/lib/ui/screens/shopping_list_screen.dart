@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/shopping_providers.dart';
@@ -67,15 +68,24 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     );
   }
 
-  Future<void> _openAisleReorder(String storeCategory) async {
+  Future<void> _openAisleReorder(
+    String storeCategory,
+    Map<String, List<ShoppingItemEntity>> itemsByAisle,
+  ) async {
     final controller = ref.read(shoppingControllerProvider.notifier);
     final aisles = await controller.getAislesForStore(storeCategory);
     if (!mounted || aisles.isEmpty) return;
+
+    final previews = <String, List<String>>{
+      for (final entry in itemsByAisle.entries)
+        entry.key: entry.value.map((i) => i.cleanName).toList(),
+    };
 
     final reordered = await AisleReorderSheet.show(
       context: context,
       storeCategory: storeCategory,
       initialAisles: aisles,
+      aisleItemPreviews: previews,
     );
     if (reordered == null || !mounted) return;
 
@@ -254,23 +264,18 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        horizontal: 13,
+                        vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.surface,
+                        color: isDark
+                            ? karritoColors.aisleCardSurface
+                            : karritoColors.fieldSurface,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: karritoColors.border,
                           width: 1,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: karritoColors.shadowTint,
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -290,7 +295,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             child: Text(
                               activeList.title,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium?.copyWith(
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.w800,
                                 color: colorScheme.onSurface,
                               ),
@@ -319,6 +325,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               tooltip: isDark
                   ? AppStrings.switchToLightTooltip
                   : AppStrings.switchToDarkTooltip,
+              style: IconButton.styleFrom(
+                backgroundColor: isDark
+                    ? karritoColors.fieldSurface
+                    : karritoColors.fieldSurface,
+              ),
               icon: AnimatedSwitcher(
                 duration: disableAnimations
                     ? Duration.zero
@@ -338,7 +349,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                 child: Icon(
                   isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                   key: ValueKey<bool>(isDark),
-                  color: isDark ? karritoColors.lime : colorScheme.onSurface,
+                  size: 20,
+                  color: isDark ? karritoColors.lime : karritoColors.accentSoft,
                 ),
               ),
               onPressed: () {
@@ -348,6 +360,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
               },
             ),
           ),
+          const SizedBox(width: 2),
           IconButton(
             visualDensity: VisualDensity.compact,
             tooltip: keepScreenOn
@@ -358,11 +371,14 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     backgroundColor: karritoColors.accent,
                     foregroundColor: karritoColors.onAccent,
                   )
-                : null,
+                : IconButton.styleFrom(
+                    backgroundColor: karritoColors.fieldSurface,
+                  ),
             icon: Icon(
               keepScreenOn
                   ? Icons.stay_current_portrait_rounded
                   : Icons.screen_lock_portrait_rounded,
+              size: 19,
             ),
             onPressed: () {
               ref
@@ -370,23 +386,33 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   .setKeepScreenOn(!keepScreenOn, notify: true);
             },
           ),
+          const SizedBox(width: 2),
           IconButton(
             visualDensity: VisualDensity.compact,
             tooltip: AppStrings.shareListTooltip,
-            icon: const Icon(Icons.share_outlined),
+            style: IconButton.styleFrom(
+              backgroundColor: karritoColors.accentContainer,
+              foregroundColor: karritoColors.accentSoft,
+            ),
+            icon: const Icon(Icons.share_rounded, size: 19),
             onPressed: _openShareOptions,
           ),
+          const SizedBox(width: 2),
           IconButton(
             visualDensity: VisualDensity.compact,
             tooltip: AppStrings.settingsTooltip,
-            icon: const Icon(Icons.settings_outlined),
+            style: IconButton.styleFrom(
+              backgroundColor: karritoColors.fieldSurface,
+              foregroundColor: colorScheme.onSurface,
+            ),
+            icon: const Icon(Icons.settings_outlined, size: 20),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
               );
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(
@@ -400,16 +426,20 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   _StatusBanner(
                     backgroundColor: karritoColors.warningSurface,
                     foregroundColor: karritoColors.warningText,
-                    icon: Icons.wifi_off_rounded,
-                    text:
-                        '${AppStrings.offlineBannerTitle}. ${AppStrings.offlineBannerBody}',
+                    badgeColor: karritoColors.cta,
+                    badgeText: AppStrings.pendingOfflineBadge,
+                    icon: Icons.cloud_off_rounded,
+                    title: AppStrings.offlineBannerTitle,
+                    subtitle: AppStrings.offlineBannerBody,
                   )
                 else if (pendingAiCount > 0)
                   _StatusBanner(
                     backgroundColor: karritoColors.ctaContainer,
                     foregroundColor: karritoColors.onCtaContainer,
-                    icon: Icons.cloud_sync_outlined,
-                    text: AppStrings.pendingAiBanner(pendingAiCount),
+                    badgeColor: karritoColors.cta,
+                    badgeText: 'Pendientes',
+                    icon: Icons.cloud_sync_rounded,
+                    title: AppStrings.pendingAiBanner(pendingAiCount),
                     trailing: uiState.isReprocessing
                         ? SizedBox(
                             width: 18,
@@ -437,7 +467,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       onTap: () => LiveShareCodeSheet.show(
                         context: context,
                         listTitle: activeList.title,
@@ -449,14 +479,25 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                           vertical: 9,
                         ),
                         decoration: BoxDecoration(
-                          color: karritoColors.accent,
-                          borderRadius: BorderRadius.circular(18),
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? const [Color(0xFF2D1B54), Color(0xFF1E1338)]
+                                : const [Color(0xFF531CB3), Color(0xFF3A008C)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: isDark
+                              ? Border.all(
+                                  color: karritoColors.accent.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                )
+                              : null,
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
+                                horizontal: 9,
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
@@ -477,15 +518,15 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                               child: Text(
                                 'Código ${activeList.shareCode}',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: karritoColors.onAccent,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                            Icon(
+                            const Icon(
                               Icons.chevron_right_rounded,
                               size: 18,
-                              color: karritoColors.onAccent,
+                              color: Colors.white,
                             ),
                           ],
                         ),
@@ -496,8 +537,10 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(24),
+                      color: isDark
+                          ? karritoColors.aisleCardSurface
+                          : colorScheme.surface,
+                      borderRadius: BorderRadius.circular(26),
                       border: Border.all(color: karritoColors.border, width: 1),
                       boxShadow: [
                         BoxShadow(
@@ -515,6 +558,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                           decoration: BoxDecoration(
                             color: karritoColors.fieldSurface,
                             borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: karritoColors.border.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: TextField(
@@ -549,14 +597,20 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                   foregroundColor: karritoColors.onCtaContainer,
                                   minimumSize: const Size(0, 42),
                                   shape: const StadiumBorder(),
+                                  side: BorderSide(
+                                    color: karritoColors.cta.withValues(
+                                      alpha: isDark ? 0.35 : 0.25,
+                                    ),
+                                  ),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 14,
                                     vertical: 8,
                                   ),
                                 ),
-                                icon: const Icon(
-                                  Icons.history_rounded,
+                                icon: Icon(
+                                  Icons.star_outline_rounded,
                                   size: 18,
+                                  color: karritoColors.cta,
                                 ),
                                 label: const Text(AppStrings.frequentButton),
                               ),
@@ -564,28 +618,42 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             const Spacer(),
                             KarritoBounceButton(
                               enabled: !uiState.isSubmitting,
-                              child: FilledButton.icon(
-                                onPressed: uiState.isSubmitting
-                                    ? null
-                                    : _submitInput,
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(0, 42),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 8,
-                                  ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: karritoColors.accent.withValues(
+                                        alpha: isDark ? 0.42 : 0.22,
+                                      ),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                                icon: uiState.isSubmitting
-                                    ? SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: colorScheme.onPrimary,
-                                        ),
-                                      )
-                                    : const Icon(Icons.add_rounded, size: 19),
-                                label: const Text(AppStrings.addItemsButton),
+                                child: FilledButton.icon(
+                                  onPressed: uiState.isSubmitting
+                                      ? null
+                                      : _submitInput,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size(0, 42),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  icon: uiState.isSubmitting
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: colorScheme.onPrimary,
+                                          ),
+                                        )
+                                      : const Icon(Icons.add_rounded, size: 19),
+                                  label: const Text(AppStrings.addItemsButton),
+                                ),
                               ),
                             ),
                           ],
@@ -609,11 +677,15 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             .where((item) => !item.isChecked)
                             .length;
                         final isSelected = store == effectiveStore;
+                        final storeVisual = StoreVisuals.forStore(store);
+
                         return KarritoBounceButton(
                           child: ChoiceChip(
                             selected: isSelected,
                             showCheckmark: false,
-                            backgroundColor: colorScheme.surface,
+                            backgroundColor: isDark
+                                ? karritoColors.aisleCardSurface
+                                : colorScheme.surface,
                             selectedColor: karritoColors.accent,
                             shape: const StadiumBorder(),
                             side: BorderSide(
@@ -621,6 +693,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                   ? karritoColors.accent
                                   : karritoColors.border,
                               width: isSelected ? 1.4 : 1.0,
+                            ),
+                            avatar: Icon(
+                              storeVisual.icon,
+                              size: 16,
+                              color: isSelected
+                                  ? karritoColors.onAccent
+                                  : karritoColors.textSecondary,
                             ),
                             label: Text(
                               '$store (${AppStrings.pendingCountBadge(pending, storeList.length)})',
@@ -662,8 +741,10 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                           ),
                           KarritoBounceButton(
                             child: TextButton.icon(
-                              onPressed: () =>
-                                  _openAisleReorder(effectiveStore),
+                              onPressed: () => _openAisleReorder(
+                                effectiveStore,
+                                itemsByAisle,
+                              ),
                               icon: const Icon(Icons.reorder_rounded, size: 18),
                               label: const Text(AppStrings.reorderAislesButton),
                               style: TextButton.styleFrom(
@@ -706,7 +787,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             key: ValueKey<String>(
                               '${activeList?.id}::$effectiveStore',
                             ),
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
                             children: [
                               if (activeStorePendingCount == 0 &&
                                   activeStoreItems.isNotEmpty)
@@ -719,7 +800,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: karritoColors.completedContainer,
-                                      borderRadius: BorderRadius.circular(18),
+                                      borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: karritoColors.completed
                                             .withValues(alpha: 0.35),
@@ -728,15 +809,15 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                     child: Row(
                                       children: [
                                         Container(
-                                          width: 24,
-                                          height: 24,
+                                          width: 26,
+                                          height: 26,
                                           decoration: BoxDecoration(
                                             color: karritoColors.lime,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
                                             Icons.check_rounded,
-                                            size: 15,
+                                            size: 16,
                                             color: karritoColors.onLime,
                                           ),
                                         ),
@@ -801,40 +882,98 @@ class _StatusBanner extends StatelessWidget {
   const _StatusBanner({
     required this.backgroundColor,
     required this.foregroundColor,
+    required this.badgeColor,
+    required this.badgeText,
     required this.icon,
-    required this.text,
+    required this.title,
+    this.subtitle,
     this.trailing,
   });
 
   final Color backgroundColor;
   final Color foregroundColor;
+  final Color badgeColor;
+  final String badgeText;
   final IconData icon;
-  final String text;
+  final String title;
+  final String? subtitle;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.35), width: 1),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 19, color: foregroundColor),
-          const SizedBox(width: 10),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: badgeColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: foregroundColor,
-                fontWeight: FontWeight.w700,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: foregroundColor,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badgeText.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      color: foregroundColor.withValues(alpha: 0.88),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+          if (trailing != null) ...[const SizedBox(width: 6), trailing!],
         ],
       ),
     );
@@ -847,7 +986,6 @@ class _EmptyListPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
 
     return Center(
@@ -861,11 +999,12 @@ class _EmptyListPlaceholder extends StatelessWidget {
               height: 74,
               decoration: BoxDecoration(
                 color: karritoColors.accentContainer,
-                borderRadius: BorderRadius.circular(24),
+                shape: BoxShape.circle,
+                border: Border.all(color: karritoColors.border),
               ),
               child: Icon(
-                Icons.shopping_cart_outlined,
-                size: 36,
+                Icons.shopping_basket_outlined,
+                size: 34,
                 color: karritoColors.accentSoft,
               ),
             ),
@@ -882,8 +1021,8 @@ class _EmptyListPlaceholder extends StatelessWidget {
               AppStrings.emptyListBody,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.42,
+                color: karritoColors.textSecondary,
+                height: 1.45,
               ),
             ),
           ],

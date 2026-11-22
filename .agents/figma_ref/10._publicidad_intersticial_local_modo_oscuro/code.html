@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "primary-fixed": "#e9ddff",
+          "on-secondary-fixed-variant": "#881f00",
+          "outline": "#958ea0",
+          "on-primary": "#3c0091",
+          "surface-container-low": "#1c1a24",
+          "background": "#12111a",
+          "error-container": "#93000a",
+          "surface-container-lowest": "#0e0d16",
+          "on-tertiary-fixed": "#161e00",
+          "error": "#ffb4ab",
+          "primary-fixed-dim": "#d0bcff",
+          "tertiary-container": "#7c9c00",
+          "surface-container-high": "#2a2933",
+          "secondary-fixed-dim": "#ffb4a1",
+          "on-secondary-fixed": "#3c0800",
+          "surface-tint": "#d0bcff",
+          "on-secondary-container": "#ffcdc1",
+          "surface-bright": "#3a3842",
+          "surface-container-highest": "#35343e",
+          "on-surface": "#e5e0ee",
+          "on-primary-container": "#340080",
+          "on-tertiary-container": "#222e00",
+          "inverse-primary": "#6d3bd7",
+          "on-primary-fixed": "#23005c",
+          "on-error-container": "#ffdad6",
+          "surface": "#12111a",
+          "on-background": "#e5e0ee",
+          "on-primary-fixed-variant": "#5516be",
+          "on-surface-variant": "#cbc3d7",
+          "outline-variant": "#494454",
+          "secondary-fixed": "#ffdbd2",
+          "on-tertiary-fixed-variant": "#3c4d00",
+          "tertiary-fixed": "#c3f400",
+          "on-error": "#690005",
+          "surface-container": "#201e28",
+          "secondary-container": "#b22c02",
+          "primary-container": "#a078ff",
+          "inverse-on-surface": "#312f39",
+          "tertiary": "#abd600",
+          "inverse-surface": "#e5e0ee",
+          "secondary": "#ffb4a1",
+          "on-secondary": "#611300",
+          "primary": "#d0bcff",
+          "on-tertiary": "#283500",
+          "tertiary-fixed-dim": "#abd600",
+          "surface-dim": "#13121b",
+          "surface-variant": "#35343e"
+        },
+        "borderRadius": {
+          "DEFAULT": "1rem",
+          "lg": "2rem",
+          "xl": "3rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-sm": "0.5rem",
+          "space-md": "1rem",
+          "margin-mobile": "1rem",
+          "space-xl": "2.5rem",
+          "space-lg": "1.5rem",
+          "space-xs": "0.25rem",
+          "gutter": "1rem",
+          "gutter-mobile": "0.75rem",
+          "margin": "1.5rem"
+        },
+        "fontFamily": {
+          "headline-lg-mobile": ["Space Grotesk"],
+          "title-md": ["Plus Jakarta Sans"],
+          "body-lg": ["Plus Jakarta Sans"],
+          "body-md": ["Plus Jakarta Sans"],
+          "title-lg": ["Plus Jakarta Sans"],
+          "headline-md": ["Space Grotesk"],
+          "label-sm": ["Space Grotesk"],
+          "label-lg": ["Space Grotesk"],
+          "headline-lg": ["Space Grotesk"],
+          "display-lg": ["Space Grotesk"],
+          "display-lg-mobile": ["Space Grotesk"]
+        }
+      }
+    }
+  };
+</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;background-color:#12111a;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-[#12111a] text-on-surface antialiased flex flex-col min-h-screen pt-safe pb-safe"><main class="flex-1 flex flex-col relative w-full bg-[#12111a]"><div class="flex flex-col w-full relative min-h-full pb-6 px-margin-mobile">
+<!-- Top Interstitial Bar -->
+<div class="flex items-center justify-between pt-2 pb-3 z-30">
+<div class="flex items-center space-x-1.5 bg-[#1e1b2b] border border-white/10 px-3 py-1.5 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-[#c4b5fd] text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-[12px] text-white/90 font-medium tracking-wide">Comercio Local Auspiciado</span>
+</div>
+<!-- Interactive Close / Skip Button with Animated SVG Progress Ring -->
+<button class="relative flex items-center justify-center bg-[#1e1b2b] border border-white/10 px-3.5 py-1.5 rounded-full transition-all duration-300 active:scale-95 text-white/90 shadow-lg" id="skip-btn">
+<svg class="w-4 h-4 -rotate-90 mr-1.5 shrink-0" viewbox="0 0 36 36">
+<circle class="text-white/20" cx="18" cy="18" fill="none" r="14" stroke="currentColor" stroke-width="3.5"></circle>
+<circle class="text-[#ff6238]" cx="18" cy="18" fill="none" id="countdown-circle" r="14" stroke="currentColor" stroke-dasharray="88" stroke-dashoffset="58" stroke-linecap="round" stroke-width="3.5"></circle>
+</svg>
+<span class="font-label-sm text-[12px] font-bold" id="skip-label">Saltar en 1s</span>
+</button>
+</div>
+<!-- Main Local Poster Flyer Card -->
+<div class="relative w-full rounded-2xl overflow-hidden bg-[#161422] border border-white/5 shadow-2xl flex flex-col mb-4">
+<!-- Visual Hero Image Container -->
+<div class="relative w-full h-64 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Authentic Argentine country butcher and charcuterie display in Catamarca, showing juicy premium beef ribs, vacío, handmade artisan sausages, and cured regional cheeses on a rustic wooden board. Vibrant warm sunlight, deep violet plum and neon orange warm ambient lighting, artisanal gourmet market atmosphere, high definition food photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArbBewDOqhtJtW1ElpNCvfEuVUyDsJ4241w5R5QkZ3_n4G4ZkiBhZ14qTKRR9Pi0-Gwsxw8n9Euc07LeX1Gvu7gUYgXljJUkhXLVPPm3bAFVZJsUyFoQ5A_wAt7yNQM-JAZJ0Sgjq6Xr3H0ggOJKMI7QfI3-ElZsp12X_vEHxjeA9VHSHat4Dq5vV5YRnQq1OJAtkAAF_wNqhYJ4xZFrWrGcbr-E5p_SuGid5pfFsA"/>
+<!-- Dynamic Scrim Gradient Overlay -->
+<div class="absolute inset-0 bg-gradient-to-t from-[#161422] via-[#161422]/60 to-black/30"></div>
+<!-- Live Badge Over Image -->
+<div class="absolute top-3 left-3 bg-[#ff6238] text-white px-3 py-1 rounded-full shadow-md flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+<span class="font-label-sm text-[11px] font-bold tracking-wider uppercase">Oferta Regional</span>
+</div>
+<!-- Rating & Heritage Tag -->
+<div class="absolute top-3 right-3 bg-[#1e1b2b]/90 backdrop-blur-md text-white border border-white/10 px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-md">
+<span class="material-symbols-outlined text-[#ff6238] text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-[12px] font-bold">4.9</span>
+<span class="font-label-sm text-[12px] text-white/60">(142)</span>
+</div>
+<!-- Title / Merchant Identity Grounded in Banner -->
+<div class="absolute bottom-3 left-4 right-4 text-white">
+<div class="flex items-center space-x-1 text-[#c4b5fd] text-xs font-semibold tracking-wider uppercase mb-1">
+<span class="material-symbols-outlined text-[16px]">storefront</span>
+<span>Sucursal Andalgalá • Catamarca</span>
+</div>
+<h2 class="font-headline-lg-mobile text-[22px] font-bold text-white leading-tight drop-shadow-sm">
+          Carnicería y Fiambrería Don Héctor
+        </h2>
+</div>
+</div>
+<!-- Flyer Offer Body -->
+<div class="p-4 flex flex-col space-y-3 bg-[#161422]">
+<!-- Punchy Promotion Headline -->
+<div class="bg-[#1d1a2a] border border-white/5 p-3.5 rounded-xl">
+<div class="flex items-center space-x-2 text-[#ff6238] mb-1">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-label-sm text-[11px] uppercase font-bold tracking-wide">Especial Fin de Semana</span>
+</div>
+<p class="font-title-lg text-white font-bold leading-snug">
+          ¡Jueves y Viernes de Asado y Picada Catamarqueña!
+        </p>
+</div>
+<!-- Highlight Chips / Perks Stack -->
+<div class="flex flex-col space-y-2">
+<!-- Cuenta DNI Pill -->
+<div class="flex items-center space-x-2.5 bg-[#1f2e10] border border-[#bef264]/20 text-[#bef264] p-3 rounded-xl">
+<span class="material-symbols-outlined text-[#bef264] text-[20px]" style="font-variation-settings: 'FILL' 1;">percent</span>
+<span class="font-label-sm text-[12px] font-bold">20% OFF abonando con Cuenta DNI o Efectivo</span>
+</div>
+<!-- Meat item row -->
+<div class="flex items-center space-x-2.5 bg-[#221f31] border border-white/5 p-3 rounded-xl text-white">
+<span class="material-symbols-outlined text-[#ff6238] text-[20px]">outdoor_grill</span>
+<span class="font-body-md text-[13px] text-white/90 font-medium">Costilla, Vacío de novillito y Chorizo artesanal del día</span>
+</div>
+<!-- Cheese item row -->
+<div class="flex items-center space-x-2.5 bg-[#221f31] border border-white/5 p-3 rounded-xl text-white">
+<span class="material-symbols-outlined text-[#c4b5fd] text-[20px]">restaurant</span>
+<span class="font-body-md text-[13px] text-white/90 font-medium">Queso criollo de campo y fiambres feteados al instante</span>
+</div>
+</div>
+<!-- Schedule & Location Details -->
+<div class="pt-1 flex flex-col space-y-2 bg-[#1d1a2a] border border-white/5 p-3 rounded-xl">
+<div class="flex items-start space-x-2 text-white/80">
+<span class="material-symbols-outlined text-[#c4b5fd] text-[18px] shrink-0 mt-0.5">location_on</span>
+<span class="font-body-md text-[13px] text-white/90 leading-snug">
+            Av. Belgrano 450, Andalgalá <span class="text-white/50">(frente a la plaza principal)</span>
+</span>
+</div>
+<div class="flex items-center space-x-2 text-white/80">
+<span class="material-symbols-outlined text-[#bef264] text-[18px] shrink-0">schedule</span>
+<span class="font-label-sm text-[12px] font-semibold text-[#bef264]">
+            Abierto hoy de 8:30 a 13:00 y de 17:30 a 21:30
+          </span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col space-y-2.5 pt-1">
+<!-- WhatsApp Primary CTA -->
+<a class="w-full bg-[#ff6238] hover:bg-[#ff724d] text-white py-3.5 px-4 rounded-full flex items-center justify-center space-x-2 font-label-lg font-bold text-[14px] shadow-lg shadow-[#ff6238]/20 active:scale-[0.98] transition-all" href="https://wa.me/5493835000000?text=Hola%20Don%20Hector!%20Vi%20la%20promo%20en%20Karrito%20y%20quiero%20consultar%20el%20stock%20del%20asado" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span>Pedir por WhatsApp al comercio</span>
+</a>
+<!-- Google Maps Secondary CTA -->
+<a class="w-full bg-[#2b1f45] border border-[#c4b5fd]/20 text-[#c4b5fd] hover:bg-[#342654] font-label-lg font-semibold text-[14px] py-3.5 px-4 rounded-full flex items-center justify-center space-x-2 active:scale-[0.98] transition-all" href="https://maps.google.com/?q=Andalgala+Catamarca" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[20px]">near_me</span>
+<span>Cómo llegar con Google Maps</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Upsell Micro-Card (Karrito Pro) -->
+<div class="w-full bg-[#1e1b2b] border border-white/5 rounded-2xl p-3.5 flex items-center justify-between shadow-lg">
+<div class="flex items-center space-x-2.5 min-w-0 pr-2">
+<div class="w-8 h-8 rounded-full bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 text-[#c4b5fd] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-sm text-[12px] font-bold text-white truncate">
+          ¿Navegar sin interrupciones?
+        </p>
+<p class="font-body-md text-[11px] text-white/60 leading-tight">
+          Pasate a <strong class="text-[#c4b5fd] font-bold">Karrito Pro</strong> por solo $3 USD/mes.
+        </p>
+</div>
+</div>
+<button class="shrink-0 bg-[#8b5cf6] hover:bg-[#9d74ff] text-white px-3.5 py-1.5 rounded-full font-label-sm text-[12px] font-bold shadow-md shadow-[#8b5cf6]/30 active:scale-95 transition-all">
+      Ver planes
+    </button>
+</div>
+</div>
+<script>
+  (function() {
+    let timeLeft = 1;
+    const skipBtn = document.getElementById('skip-btn');
+    const skipLabel = document.getElementById('skip-label');
+    const circle = document.getElementById('countdown-circle');
+    const totalOffset = 88;
+
+    const interval = setInterval(function() {
+      timeLeft -= 1;
+      if (timeLeft > 0) {
+        if (skipLabel) skipLabel.textContent = 'Saltar en ' + timeLeft + 's';
+        if (circle) {
+          const dashoffset = totalOffset - (totalOffset * (3 - timeLeft) / 3);
+          circle.setAttribute('stroke-dashoffset', dashoffset.toString());
+        }
+      } else {
+        clearInterval(interval);
+        if (skipLabel) skipLabel.textContent = '✕ Cerrar';
+        if (circle) circle.setAttribute('stroke-dashoffset', '0');
+        if (skipBtn) {
+          skipBtn.classList.remove('text-white/90');
+          skipBtn.classList.add('bg-[#8b5cf6]', 'text-white', 'border-transparent', 'shadow-md');
+        }
+      }
+    }, 1000);
+
+    if (skipBtn) {
+      skipBtn.addEventListener('click', function() {
+        if (timeLeft <= 0) {
+          const rootEl = skipBtn.closest('.flex.flex-col.w-full');
+          if (rootEl) {
+            rootEl.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
+            rootEl.style.opacity = '0';
+            rootEl.style.transform = 'scale(0.98)';
+            setTimeout(function() {
+              rootEl.style.display = 'none';
+            }, 250);
+          }
+        }
+      });
+    }
+  })();
+</script></main></body></html>
