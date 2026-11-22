@@ -56,6 +56,14 @@ class EditItemBottomSheet extends StatefulWidget {
 }
 
 class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
+  static const List<String> _quickUnits = <String>[
+    'u',
+    'kg',
+    'g',
+    'l',
+    'paquete',
+  ];
+
   late final TextEditingController _nameController;
   late final TextEditingController _qtyController;
   late String _selectedUnit;
@@ -174,7 +182,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + bottomInset),
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 22 + bottomInset),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -183,7 +191,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
             Text(
               AppStrings.editItemTitle,
               style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 16),
@@ -193,8 +201,8 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
               controller: _nameController,
               textCapitalization: TextCapitalization.sentences,
               style: theme.textTheme.bodyLarge?.copyWith(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
               ),
               decoration: InputDecoration(
@@ -221,9 +229,10 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                       const SizedBox(height: 6),
                       Container(
                         height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         decoration: BoxDecoration(
                           color: karritoColors.fieldSurface,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(999),
                           border: Border.all(
                             color: karritoColors.border,
                             width: 1,
@@ -232,15 +241,18 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                         child: Row(
                           children: [
                             SizedBox(
-                              width: 44,
-                              height: 48,
+                              width: 38,
+                              height: 38,
                               child: IconButton(
                                 padding: EdgeInsets.zero,
                                 tooltip: 'Restar cantidad',
-                                icon: Icon(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: colorScheme.surface,
+                                  foregroundColor: colorScheme.onSurface,
+                                ),
+                                icon: const Icon(
                                   Icons.remove_rounded,
                                   size: 20,
-                                  color: colorScheme.onSurface,
                                 ),
                                 onPressed: () => _stepQuantity(-1),
                               ),
@@ -255,7 +267,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                                     ),
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   fontFeatures: const [
                                     FontFeature.tabularFigures(),
                                   ],
@@ -264,7 +276,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                                 decoration: const InputDecoration(
                                   filled: false,
                                   isDense: true,
-                                  constraints: BoxConstraints(minHeight: 46),
+                                  constraints: BoxConstraints(minHeight: 44),
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -276,16 +288,16 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                               ),
                             ),
                             SizedBox(
-                              width: 44,
-                              height: 48,
+                              width: 38,
+                              height: 38,
                               child: IconButton(
                                 padding: EdgeInsets.zero,
                                 tooltip: 'Sumar cantidad',
-                                icon: Icon(
-                                  Icons.add_rounded,
-                                  size: 20,
-                                  color: colorScheme.onSurface,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: karritoColors.accent,
+                                  foregroundColor: karritoColors.onAccent,
                                 ),
+                                icon: const Icon(Icons.add_rounded, size: 20),
                                 onPressed: () => _stepQuantity(1),
                               ),
                             ),
@@ -309,6 +321,36 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _quickUnits.map((unit) {
+                final active = _selectedUnit == unit;
+                return ChoiceChip(
+                  label: Text(
+                    unit,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: active
+                          ? karritoColors.onAccent
+                          : karritoColors.textSecondary,
+                    ),
+                  ),
+                  selected: active,
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: karritoColors.fieldSurface,
+                  selectedColor: karritoColors.accent,
+                  shape: const StadiumBorder(),
+                  side: BorderSide(
+                    color: active ? karritoColors.accent : karritoColors.border,
+                  ),
+                  onSelected: (_) => setState(() => _selectedUnit = unit),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 14),
             KarritoSelectorField<String>(
@@ -348,7 +390,15 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                       onPressed: _confirmDelete,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
-                        side: BorderSide(color: karritoColors.border, width: 1),
+                        backgroundColor: colorScheme.errorContainer.withValues(
+                          alpha: 0.45,
+                        ),
+                        side: BorderSide(
+                          color: karritoColors.softDestructive.withValues(
+                            alpha: 0.4,
+                          ),
+                          width: 1,
+                        ),
                         foregroundColor: karritoColors.softDestructive,
                       ),
                       child: const Text(

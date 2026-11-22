@@ -316,4 +316,26 @@ void main() {
       );
     },
   );
+
+  test(
+    'creates all 4 SQLite performance indexes in Drift schemaVersion 3',
+    () async {
+      // Trigger database open/create first.
+      await repo.watchPreferences().first;
+
+      Future<Set<String>> indexNamesFor(String table) async {
+        final rows = await db.customSelect("PRAGMA index_list('$table')").get();
+        return rows.map((r) => r.read<String>('name')).toSet();
+      }
+
+      final itemIndexes = await indexNamesFor('local_items');
+      final learnedIndexes = await indexNamesFor('local_learned_items');
+      final aisleIndexes = await indexNamesFor('local_aisle_order');
+
+      expect(itemIndexes, contains('idx_local_items_list_store_aisle'));
+      expect(itemIndexes, contains('idx_local_items_sync_status'));
+      expect(learnedIndexes, contains('idx_local_learned_use_count'));
+      expect(aisleIndexes, contains('idx_local_aisle_order_lookup'));
+    },
+  );
 }

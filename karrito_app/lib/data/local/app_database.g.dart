@@ -2206,6 +2206,17 @@ class $LocalPreferencesTable extends LocalPreferences
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+    'last_synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2213,6 +2224,7 @@ class $LocalPreferencesTable extends LocalPreferences
     themeMode,
     onboardingCompleted,
     keepScreenOn,
+    lastSyncedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2259,6 +2271,15 @@ class $LocalPreferencesTable extends LocalPreferences
         ),
       );
     }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2288,6 +2309,10 @@ class $LocalPreferencesTable extends LocalPreferences
         DriftSqlType.bool,
         data['${effectivePrefix}keep_screen_on'],
       )!,
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_synced_at'],
+      ),
     );
   }
 
@@ -2304,12 +2329,14 @@ class UserPreferencesEntity extends DataClass
   final String themeMode;
   final bool onboardingCompleted;
   final bool keepScreenOn;
+  final DateTime? lastSyncedAt;
   const UserPreferencesEntity({
     required this.id,
     required this.city,
     required this.themeMode,
     required this.onboardingCompleted,
     required this.keepScreenOn,
+    this.lastSyncedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2319,6 +2346,9 @@ class UserPreferencesEntity extends DataClass
     map['theme_mode'] = Variable<String>(themeMode);
     map['onboarding_completed'] = Variable<bool>(onboardingCompleted);
     map['keep_screen_on'] = Variable<bool>(keepScreenOn);
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
     return map;
   }
 
@@ -2329,6 +2359,9 @@ class UserPreferencesEntity extends DataClass
       themeMode: Value(themeMode),
       onboardingCompleted: Value(onboardingCompleted),
       keepScreenOn: Value(keepScreenOn),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
     );
   }
 
@@ -2345,6 +2378,7 @@ class UserPreferencesEntity extends DataClass
         json['onboardingCompleted'],
       ),
       keepScreenOn: serializer.fromJson<bool>(json['keepScreenOn']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
   @override
@@ -2356,6 +2390,7 @@ class UserPreferencesEntity extends DataClass
       'themeMode': serializer.toJson<String>(themeMode),
       'onboardingCompleted': serializer.toJson<bool>(onboardingCompleted),
       'keepScreenOn': serializer.toJson<bool>(keepScreenOn),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
 
@@ -2365,12 +2400,14 @@ class UserPreferencesEntity extends DataClass
     String? themeMode,
     bool? onboardingCompleted,
     bool? keepScreenOn,
+    Value<DateTime?> lastSyncedAt = const Value.absent(),
   }) => UserPreferencesEntity(
     id: id ?? this.id,
     city: city ?? this.city,
     themeMode: themeMode ?? this.themeMode,
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
   );
   UserPreferencesEntity copyWithCompanion(LocalPreferencesCompanion data) {
     return UserPreferencesEntity(
@@ -2383,6 +2420,9 @@ class UserPreferencesEntity extends DataClass
       keepScreenOn: data.keepScreenOn.present
           ? data.keepScreenOn.value
           : this.keepScreenOn,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
     );
   }
 
@@ -2393,14 +2433,21 @@ class UserPreferencesEntity extends DataClass
           ..write('city: $city, ')
           ..write('themeMode: $themeMode, ')
           ..write('onboardingCompleted: $onboardingCompleted, ')
-          ..write('keepScreenOn: $keepScreenOn')
+          ..write('keepScreenOn: $keepScreenOn, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, city, themeMode, onboardingCompleted, keepScreenOn);
+  int get hashCode => Object.hash(
+    id,
+    city,
+    themeMode,
+    onboardingCompleted,
+    keepScreenOn,
+    lastSyncedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2409,7 +2456,8 @@ class UserPreferencesEntity extends DataClass
           other.city == this.city &&
           other.themeMode == this.themeMode &&
           other.onboardingCompleted == this.onboardingCompleted &&
-          other.keepScreenOn == this.keepScreenOn);
+          other.keepScreenOn == this.keepScreenOn &&
+          other.lastSyncedAt == this.lastSyncedAt);
 }
 
 class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
@@ -2418,12 +2466,14 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
   final Value<String> themeMode;
   final Value<bool> onboardingCompleted;
   final Value<bool> keepScreenOn;
+  final Value<DateTime?> lastSyncedAt;
   const LocalPreferencesCompanion({
     this.id = const Value.absent(),
     this.city = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   });
   LocalPreferencesCompanion.insert({
     this.id = const Value.absent(),
@@ -2431,6 +2481,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.themeMode = const Value.absent(),
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   });
   static Insertable<UserPreferencesEntity> custom({
     Expression<int>? id,
@@ -2438,6 +2489,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Expression<String>? themeMode,
     Expression<bool>? onboardingCompleted,
     Expression<bool>? keepScreenOn,
+    Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2446,6 +2498,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       if (onboardingCompleted != null)
         'onboarding_completed': onboardingCompleted,
       if (keepScreenOn != null) 'keep_screen_on': keepScreenOn,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
 
@@ -2455,6 +2508,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Value<String>? themeMode,
     Value<bool>? onboardingCompleted,
     Value<bool>? keepScreenOn,
+    Value<DateTime?>? lastSyncedAt,
   }) {
     return LocalPreferencesCompanion(
       id: id ?? this.id,
@@ -2462,6 +2516,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       themeMode: themeMode ?? this.themeMode,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
 
@@ -2483,6 +2538,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     if (keepScreenOn.present) {
       map['keep_screen_on'] = Variable<bool>(keepScreenOn.value);
     }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
     return map;
   }
 
@@ -2493,7 +2551,8 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
           ..write('city: $city, ')
           ..write('themeMode: $themeMode, ')
           ..write('onboardingCompleted: $onboardingCompleted, ')
-          ..write('keepScreenOn: $keepScreenOn')
+          ..write('keepScreenOn: $keepScreenOn, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
@@ -4247,6 +4306,7 @@ typedef $$LocalPreferencesTableCreateCompanionBuilder =
       Value<String> themeMode,
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
+      Value<DateTime?> lastSyncedAt,
     });
 typedef $$LocalPreferencesTableUpdateCompanionBuilder =
     LocalPreferencesCompanion Function({
@@ -4255,6 +4315,7 @@ typedef $$LocalPreferencesTableUpdateCompanionBuilder =
       Value<String> themeMode,
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
+      Value<DateTime?> lastSyncedAt,
     });
 
 class $$LocalPreferencesTableFilterComposer
@@ -4288,6 +4349,11 @@ class $$LocalPreferencesTableFilterComposer
 
   ColumnFilters<bool> get keepScreenOn => $composableBuilder(
     column: $table.keepScreenOn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4325,6 +4391,11 @@ class $$LocalPreferencesTableOrderingComposer
     column: $table.keepScreenOn,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalPreferencesTableAnnotationComposer
@@ -4352,6 +4423,11 @@ class $$LocalPreferencesTableAnnotationComposer
 
   GeneratedColumn<bool> get keepScreenOn => $composableBuilder(
     column: $table.keepScreenOn,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
     builder: (column) => column,
   );
 }
@@ -4398,12 +4474,14 @@ class $$LocalPreferencesTableTableManager
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion(
                 id: id,
                 city: city,
                 themeMode: themeMode,
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
+                lastSyncedAt: lastSyncedAt,
               ),
           createCompanionCallback:
               ({
@@ -4412,12 +4490,14 @@ class $$LocalPreferencesTableTableManager
                 Value<String> themeMode = const Value.absent(),
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion.insert(
                 id: id,
                 city: city,
                 themeMode: themeMode,
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
+                lastSyncedAt: lastSyncedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(

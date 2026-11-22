@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
@@ -45,20 +46,32 @@ abstract interface class SyncService {
 abstract interface class KarritoSyncRemote {
   Future<void> upsertUserProfile(Map<String, dynamic> row);
   Future<void> updateUserCity(String uid, String city, {String? email});
-  Future<List<Map<String, dynamic>>> fetchShoppingLists();
+  Future<List<Map<String, dynamic>>> fetchShoppingLists(
+    String uid, {
+    DateTime? updatedSince,
+  });
   Future<void> upsertShoppingList(Map<String, dynamic> row);
   Future<void> updateShoppingList(String listId, Map<String, dynamic> values);
   Future<void> deleteShoppingList(String listId);
   Future<void> deleteListMembership(String listId, String uid);
-  Future<List<Map<String, dynamic>>> fetchListItems();
+  Future<List<Map<String, dynamic>>> fetchListItems({
+    DateTime? updatedSince,
+    Iterable<String>? listIds,
+  });
   Future<void> upsertListItem(Map<String, dynamic> row);
   Future<void> deleteListItem(String itemId);
-  Future<List<Map<String, dynamic>>> fetchAislePreferences(String uid);
+  Future<List<Map<String, dynamic>>> fetchAislePreferences(
+    String uid, {
+    DateTime? updatedSince,
+  });
   Future<void> upsertAislePreferences(
     List<Map<String, dynamic>> rows, {
     required String onConflict,
   });
-  Future<List<Map<String, dynamic>>> fetchLearnedItems(String uid);
+  Future<List<Map<String, dynamic>>> fetchLearnedItems(
+    String uid, {
+    DateTime? updatedSince,
+  });
   Future<void> upsertLearnedItems(
     List<Map<String, dynamic>> rows, {
     required String onConflict,
@@ -88,13 +101,36 @@ class _SupabaseSyncRemote implements KarritoSyncRemote {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchShoppingLists() async {
-    final rows = await _client
+  Future<List<Map<String, dynamic>>> fetchShoppingLists(
+    String uid, {
+    DateTime? updatedSince,
+  }) async {
+    final memberships = await _client
+        .from('list_members')
+        .select('list_id')
+        .eq('user_id', uid);
+    final memberListIds = <String>{
+      for (final m in memberships)
+        if (m['list_id'] != null) m['list_id'].toString(),
+    };
+
+    var query = _client
         .from('shopping_lists')
         .select(
           'id, owner_id, title, is_shared, share_code, created_at, updated_at',
         );
-    return List<Map<String, dynamic>>.from(rows);
+    if (updatedSince != null) {
+      query = query.gte('updated_at', updatedSince.toUtc().toIso8601String());
+    }
+
+    final rows = List<Map<String, dynamic>>.from(await query);
+    // Keep only lists owned by or shared with this user so admin accounts
+    // testing the mobile app never pull unrelated users' private lists.
+    return rows.where((row) {
+      final id = row['id']?.toString();
+      final ownerId = row['owner_id']?.toString();
+      return ownerId == uid || (id != null && memberListIds.contains(id));
+    }).toList();
   }
 
   @override
@@ -125,8 +161,24 @@ class _SupabaseSyncRemote implements KarritoSyncRemote {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchListItems() async {
-    final rows = await _client.from('list_items').select();
+  Future<List<Map<String, dynamic>>> fetchListItems({
+    DateTime? updatedSince,
+    Iterable<String>? listIds,
+  }) async {
+    final ids = listIds?.toList();
+    if (ids != null && ids.isEmpty) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    var query = _client.from('list_items').select();
+    if (ids != null) {
+      query = query.inFilter('list_id', ids);
+    }
+    if (updatedSince != null) {
+      query = query.gte('updated_at', updatedSince.toUtc().toIso8601String());
+    }
+
+    final rows = await query;
     return List<Map<String, dynamic>>.from(rows);
   }
 
@@ -141,11 +193,18 @@ class _SupabaseSyncRemote implements KarritoSyncRemote {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchAislePreferences(String uid) async {
-    final rows = await _client
+  Future<List<Map<String, dynamic>>> fetchAislePreferences(
+    String uid, {
+    DateTime? updatedSince,
+  }) async {
+    var query = _client
         .from('aisle_preferences')
         .select('store_category, aisle_name, sort_order, updated_at')
         .eq('user_id', uid);
+    if (updatedSince != null) {
+      query = query.gte('updated_at', updatedSince.toUtc().toIso8601String());
+    }
+    final rows = await query;
     return List<Map<String, dynamic>>.from(rows);
   }
 
@@ -160,13 +219,20 @@ class _SupabaseSyncRemote implements KarritoSyncRemote {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchLearnedItems(String uid) async {
-    final rows = await _client
+  Future<List<Map<String, dynamic>>> fetchLearnedItems(
+    String uid, {
+    DateTime? updatedSince,
+  }) async {
+    var query = _client
         .from('learned_items')
         .select(
           'normalized_name, preferred_store, preferred_aisle, use_count, updated_at',
         )
         .eq('user_id', uid);
+    if (updatedSince != null) {
+      query = query.gte('updated_at', updatedSince.toUtc().toIso8601String());
+    }
+    final rows = await query;
     return List<Map<String, dynamic>>.from(rows);
   }
 
@@ -194,8 +260,12 @@ class SupabaseSyncService implements SyncService {
     required SupabaseClient? client,
     required this._authService,
     KarritoSyncRemote? remote,
+    DateTime Function()? clock,
+    Uuid? uuid,
   }) : _client = client,
-       _remote = remote ?? _SupabaseSyncRemote(client!);
+       _remote = remote ?? _SupabaseSyncRemote(client!),
+       _clock = clock ?? DateTime.now,
+       _uuid = uuid ?? const Uuid();
 
   static const String aislePreferencesOnConflict =
       'user_id,store_category,aisle_name';
@@ -205,8 +275,30 @@ class SupabaseSyncService implements SyncService {
   final SupabaseClient? _client;
   final AuthService _authService;
   final KarritoSyncRemote _remote;
+  final DateTime Function() _clock;
+  final Uuid _uuid;
 
   bool _isSyncing = false;
+
+  /// Extracts a concise diagnostic reference code from Supabase / network
+  /// exceptions so user-facing error toasts can show `(Ref: 42501)` without
+  /// leaking raw SQL or stack traces.
+  static String? extractDiagnosticCode(Object error) {
+    if (error is PostgrestException) {
+      final code = error.code?.trim();
+      return (code != null && code.isNotEmpty) ? code : 'PG';
+    }
+    if (error is AuthException) {
+      final code = error.code?.trim();
+      if (code != null && code.isNotEmpty) return code;
+      final status = error.statusCode?.trim();
+      if (status != null && status.isNotEmpty) return 'AUTH-$status';
+      return 'AUTH';
+    }
+    if (error is TimeoutException) return 'TIMEOUT';
+    if (error is SocketException) return 'OFFLINE';
+    return null;
+  }
 
   static Map<String, dynamic> buildUserProfileUpsertPayload({
     required String uid,
@@ -263,12 +355,25 @@ class SupabaseSyncService implements SyncService {
       final uid = _authService.currentUserId;
       if (!signedIn || uid == null) return;
 
+      final prefs = await (_db.select(
+        _db.localPreferences,
+      )..where((t) => t.id.equals(1))).getSingleOrNull();
+      final lastSyncedAt = prefs?.lastSyncedAt;
+      final syncStartedAt = _clock().toUtc();
+
       await _ensureUserProfileAndCity(uid);
       await _pushPendingDeletions(uid);
-      await _syncLists(uid);
-      await _syncItems();
-      await _syncAislePreferences(uid);
-      await _syncLearnedItems(uid);
+
+      // Run independent table sync branches concurrently to cut sync latency.
+      // Lists always complete before items inside `_syncListsAndItems` to
+      // satisfy the `list_items.list_id -> shopping_lists.id` foreign key.
+      await Future.wait<void>(<Future<void>>[
+        _syncListsAndItems(uid, updatedSince: lastSyncedAt),
+        _syncAislePreferences(uid, updatedSince: lastSyncedAt),
+        _syncLearnedItems(uid, updatedSince: lastSyncedAt),
+      ]);
+
+      await _saveLastSyncedAt(syncStartedAt);
     } on SocketException catch (e) {
       debugPrint('Karrito sync skipped (offline): $e');
     } on TimeoutException catch (e) {
@@ -285,6 +390,22 @@ class SupabaseSyncService implements SyncService {
     } finally {
       _isSyncing = false;
     }
+  }
+
+  Future<void> _syncListsAndItems(String uid, {DateTime? updatedSince}) async {
+    await _syncLists(uid, updatedSince: updatedSince);
+    await _syncItems(updatedSince: updatedSince);
+  }
+
+  Future<void> _saveLastSyncedAt(DateTime timestampUtc) async {
+    await _db
+        .into(_db.localPreferences)
+        .insertOnConflictUpdate(
+          LocalPreferencesCompanion(
+            id: const Value(1),
+            lastSyncedAt: Value(timestampUtc),
+          ),
+        );
   }
 
   @override
@@ -321,8 +442,8 @@ class SupabaseSyncService implements SyncService {
         return LiveShareOutcome.ready(list.shareCode!);
       }
 
-      // Ensure list row exists remotely before sharing code.
-      await _pushSingleList(list, uid);
+      // Ensure list row exists remotely before sharing code (handles UUID self-heal if needed).
+      final syncedList = await _pushSingleList(list, uid);
 
       for (var attempt = 0; attempt < 4; attempt++) {
         final code = ShareCodeHelper.generateCode();
@@ -332,18 +453,18 @@ class SupabaseSyncService implements SyncService {
               .update(<String, dynamic>{
                 'is_shared': true,
                 'share_code': code,
-                'updated_at': DateTime.now().toUtc().toIso8601String(),
+                'updated_at': _clock().toUtc().toIso8601String(),
               })
-              .eq('id', list.id);
+              .eq('id', syncedList.id);
 
           await (_db.update(
             _db.localLists,
-          )..where((t) => t.id.equals(list.id))).write(
+          )..where((t) => t.id.equals(syncedList.id))).write(
             LocalListsCompanion(
               ownerId: Value(uid),
               isShared: const Value(true),
               shareCode: Value(code),
-              updatedAt: Value(DateTime.now()),
+              updatedAt: Value(_clock()),
               syncStatus: const Value('synced'),
             ),
           );
@@ -364,10 +485,14 @@ class SupabaseSyncService implements SyncService {
       throw const ShoppingActionException(AppStrings.liveOfflineError);
     } on PostgrestException catch (e) {
       _logPostgrestError('enableLiveShare', e);
-      throw const ShoppingActionException(AppStrings.syncFailedError);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
     } on AuthException catch (e) {
       _logAuthError('enableLiveShare', e);
-      throw const ShoppingActionException(AppStrings.syncFailedError);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
     } catch (e) {
       final lower = e.toString().toLowerCase();
       if (lower.contains('socket') ||
@@ -484,10 +609,14 @@ class SupabaseSyncService implements SyncService {
       if (msg.isNotEmpty) {
         throw ShoppingActionException(msg);
       }
-      throw const ShoppingActionException(AppStrings.syncFailedError);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
     } on AuthException catch (e) {
       _logAuthError('joinSharedListByCode', e);
-      throw const ShoppingActionException(AppStrings.syncFailedError);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
     } on SocketException {
       throw const ShoppingActionException(AppStrings.liveOfflineError);
     } catch (e) {
@@ -602,7 +731,8 @@ class SupabaseSyncService implements SyncService {
     }
   }
 
-  Future<void> _syncLists(String uid) async {
+  Future<void> _syncLists(String uid, {DateTime? updatedSince}) async {
+    final isDeltaSync = updatedSince != null;
     final pendingListDeletes =
         (await (_db.select(
               _db.localPendingDeletions,
@@ -610,7 +740,10 @@ class SupabaseSyncService implements SyncService {
             .map((e) => e.entityKey)
             .toSet();
 
-    final remoteRows = await _remote.fetchShoppingLists();
+    final remoteRows = await _remote.fetchShoppingLists(
+      uid,
+      updatedSince: updatedSince,
+    );
     final remoteById = <String, Map<String, dynamic>>{
       for (final r in remoteRows)
         if (r['id'] != null) r['id'].toString(): r,
@@ -660,13 +793,13 @@ class SupabaseSyncService implements SyncService {
       }
     }
 
-    // Push local-only pending lists OR remove previously synced lists deleted remotely.
+    // Push local-only pending lists OR (on full sync only) prune remotely deleted lists.
     for (final local in localLists) {
       if (remoteById.containsKey(local.id)) continue;
 
       if (local.syncStatus == 'pending' && !local.isJoinedRemote) {
         await _pushSingleList(local, uid);
-      } else if (local.syncStatus == 'synced') {
+      } else if (!isDeltaSync && local.syncStatus == 'synced') {
         final remaining = await _db.select(_db.localLists).get();
         if (remaining.length > 1) {
           await (_db.delete(
@@ -677,7 +810,17 @@ class SupabaseSyncService implements SyncService {
     }
   }
 
-  Future<void> _pushSingleList(ShoppingListEntity list, String uid) async {
+  /// Pushes a single local list to Supabase.
+  ///
+  /// If an owned local list collides on primary key with a remote row owned by
+  /// another UID (e.g., an old anonymous guest session after signing into an
+  /// existing Google account), Supabase rejects the conflict `DO UPDATE` with
+  /// `42501` RLS violation. In that case we transparently reassign fresh UUIDs
+  /// to the local list and its items and retry once as a new row owned by [uid].
+  Future<ShoppingListEntity> _pushSingleList(
+    ShoppingListEntity list,
+    String uid,
+  ) async {
     try {
       if (list.isJoinedRemote) {
         await _remote.updateShoppingList(list.id, <String, dynamic>{
@@ -698,13 +841,116 @@ class SupabaseSyncService implements SyncService {
           syncStatus: const Value('synced'),
         ),
       );
+      return list.copyWith(
+        ownerId: Value(list.isJoinedRemote ? list.ownerId : uid),
+        syncStatus: 'synced',
+      );
     } on PostgrestException catch (e) {
       _logPostgrestError('pushSingleList(${list.id})', e);
-      rethrow;
+
+      final isOwnershipConflict =
+          !list.isJoinedRemote && (e.code == '42501' || e.code == '23505');
+      if (!isOwnershipConflict) {
+        rethrow;
+      }
+
+      debugPrint(
+        'Karrito sync: list ${list.id} collided with another owner in Supabase '
+        '(code=${e.code}). Reassigning fresh local UUIDs and retrying insert.',
+      );
+      final cloned = await _reassignOwnedListUuids(list, uid);
+      try {
+        await _remote.upsertShoppingList(
+          buildShoppingListUpsertPayload(list: cloned, currentUid: uid),
+        );
+        await (_db.update(
+          _db.localLists,
+        )..where((t) => t.id.equals(cloned.id))).write(
+          LocalListsCompanion(
+            ownerId: Value(uid),
+            syncStatus: const Value('synced'),
+          ),
+        );
+        return cloned.copyWith(ownerId: Value(uid), syncStatus: 'synced');
+      } on PostgrestException catch (retryErr) {
+        _logPostgrestError('pushSingleList.retry(${cloned.id})', retryErr);
+        rethrow;
+      }
     }
   }
 
-  Future<void> _syncItems() async {
+  /// Replaces [oldList] and all of its local items with fresh UUIDs owned by
+  /// [uid] inside a single SQLite transaction so the retry inserts clean rows.
+  Future<ShoppingListEntity> _reassignOwnedListUuids(
+    ShoppingListEntity oldList,
+    String uid,
+  ) async {
+    final newListId = _uuid.v4();
+    final now = _clock();
+
+    await _db.transaction(() async {
+      final oldItems = await (_db.select(
+        _db.localItems,
+      )..where((t) => t.listId.equals(oldList.id))).get();
+
+      await _db
+          .into(_db.localLists)
+          .insert(
+            LocalListsCompanion.insert(
+              id: newListId,
+              title: oldList.title,
+              ownerId: Value(uid),
+              isShared: const Value(false),
+              shareCode: const Value(null),
+              isJoinedRemote: const Value(false),
+              createdAt: oldList.createdAt,
+              updatedAt: now,
+              syncStatus: const Value('pending'),
+            ),
+          );
+
+      if (oldItems.isNotEmpty) {
+        final newCompanions = oldItems.map((item) {
+          return LocalItemsCompanion.insert(
+            id: _uuid.v4(),
+            listId: newListId,
+            rawText: item.rawText,
+            cleanName: item.cleanName,
+            quantity: Value(item.quantity),
+            unit: Value(item.unit),
+            storeCategory: item.storeCategory,
+            aisleName: item.aisleName,
+            isChecked: Value(item.isChecked),
+            position: Value(item.position),
+            updatedAt: now,
+            syncStatus: Value(
+              item.syncStatus == 'pending_ai' ? 'pending_ai' : 'pending',
+            ),
+          );
+        }).toList();
+        await _db.batch((b) => b.insertAll(_db.localItems, newCompanions));
+      }
+
+      await (_db.delete(
+        _db.localLists,
+      )..where((t) => t.id.equals(oldList.id))).go();
+    });
+
+    return ShoppingListEntity(
+      id: newListId,
+      title: oldList.title,
+      ownerId: uid,
+      isShared: false,
+      shareCode: null,
+      isJoinedRemote: false,
+      createdAt: oldList.createdAt,
+      updatedAt: now,
+      syncStatus: 'pending',
+    );
+  }
+
+  Future<void> _syncItems({DateTime? updatedSince}) async {
+    final isDeltaSync = updatedSince != null;
     final pendingItemDeletes =
         (await (_db.select(
               _db.localPendingDeletions,
@@ -720,7 +966,10 @@ class SupabaseSyncService implements SyncService {
         .toSet();
     if (activeListIds.isEmpty) return;
 
-    final remoteRows = await _remote.fetchListItems();
+    final remoteRows = await _remote.fetchListItems(
+      updatedSince: updatedSince,
+      listIds: activeListIds,
+    );
     final remoteById = <String, Map<String, dynamic>>{
       for (final r in remoteRows)
         if (r['id'] != null && activeListIds.contains(r['list_id']?.toString()))
@@ -788,7 +1037,7 @@ class SupabaseSyncService implements SyncService {
       if (local.syncStatus == 'pending') {
         if (!syncedListIds.contains(local.listId)) continue;
         await _pushSingleItem(local);
-      } else if (local.syncStatus == 'synced') {
+      } else if (!isDeltaSync && local.syncStatus == 'synced') {
         await (_db.delete(
           _db.localItems,
         )..where((t) => t.id.equals(local.id))).go();
@@ -820,8 +1069,14 @@ class SupabaseSyncService implements SyncService {
     }
   }
 
-  Future<void> _syncAislePreferences(String uid) async {
-    final remoteRows = await _remote.fetchAislePreferences(uid);
+  Future<void> _syncAislePreferences(
+    String uid, {
+    DateTime? updatedSince,
+  }) async {
+    final remoteRows = await _remote.fetchAislePreferences(
+      uid,
+      updatedSince: updatedSince,
+    );
 
     final remoteByKey = <(String, String), Map<String, dynamic>>{
       for (final row in remoteRows)
@@ -866,7 +1121,7 @@ class SupabaseSyncService implements SyncService {
       if (local.syncStatus != 'pending') continue;
       final key = (local.storeCategory, local.aisleName);
       final remote = remoteByKey[key];
-      final localUpdated = local.updatedAt ?? DateTime.now();
+      final localUpdated = local.updatedAt ?? _clock();
 
       final shouldPush =
           remote == null ||
@@ -911,7 +1166,7 @@ class SupabaseSyncService implements SyncService {
     }
   }
 
-  Future<void> _syncLearnedItems(String uid) async {
+  Future<void> _syncLearnedItems(String uid, {DateTime? updatedSince}) async {
     final pendingLearnedDeletes =
         (await (_db.select(
               _db.localPendingDeletions,
@@ -919,7 +1174,10 @@ class SupabaseSyncService implements SyncService {
             .map((e) => e.entityKey)
             .toSet();
 
-    final remoteRows = await _remote.fetchLearnedItems(uid);
+    final remoteRows = await _remote.fetchLearnedItems(
+      uid,
+      updatedSince: updatedSince,
+    );
 
     final remoteByName = <String, Map<String, dynamic>>{
       for (final row in remoteRows)

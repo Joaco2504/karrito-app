@@ -94,6 +94,7 @@ class LocalPreferences extends Table {
   BoolColumn get onboardingCompleted =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get keepScreenOn => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -128,13 +129,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await _createPerformanceIndexes();
         await _seedInitialData();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -149,10 +151,33 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(localLearnedItems, localLearnedItems.syncStatus);
           await m.createTable(localPendingDeletions);
         }
+        if (from < 3) {
+          await m.addColumn(localPreferences, localPreferences.lastSyncedAt);
+          await _createPerformanceIndexes();
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
       },
+    );
+  }
+
+  Future<void> _createPerformanceIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_items_list_store_aisle '
+      'ON local_items (list_id, store_category, aisle_name, is_checked, position)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_items_sync_status '
+      'ON local_items (sync_status, updated_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_learned_use_count '
+      'ON local_learned_items (use_count DESC)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_aisle_order_lookup '
+      'ON local_aisle_order (store_category, sort_order)',
     );
   }
 

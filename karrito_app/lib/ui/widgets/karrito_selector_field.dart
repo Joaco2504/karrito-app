@@ -18,7 +18,8 @@ class KarritoFieldLabel extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: 13,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
         color: karritoColors.textSecondary,
         height: 1.25,
       ),
@@ -26,9 +27,9 @@ class KarritoFieldLabel extends StatelessWidget {
   }
 }
 
-/// Reusable option selector following `karrito-ui-selectors`:
-/// fixed label above, distinct solid surface, 1px border, 14px radius,
-/// >= 48px touch target, and a rounded `ModalBottomSheet` picker with green check.
+/// Reusable option selector following `karrito-ui-selectors` + Electric Mercado:
+/// fixed label above, solid lavender/violet surface, 1px border, 16px radius,
+/// >= 48px touch target, and a rounded 32px `ModalBottomSheet` picker with check.
 class KarritoSelectorField<T> extends StatelessWidget {
   const KarritoSelectorField({
     required this.sheetTitle,
@@ -63,22 +64,22 @@ class KarritoSelectorField<T> extends StatelessWidget {
         final theme = Theme.of(sheetContext);
         final colorScheme = theme.colorScheme;
         final karritoColors = theme.extension<KarritoColors>()!;
-        final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.7;
+        final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.72;
 
         return ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
                   child: Text(
                     sheetTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -86,7 +87,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: options.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (itemContext, index) {
                       final option = options[index];
                       final isSelected = option == value;
@@ -94,29 +95,25 @@ class KarritoSelectorField<T> extends StatelessWidget {
 
                       return Material(
                         color: isSelected
-                            ? karritoColors.completedContainer.withValues(
-                                alpha: 0.55,
-                              )
+                            ? karritoColors.completedContainer
                             : karritoColors.fieldSurface,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                           side: BorderSide(
                             color: isSelected
-                                ? karritoColors.completed.withValues(
-                                    alpha: 0.55,
-                                  )
+                                ? karritoColors.completed.withValues(alpha: 0.6)
                                 : karritoColors.border,
-                            width: 1,
+                            width: isSelected ? 1.4 : 1,
                           ),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: InkWell(
                           onTap: () => Navigator.of(sheetContext).pop(option),
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: 48),
+                            constraints: const BoxConstraints(minHeight: 50),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
+                                horizontal: 16,
                                 vertical: 12,
                               ),
                               child: Row(
@@ -138,10 +135,18 @@ class KarritoSelectorField<T> extends StatelessWidget {
                                   ),
                                   if (isSelected) ...[
                                     const SizedBox(width: 10),
-                                    Icon(
-                                      Icons.check_rounded,
-                                      color: karritoColors.completed,
-                                      size: 22,
+                                    Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        color: karritoColors.lime,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.check_rounded,
+                                        color: karritoColors.onLime,
+                                        size: 16,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -187,7 +192,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
           child: Material(
             color: karritoColors.fieldSurface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: karritoColors.border, width: 1),
             ),
             clipBehavior: Clip.antiAlias,
@@ -206,7 +211,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
                         Icon(
                           leadingIcon,
                           size: 20,
-                          color: karritoColors.textSecondary,
+                          color: karritoColors.accentSoft,
                         ),
                         const SizedBox(width: 10),
                       ],
@@ -217,7 +222,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
                           ),
                         ),
@@ -226,7 +231,7 @@ class KarritoSelectorField<T> extends StatelessWidget {
                       Icon(
                         Icons.keyboard_arrow_down_rounded,
                         size: 22,
-                        color: karritoColors.textSecondary,
+                        color: karritoColors.accentSoft,
                       ),
                     ],
                   ),

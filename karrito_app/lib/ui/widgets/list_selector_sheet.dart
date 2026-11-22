@@ -219,27 +219,27 @@ class ListSelectorSheet extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
                     color: isSelected
-                        ? karritoColors.accentContainer.withValues(alpha: 0.45)
-                        : null,
+                        ? karritoColors.accentContainer.withValues(alpha: 0.55)
+                        : karritoColors.fieldSurface,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
                         color: isSelected
-                            ? karritoColors.accent
+                            ? karritoColors.accentSoft
                             : karritoColors.border,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
                     child: ListTile(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       leading: Icon(
                         isSelected
                             ? Icons.radio_button_checked_rounded
                             : Icons.radio_button_off_rounded,
                         color: isSelected
-                            ? karritoColors.accent
+                            ? karritoColors.accentSoft
                             : colorScheme.onSurfaceVariant,
                       ),
                       title: Row(
@@ -250,8 +250,8 @@ class ListSelectorSheet extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
                               ),
                             ),
                           ),
@@ -259,19 +259,19 @@ class ListSelectorSheet extends StatelessWidget {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
+                                horizontal: 8,
+                                vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: karritoColors.completedContainer,
-                                borderRadius: BorderRadius.circular(8),
+                                color: karritoColors.lime,
+                                borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
                                 AppStrings.liveListBadge,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: karritoColors.onCompletedContainer,
+                                  fontWeight: FontWeight.w800,
+                                  color: karritoColors.onLime,
                                 ),
                               ),
                             ),

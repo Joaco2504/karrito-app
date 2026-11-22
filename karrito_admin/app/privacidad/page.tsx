@@ -21,11 +21,11 @@ export default function PrivacidadPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-xs">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
+            <div className="flex size-9 items-center justify-center rounded-2xl bg-brand-accent text-brand-lime">
               <ShoppingCartIcon className="size-4" aria-hidden="true" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-foreground">
+              <span className="text-sm font-extrabold tracking-tight text-foreground">
                 Karrito
               </span>
               <span className="text-xs text-muted-foreground">
@@ -40,7 +40,7 @@ export default function PrivacidadPage() {
               size="sm"
               render={<Link href="/login" />}
               nativeButton={false}
-              className="rounded-[12px]"
+              className="rounded-full px-4"
             >
               <ArrowLeftIcon data-icon="inline-start" />
               Panel admin
@@ -51,7 +51,7 @@ export default function PrivacidadPage() {
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardContent className="flex flex-col gap-6 p-6 sm:p-10">
             <div className="flex flex-col gap-2">
               <p className="text-xs font-medium text-muted-foreground">

@@ -167,8 +167,8 @@ class _KarritoToastOverlayState extends State<_KarritoToastOverlay>
       IconData iconData,
     ) = switch (widget.type) {
       KarritoToastType.success => (
-        karritoColors.completedContainer,
-        karritoColors.completed,
+        karritoColors.lime,
+        karritoColors.onLime,
         karritoColors.completed.withValues(alpha: 0.55),
         Icons.check_circle_rounded,
       ),
@@ -180,10 +180,8 @@ class _KarritoToastOverlayState extends State<_KarritoToastOverlay>
       ),
       KarritoToastType.info => (
         karritoColors.accentContainer,
-        theme.brightness == Brightness.dark
-            ? karritoColors.accent
-            : karritoColors.onAccentContainer,
-        karritoColors.accent.withValues(alpha: 0.65),
+        karritoColors.accentSoft,
+        karritoColors.accent.withValues(alpha: 0.55),
         Icons.info_outline_rounded,
       ),
     };
@@ -207,12 +205,12 @@ class _KarritoToastOverlayState extends State<_KarritoToastOverlay>
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: borderColor, width: 1.3),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.22),
-                    blurRadius: 18,
+                    color: karritoColors.shadowTint.withValues(alpha: 0.28),
+                    blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
@@ -225,9 +223,9 @@ class _KarritoToastOverlayState extends State<_KarritoToastOverlay>
                     height: 34,
                     decoration: BoxDecoration(
                       color: badgeBg,
-                      borderRadius: BorderRadius.circular(10),
+                      shape: BoxShape.circle,
                     ),
-                    child: Icon(iconData, size: 20, color: iconColor),
+                    child: Icon(iconData, size: 19, color: iconColor),
                   ),
                   const SizedBox(width: 12),
                   Flexible(

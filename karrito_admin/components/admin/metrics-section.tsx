@@ -56,17 +56,17 @@ export function MetricsSection({
   return (
     <section aria-label="Tablero de métricas" className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
             <div className="flex flex-col gap-1">
-              <CardDescription className="text-[13px] font-medium">
+              <CardDescription className="text-[13px] font-semibold">
                 Usuarios totales
               </CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
+              <CardTitle className="text-3xl font-extrabold tracking-tight tabular-nums">
                 {formatNumberAR(metrics.totalUsers)}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-brand-accent text-brand-accent-foreground">
               <UsersIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -86,19 +86,19 @@ export function MetricsSection({
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
             <div className="flex flex-col gap-1">
-              <CardDescription className="text-[13px] font-medium">
+              <CardDescription className="text-[13px] font-semibold">
                 Cuentas por plan
               </CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
+              <CardTitle className="text-3xl font-extrabold tracking-tight tabular-nums">
                 {formatNumberAR(
                   metrics.planCounts.basic_2usd + metrics.planCounts.pro_3usd,
                 )}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-brand-cta text-brand-cta-foreground">
               <MegaphoneIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -124,24 +124,24 @@ export function MetricsSection({
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
             <div className="flex flex-col gap-1">
-              <CardDescription className="text-[13px] font-medium">
+              <CardDescription className="text-[13px] font-semibold">
                 Cargas con IA hoy
               </CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
+              <CardTitle className="text-3xl font-extrabold tracking-tight tabular-nums">
                 {formatNumberAR(metrics.aiLoadsToday)}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent/20 text-foreground">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
               <SparklesIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-1 pt-1 text-xs text-muted-foreground">
             <span>
               Fecha de Argentina (UTC-3):{" "}
-              <strong className="font-medium text-foreground">
+              <strong className="font-semibold text-foreground">
                 {formatDateAR(metrics.todayArgentinaISO)}
               </strong>
             </span>
@@ -149,17 +149,17 @@ export function MetricsSection({
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
             <div className="flex flex-col gap-1">
-              <CardDescription className="text-[13px] font-medium">
+              <CardDescription className="text-[13px] font-semibold">
                 Facturación mensual estimada
               </CardDescription>
-              <CardTitle className="text-3xl font-semibold text-success tabular-nums">
+              <CardTitle className="text-3xl font-extrabold tracking-tight text-success tabular-nums">
                 {formatUsdAR(metrics.estimatedMonthlyRevenueUsd)}
               </CardTitle>
             </div>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-success/15 text-success">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-brand-lime text-brand-lime-foreground">
               <CoinsIcon className="size-5" aria-hidden="true" />
             </div>
           </CardHeader>
@@ -181,9 +181,9 @@ export function MetricsSection({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-base font-bold">
               Anuncios activos por localidad
             </CardTitle>
             <CardDescription>
@@ -196,9 +196,9 @@ export function MetricsSection({
               {activeAdsByCity.map(({ city, count }) => (
                 <div
                   key={city}
-                  className="flex items-center gap-2 rounded-[12px] border border-border bg-field px-3 py-2 text-sm"
+                  className="flex items-center gap-2 rounded-full border border-border bg-field px-3.5 py-2 text-sm"
                 >
-                  <span className="font-medium text-foreground">{city}</span>
+                  <span className="font-semibold text-foreground">{city}</span>
                   <Badge
                     variant={count > 0 ? "default" : "secondary"}
                     className="tabular-nums"
@@ -212,7 +212,7 @@ export function MetricsSection({
               <Button
                 type="button"
                 onClick={onOpenNewAd}
-                className="min-h-[42px] rounded-[12px]"
+                className="min-h-[42px] rounded-full px-5"
               >
                 Cargar anuncio
               </Button>
@@ -220,7 +220,7 @@ export function MetricsSection({
                 type="button"
                 variant="outline"
                 onClick={() => onNavigateTab("publicidad")}
-                className="min-h-[42px] rounded-[12px]"
+                className="min-h-[42px] rounded-full px-5"
               >
                 Ver comercios
                 <ArrowRightIcon data-icon="inline-end" />
@@ -229,9 +229,9 @@ export function MetricsSection({
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-border bg-card shadow-xs">
+        <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">
+            <CardTitle className="text-base font-bold">
               Accesos directos de gestión
             </CardTitle>
             <CardDescription>
@@ -244,10 +244,10 @@ export function MetricsSection({
               type="button"
               variant="outline"
               onClick={() => onNavigateTab("usuarios")}
-              className="min-h-[46px] w-full justify-between rounded-[14px] px-4"
+              className="min-h-[48px] w-full justify-between rounded-2xl px-4"
             >
               <span className="flex items-center gap-2.5">
-                <UsersIcon className="size-4 text-accent-foreground" />
+                <UsersIcon className="size-4 text-primary" />
                 Cambiar planes o suspender usuarios
               </span>
               <ArrowRightIcon className="size-4 text-muted-foreground" />
@@ -257,10 +257,10 @@ export function MetricsSection({
               type="button"
               variant="outline"
               onClick={() => onNavigateTab("configuracion")}
-              className="min-h-[46px] w-full justify-between rounded-[14px] px-4"
+              className="min-h-[48px] w-full justify-between rounded-2xl px-4"
             >
               <span className="flex items-center gap-2.5">
-                <SlidersHorizontalIcon className="size-4 text-accent-foreground" />
+                <SlidersHorizontalIcon className="size-4 text-primary" />
                 Ajustar topes de IA y listas activas
               </span>
               <ArrowRightIcon className="size-4 text-muted-foreground" />

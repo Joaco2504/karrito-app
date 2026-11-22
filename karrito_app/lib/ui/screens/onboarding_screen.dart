@@ -88,12 +88,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       if (!widget.isReviewMode)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                            horizontal: 14,
+                            vertical: 7,
                           ),
                           decoration: BoxDecoration(
                             color: karritoColors.accent,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -101,9 +101,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               Icon(
                                 Icons.shopping_cart_rounded,
                                 size: 16,
-                                color: karritoColors.onAccent,
+                                color: karritoColors.lime,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 7),
                               Text(
                                 AppStrings.appName,
                                 style: theme.textTheme.labelLarge?.copyWith(
@@ -283,72 +283,79 @@ class _OnboardingStepSlide extends StatelessWidget {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              illustration,
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: karritoColors.accentContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Paso $stepNumber de 3',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: karritoColors.onAccentContainer,
-                      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: karritoColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: karritoColors.shadowTint,
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            illustration,
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: karritoColors.lime,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Paso $stepNumber de 3',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: karritoColors.onLime,
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.25,
               ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.42,
               ),
-              const SizedBox(height: 6),
-              Text(
-                body,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.42,
-                ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: karritoColors.fieldSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: karritoColors.border, width: 1),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: karritoColors.fieldSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: karritoColors.border, width: 1),
-                ),
-                child: Text(
-                  example,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
+              child: Text(
+                example,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -367,7 +374,7 @@ class _MixedInputIllustration extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: karritoColors.fieldSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: karritoColors.border),
       ),
       child: Row(
@@ -377,12 +384,12 @@ class _MixedInputIllustration extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: karritoColors.accent,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               Icons.edit_note_rounded,
               size: 30,
-              color: karritoColors.onAccent,
+              color: karritoColors.lime,
             ),
           ),
           const SizedBox(width: 14),
@@ -422,23 +429,22 @@ class _StoreGroupingIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final karritoColors = Theme.of(context).extension<KarritoColors>()!;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: karritoColors.fieldSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: karritoColors.border),
       ),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: karritoColors.accent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -446,13 +452,13 @@ class _StoreGroupingIllustration extends StatelessWidget {
                   Icon(
                     Icons.storefront_rounded,
                     size: 20,
-                    color: karritoColors.onAccent,
+                    color: karritoColors.lime,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Supermercado',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w800,
                       color: karritoColors.onAccent,
                     ),
@@ -472,11 +478,13 @@ class _StoreGroupingIllustration extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: karritoColors.border),
+                color: karritoColors.ctaContainer,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: karritoColors.cta.withValues(alpha: 0.35),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,23 +492,25 @@ class _StoreGroupingIllustration extends StatelessWidget {
                   Icon(
                     Icons.handyman_outlined,
                     size: 20,
-                    color: colorScheme.onSurface,
+                    color: karritoColors.onCtaContainer,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Ferretería',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
+                      color: karritoColors.onCtaContainer,
                     ),
                   ),
                   Text(
                     'Fijaciones',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: karritoColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      color: karritoColors.onCtaContainer.withValues(
+                        alpha: 0.85,
+                      ),
                     ),
                   ),
                 ],
@@ -525,7 +535,7 @@ class _OfflineChecklistIllustration extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: karritoColors.fieldSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: karritoColors.border),
       ),
       child: Column(
@@ -537,12 +547,12 @@ class _OfflineChecklistIllustration extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: karritoColors.completed,
+                  color: karritoColors.lime,
                 ),
                 child: Icon(
                   Icons.check_rounded,
                   size: 15,
-                  color: colorScheme.onTertiary,
+                  color: karritoColors.onLime,
                 ),
               ),
               const SizedBox(width: 10),
@@ -557,17 +567,17 @@ class _OfflineChecklistIllustration extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 decoration: BoxDecoration(
-                  color: karritoColors.completedContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  color: karritoColors.ctaContainer,
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   'Sin señal',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: karritoColors.onCompletedContainer,
+                    color: karritoColors.onCtaContainer,
                   ),
                 ),
               ),
@@ -581,7 +591,7 @@ class _OfflineChecklistIllustration extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: karritoColors.accent, width: 2),
+                  border: Border.all(color: karritoColors.accentSoft, width: 2),
                 ),
               ),
               const SizedBox(width: 10),
@@ -597,7 +607,7 @@ class _OfflineChecklistIllustration extends StatelessWidget {
               Icon(
                 Icons.stay_current_portrait_rounded,
                 size: 18,
-                color: karritoColors.accent,
+                color: karritoColors.accentSoft,
               ),
             ],
           ),
@@ -617,17 +627,17 @@ class _MiniTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: borderColor),
       ),
       child: Text(
         label,
         style: Theme.of(
           context,
-        ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+        ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

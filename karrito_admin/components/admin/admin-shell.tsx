@@ -60,11 +60,11 @@ export function AdminShell({
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur-xs">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-brand-accent text-brand-lime">
               <ShoppingCartIcon className="size-5" aria-hidden="true" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-base font-semibold leading-tight text-foreground">
+              <h1 className="text-base font-extrabold leading-tight tracking-tight text-foreground">
                 Karrito
               </h1>
               <span className="text-xs text-muted-foreground">
@@ -80,7 +80,7 @@ export function AdminShell({
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="min-h-[40px] rounded-[12px]"
+              className="min-h-[40px] rounded-full px-4"
             >
               <RefreshCwIcon
                 data-icon="inline-start"
@@ -94,7 +94,7 @@ export function AdminShell({
               size="sm"
               render={<Link href="/privacidad" />}
               nativeButton={false}
-              className="min-h-[40px] rounded-[12px]"
+              className="min-h-[40px] rounded-full px-4"
             >
               <ShieldCheckIcon data-icon="inline-start" />
               Privacidad
@@ -107,7 +107,7 @@ export function AdminShell({
                 type="submit"
                 variant="outline"
                 size="sm"
-                className="min-h-[40px] rounded-[12px]"
+                className="min-h-[40px] rounded-full px-4"
               >
                 <LogOutIcon data-icon="inline-start" />
                 Salir
@@ -133,10 +133,10 @@ export function AdminShell({
           className="flex flex-col gap-6"
         >
           <div className="overflow-x-auto pb-1">
-            <TabsList className="h-auto w-full justify-start gap-1 rounded-[14px] border border-border bg-card p-1 sm:w-fit">
+            <TabsList className="karrito-card-elevation h-auto w-full justify-start gap-1.5 rounded-full border border-border bg-card p-1.5 sm:w-fit">
               <TabsTrigger
                 value="resumen"
-                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
+                className="min-h-[40px] rounded-full px-4 font-bold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <BarChart3Icon data-icon="inline-start" />
                 Métricas
@@ -144,7 +144,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="publicidad"
-                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
+                className="min-h-[40px] rounded-full px-4 font-bold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <MegaphoneIcon data-icon="inline-start" />
                 Publicidad local
@@ -158,7 +158,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="usuarios"
-                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
+                className="min-h-[40px] rounded-full px-4 font-bold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <UsersIcon data-icon="inline-start" />
                 Usuarios
@@ -172,7 +172,7 @@ export function AdminShell({
 
               <TabsTrigger
                 value="configuracion"
-                className="min-h-[40px] rounded-[10px] px-3.5 font-semibold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
+                className="min-h-[40px] rounded-full px-4 font-bold data-active:bg-brand-accent data-active:text-brand-accent-foreground"
               >
                 <SlidersHorizontalIcon data-icon="inline-start" />
                 Configuración

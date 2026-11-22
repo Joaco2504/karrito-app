@@ -84,14 +84,14 @@ export function LoginCard({ errorCode }: LoginCardProps) {
   };
 
   return (
-    <Card className="w-full max-w-md rounded-2xl border border-border bg-card shadow-sm">
+    <Card className="karrito-card-elevation w-full max-w-md rounded-3xl border border-border bg-card">
       <CardHeader className="gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-brand-accent text-brand-accent-foreground">
+          <div className="flex size-11 items-center justify-center rounded-2xl bg-brand-accent text-brand-lime">
             <ShoppingCartIcon className="size-5" aria-hidden="true" />
           </div>
           <div className="flex flex-col">
-            <CardTitle className="text-xl font-semibold">
+            <CardTitle className="text-xl font-extrabold tracking-tight">
               Panel de Karrito
             </CardTitle>
             <CardDescription>
@@ -127,7 +127,7 @@ export function LoginCard({ errorCode }: LoginCardProps) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isPending}
-          className="min-h-[48px] w-full rounded-[14px] text-sm font-medium"
+          className="min-h-[48px] w-full rounded-full text-sm font-bold"
         >
           {isPending ? (
             <>

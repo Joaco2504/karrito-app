@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_strings.dart';
+import '../../domain/services/item_text_parser.dart';
 import '../models/procesar_lista_response.dart';
 import 'auth_service.dart';
 
@@ -40,20 +42,90 @@ abstract interface class AiClassifierService {
   Future<ProcesarListaResponse> classifyText(String text);
 }
 
+class _AiCacheEntry {
+  const _AiCacheEntry({required this.response, required this.storedAt});
+
+  final ProcesarListaResponse response;
+  final DateTime storedAt;
+}
+
+/// In-memory LRU cache with TTL for repeated `procesar-lista` text inputs.
+/// Avoids duplicate Edge Function + Gemini calls when a user pastes or retries
+/// the same block within [ttl] (30 minutes by default).
+class AiResponseCache {
+  AiResponseCache({
+    this.maxEntries = 40,
+    this.ttl = const Duration(minutes: 30),
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
+
+  final int maxEntries;
+  final Duration ttl;
+  final DateTime Function() _clock;
+  final LinkedHashMap<String, _AiCacheEntry> _entries =
+      LinkedHashMap<String, _AiCacheEntry>();
+
+  static String normalizeKey(String rawInput) {
+    return ItemTextParser.normalizeProductName(rawInput);
+  }
+
+  ProcesarListaResponse? get(String rawInput) {
+    final key = normalizeKey(rawInput);
+    if (key.isEmpty) return null;
+
+    final entry = _entries.remove(key);
+    if (entry == null) return null;
+
+    if (_clock().difference(entry.storedAt) >= ttl) {
+      return null;
+    }
+
+    // Re-insert at tail to mark as most recently used.
+    _entries[key] = entry;
+    return entry.response;
+  }
+
+  void put(String rawInput, ProcesarListaResponse response) {
+    final key = normalizeKey(rawInput);
+    if (key.isEmpty || response.items.isEmpty) return;
+
+    _entries.remove(key);
+    while (_entries.length >= maxEntries) {
+      _entries.remove(_entries.keys.first);
+    }
+    _entries[key] = _AiCacheEntry(response: response, storedAt: _clock());
+  }
+
+  void clear() => _entries.clear();
+
+  int get length => _entries.length;
+}
+
+typedef AiFunctionInvoker = Future<dynamic> Function(String trimmedText);
+
 class SupabaseAiClassifierService implements AiClassifierService {
   SupabaseAiClassifierService({
     required this._client,
     required this._authService,
-  });
+    AiResponseCache? cache,
+    this._invoker,
+  }) : _cache = cache ?? AiResponseCache();
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
   final AuthService _authService;
+  final AiResponseCache _cache;
+  final AiFunctionInvoker? _invoker;
 
   @override
   Future<ProcesarListaResponse> classifyText(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) {
       throw const AiProcessingException(AppStrings.emptyInputError);
+    }
+
+    final cached = _cache.get(trimmed);
+    if (cached != null) {
+      return cached;
     }
 
     // Ensure a valid anonymous JWT exists if the app first launched offline.
@@ -63,12 +135,20 @@ class SupabaseAiClassifierService implements AiClassifierService {
     }
 
     try {
-      final response = await _client.functions
-          .invoke('procesar-lista', body: <String, dynamic>{'text': trimmed})
-          .timeout(const Duration(seconds: 25));
+      final rawData = _invoker != null
+          ? await _invoker(trimmed).timeout(const Duration(seconds: 25))
+          : (await _client!.functions
+                    .invoke(
+                      'procesar-lista',
+                      body: <String, dynamic>{'text': trimmed},
+                    )
+                    .timeout(const Duration(seconds: 25)))
+                .data;
 
-      final payload = _normalizeJsonMap(response.data);
-      return ProcesarListaResponse.fromJson(payload);
+      final payload = _normalizeJsonMap(rawData);
+      final parsed = ProcesarListaResponse.fromJson(payload);
+      _cache.put(trimmed, parsed);
+      return parsed;
     } on TimeoutException {
       throw const AiOfflineOrNetworkException();
     } on SocketException {
@@ -97,10 +177,11 @@ class SupabaseAiClassifierService implements AiClassifierService {
         );
       }
 
-      if (e.status == 401) {
+      if (e.status == 401 && _client != null) {
         // Attempt one silent session refresh/re-auth before failing.
         final recovered = await _recoverSessionAndRetry(trimmed);
         if (recovered != null) {
+          _cache.put(trimmed, recovered);
           return recovered;
         }
       }
@@ -126,9 +207,11 @@ class SupabaseAiClassifierService implements AiClassifierService {
   }
 
   Future<ProcesarListaResponse?> _recoverSessionAndRetry(String text) async {
+    final client = _client;
+    if (client == null) return null;
     try {
-      await _client.auth.signInAnonymously();
-      final retry = await _client.functions
+      await client.auth.signInAnonymously();
+      final retry = await client.functions
           .invoke('procesar-lista', body: <String, dynamic>{'text': text})
           .timeout(const Duration(seconds: 25));
       return ProcesarListaResponse.fromJson(_normalizeJsonMap(retry.data));

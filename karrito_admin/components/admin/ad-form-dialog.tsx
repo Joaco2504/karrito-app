@@ -507,12 +507,12 @@ export function AdFormDialog({
 
             <Field
               orientation="horizontal"
-              className="rounded-[14px] border border-border bg-field px-4 py-3"
+              className="rounded-2xl border border-border bg-field px-4 py-3"
             >
               <FieldContent>
                 <FieldLabel
                   htmlFor="ad-is-active"
-                  className="text-sm font-medium text-foreground"
+                  className="text-sm font-semibold text-foreground"
                 >
                   Anuncio activo en la app
                 </FieldLabel>
@@ -535,14 +535,14 @@ export function AdFormDialog({
               variant="outline"
               disabled={isSaving || isUploading}
               onClick={() => onOpenChange(false)}
-              className="min-h-[44px] rounded-[12px]"
+              className="min-h-[44px] rounded-full px-5"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isSaving || isUploading}
-              className="min-h-[44px] rounded-[12px]"
+              className="min-h-[44px] rounded-full px-6"
             >
               {isSaving ? (
                 <>

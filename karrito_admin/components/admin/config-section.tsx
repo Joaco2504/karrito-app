@@ -160,7 +160,7 @@ export function ConfigSection({
       aria-label="Control remoto de configuración"
       className="flex flex-col gap-5"
     >
-      <Card className="max-w-2xl rounded-2xl border border-border bg-card shadow-xs">
+      <Card className="karrito-card-elevation max-w-2xl rounded-3xl border border-border bg-card">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">
             Control remoto de configuración
@@ -223,7 +223,7 @@ export function ConfigSection({
               variant="outline"
               disabled={!isDirty || isSaving}
               onClick={handleReset}
-              className="min-h-[44px] rounded-[12px]"
+              className="min-h-[44px] rounded-full px-5"
             >
               <RotateCcwIcon data-icon="inline-start" />
               Descartar cambios
@@ -232,7 +232,7 @@ export function ConfigSection({
             <Button
               type="submit"
               disabled={!isDirty || isSaving}
-              className="min-h-[44px] rounded-[12px] px-5"
+              className="min-h-[44px] rounded-full px-6"
             >
               {isSaving ? (
                 <>

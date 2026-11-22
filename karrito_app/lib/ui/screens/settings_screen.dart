@@ -49,44 +49,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text(
                   AppStrings.cloudBackupSection,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     child: account.isAnonymous
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.cloud_off_outlined,
-                                    color: karritoColors.textSecondary,
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: karritoColors.accentContainer,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Icon(
+                                      Icons.cloud_off_outlined,
+                                      color: karritoColors.accentSoft,
+                                      size: 20,
+                                    ),
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       AppStrings.guestAccountTitle,
                                       style: theme.textTheme.titleSmall
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w800,
                                           ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
                               Text(
                                 AppStrings.guestAccountSubtitle,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: karritoColors.textSecondary,
-                                  height: 1.38,
+                                  height: 1.4,
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 16),
                               KarritoBounceButton(
                                 enabled: !uiState.isLinkingGoogle,
                                 child: FilledButton.icon(
@@ -121,16 +130,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               Row(
                                 children: [
                                   Container(
-                                    width: 38,
-                                    height: 38,
+                                    width: 42,
+                                    height: 42,
                                     decoration: BoxDecoration(
-                                      color: karritoColors.completedContainer,
-                                      borderRadius: BorderRadius.circular(11),
+                                      color: karritoColors.lime,
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: Icon(
                                       Icons.cloud_done_outlined,
-                                      color: karritoColors.completed,
-                                      size: 20,
+                                      color: karritoColors.onLime,
+                                      size: 21,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -143,7 +152,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                           AppStrings.linkedAccountTitle,
                                           style: theme.textTheme.titleSmall
                                               ?.copyWith(
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight: FontWeight.w800,
                                               ),
                                         ),
                                         if (account.email != null &&
@@ -161,7 +170,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 16),
                               KarritoBounceButton(
                                 enabled: !uiState.isSyncing,
                                 child: OutlinedButton.icon(
@@ -176,13 +185,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                           height: 16,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: karritoColors.accent,
+                                            color: karritoColors.accentSoft,
                                           ),
                                         )
                                       : Icon(
                                           Icons.sync_rounded,
                                           size: 18,
-                                          color: karritoColors.accent,
+                                          color: karritoColors.accentSoft,
                                         ),
                                   label: Text(
                                     uiState.isSyncing
@@ -199,13 +208,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text(
                   AppStrings.settingsGeneralSection,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -221,7 +230,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const KarritoFieldLabel(
                           AppStrings.settingsAppearanceLabel,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         SegmentedButton<String>(
                           showSelectedIcon: false,
                           segments: const [
@@ -261,7 +270,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         secondary: Icon(
                           Icons.stay_current_portrait_rounded,
                           color: keepScreenOn
-                              ? karritoColors.accent
+                              ? karritoColors.accentSoft
                               : karritoColors.textSecondary,
                         ),
                         title: const Text(AppStrings.settingsKeepScreenOnTitle),
@@ -273,7 +282,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ListTile(
                         leading: Icon(
                           Icons.menu_book_outlined,
-                          color: karritoColors.textSecondary,
+                          color: karritoColors.accentSoft,
                         ),
                         title: const Text(AppStrings.settingsGuideTitle),
                         subtitle: const Text(AppStrings.settingsGuideSubtitle),
@@ -301,7 +310,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text(
                   AppStrings.faqSectionTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -355,9 +364,9 @@ class _FaqAccordionCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isOpen ? karritoColors.accent : karritoColors.border,
+          color: isOpen ? karritoColors.accentSoft : karritoColors.border,
           width: isOpen ? 1.5 : 1.0,
         ),
       ),
@@ -375,12 +384,12 @@ class _FaqAccordionCard extends StatelessWidget {
                   children: [
                     AnimatedContainer(
                       duration: duration,
-                      width: 8,
-                      height: 8,
+                      width: 9,
+                      height: 9,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isOpen
-                            ? karritoColors.accent
+                            ? karritoColors.lime
                             : karritoColors.border,
                       ),
                     ),
@@ -404,7 +413,7 @@ class _FaqAccordionCard extends StatelessWidget {
                         Icons.keyboard_arrow_down_rounded,
                         size: 22,
                         color: isOpen
-                            ? karritoColors.accent
+                            ? karritoColors.accentSoft
                             : karritoColors.textSecondary,
                       ),
                     ),
@@ -413,7 +422,7 @@ class _FaqAccordionCard extends StatelessWidget {
                 AnimatedCrossFade(
                   firstChild: const SizedBox.shrink(),
                   secondChild: Padding(
-                    padding: const EdgeInsets.only(top: 12, left: 20, right: 4),
+                    padding: const EdgeInsets.only(top: 12, left: 21, right: 4),
                     child: Text(
                       answer,
                       style: theme.textTheme.bodyMedium?.copyWith(

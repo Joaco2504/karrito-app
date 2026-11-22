@@ -211,7 +211,7 @@ export function UsersSection({
 
   return (
     <section aria-label="Gestión de usuarios" className="flex flex-col gap-5">
-      <Card className="rounded-2xl border border-border bg-card shadow-xs">
+      <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
         <CardHeader className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg font-semibold">

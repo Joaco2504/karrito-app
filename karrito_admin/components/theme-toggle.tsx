@@ -123,7 +123,7 @@ export function ThemeToggle() {
       onClick={handleToggle}
       aria-label={label}
       title={label}
-      className="size-10 rounded-[12px]"
+      className="size-10 rounded-full"
     >
       {isDark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
     </Button>

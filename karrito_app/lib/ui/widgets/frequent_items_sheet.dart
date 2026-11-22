@@ -43,6 +43,7 @@ class FrequentItemsSheet extends ConsumerStatefulWidget {
 class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  String? _selectedStoreFilter;
   String? _inlineNotice;
 
   @override
@@ -60,44 +61,78 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
     final learnedAsync = ref.watch(learnedItemsProvider);
     final allLearned = learnedAsync.value ?? const <LearnedItemEntity>[];
 
+    final availableStores = <String>{
+      for (final item in allLearned) item.preferredStore,
+    }.toList()..sort();
+
+    final effectiveStoreFilter =
+        _selectedStoreFilter != null &&
+            availableStores.contains(_selectedStoreFilter)
+        ? _selectedStoreFilter
+        : null;
+
     final normalizedQuery = ItemTextParser.normalizeProductName(_query);
-    final filtered = normalizedQuery.isEmpty
-        ? allLearned
-        : allLearned.where((item) {
-            final name = item.normalizedName;
-            final store = ItemTextParser.normalizeProductName(
-              item.preferredStore,
-            );
-            final aisle = ItemTextParser.normalizeProductName(
-              item.preferredAisle,
-            );
-            return name.contains(normalizedQuery) ||
-                store.contains(normalizedQuery) ||
-                aisle.contains(normalizedQuery);
-          }).toList();
+    final filtered = allLearned.where((item) {
+      if (effectiveStoreFilter != null &&
+          item.preferredStore != effectiveStoreFilter) {
+        return false;
+      }
+      if (normalizedQuery.isEmpty) return true;
+      final name = item.normalizedName;
+      final store = ItemTextParser.normalizeProductName(item.preferredStore);
+      final aisle = ItemTextParser.normalizeProductName(item.preferredAisle);
+      return name.contains(normalizedQuery) ||
+          store.contains(normalizedQuery) ||
+          aisle.contains(normalizedQuery);
+    }).toList();
 
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.80;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 4, 16, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 4, 16, 18 + bottomInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                AppStrings.frequentItemsTitle,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      AppStrings.frequentItemsTitle,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: karritoColors.lime,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '1 toque',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: karritoColors.onLime,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -107,9 +142,24 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: AppStrings.frequentSearchHint,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: BorderSide(color: karritoColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: BorderSide(color: karritoColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: BorderSide(
+                    color: karritoColors.accentSoft,
+                    width: 1.6,
+                  ),
+                ),
                 prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: karritoColors.textSecondary,
+                  color: karritoColors.accentSoft,
                 ),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
@@ -127,23 +177,87 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
               ),
               onChanged: (value) => setState(() => _query = value),
             ),
+            if (availableStores.length > 1) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 38,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(
+                          'Todos',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: effectiveStoreFilter == null
+                                ? karritoColors.onAccent
+                                : colorScheme.onSurface,
+                          ),
+                        ),
+                        selected: effectiveStoreFilter == null,
+                        showCheckmark: false,
+                        selectedColor: karritoColors.accent,
+                        backgroundColor: karritoColors.fieldSurface,
+                        shape: const StadiumBorder(),
+                        onSelected: (_) =>
+                            setState(() => _selectedStoreFilter = null),
+                      ),
+                    ),
+                    for (final store in availableStores)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: Text(
+                            store,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: effectiveStoreFilter == store
+                                  ? karritoColors.onAccent
+                                  : colorScheme.onSurface,
+                            ),
+                          ),
+                          selected: effectiveStoreFilter == store,
+                          showCheckmark: false,
+                          selectedColor: karritoColors.accent,
+                          backgroundColor: karritoColors.fieldSurface,
+                          shape: const StadiumBorder(),
+                          onSelected: (_) =>
+                              setState(() => _selectedStoreFilter = store),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
             if (_inlineNotice != null) ...[
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: 14,
+                  vertical: 9,
                 ),
                 decoration: BoxDecoration(
                   color: karritoColors.completedContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      size: 18,
-                      color: karritoColors.completed,
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: karritoColors.lime,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: karritoColors.onLime,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -151,7 +265,7 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                         _inlineNotice!,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: karritoColors.onCompletedContainer,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -209,10 +323,13 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     final title = _displayTitle(item);
+                    final countLabel = item.useCount == 1
+                        ? '1 vez'
+                        : '${item.useCount} veces';
                     return Material(
                       color: karritoColors.fieldSurface,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(20),
                         side: BorderSide(color: karritoColors.border, width: 1),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -234,9 +351,9 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                           }
                         },
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 54),
+                          constraints: const BoxConstraints(minHeight: 58),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+                            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
                             child: Row(
                               children: [
                                 Expanded(
@@ -248,12 +365,12 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                         title,
                                         style: theme.textTheme.bodyLarge
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        '${item.preferredStore} · ${item.preferredAisle}',
+                                        '${item.preferredStore} · ${item.preferredAisle} · $countLabel',
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color:
@@ -265,21 +382,45 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                 ),
                                 IconButton(
                                   tooltip: AppStrings.removeFrequentTooltip,
+                                  visualDensity: VisualDensity.compact,
                                   icon: Icon(
                                     Icons.delete_outline_rounded,
-                                    size: 20,
+                                    size: 19,
                                     color: karritoColors.textSecondary,
                                   ),
                                   onPressed: () async {
                                     await widget.onRemoveFrequent(item);
                                   },
                                 ),
-                                Icon(
-                                  Icons.add_circle_outline_rounded,
-                                  color: karritoColors.accent,
-                                  size: 22,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: karritoColors.accent,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.add_rounded,
+                                        size: 16,
+                                        color: karritoColors.onAccent,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'Sumar',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          color: karritoColors.onAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 6),
                               ],
                             ),
                           ),

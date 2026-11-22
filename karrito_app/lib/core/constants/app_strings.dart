@@ -195,6 +195,13 @@ class AppStrings {
       'Sincronización completa con tu cuenta.';
   static const String syncFailedError =
       'No pudimos sincronizar ahora. Tus cambios siguen seguros en el teléfono y se suben cuando mejore la señal.';
+  static String syncFailedWithRef(String? refCode) {
+    final trimmed = refCode?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return syncFailedError;
+    }
+    return '$syncFailedError (Ref: $trimmed)';
+  }
 
   // Errors & feedback
   static const String emptyInputError =

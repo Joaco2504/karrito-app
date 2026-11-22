@@ -1,3 +1,10 @@
+import 'package:flutter/foundation.dart';
+
+/// Top-level isolate entry point used by [ItemTextParser.parseInputAsync].
+TextParseResult _parseInputIsolateEntry(String input) {
+  return ItemTextParser.parseInput(input);
+}
+
 /// Result of splitting a free-text user input before checking `local_learned_items`
 /// or invoking the `procesar-lista` Edge Function.
 class TextParseResult {
@@ -32,6 +39,10 @@ class ParsedCandidate {
 
 class ItemTextParser {
   ItemTextParser._();
+
+  /// Inputs longer than this character count are parsed off the UI thread via
+  /// [compute] so pasted WhatsApp blocks never drop frames.
+  static const int isolateParseThreshold = 300;
 
   static final RegExp _splitPattern = RegExp(r'(?:\r?\n|;|(?<!\d),(?!\d))+');
   static final RegExp _leadingBulletPattern = RegExp(r'^(?:[-*•]+|\d+[.)])\s+');
@@ -159,6 +170,15 @@ class ItemTextParser {
       default:
         return folded;
     }
+  }
+
+  /// Parses [input] synchronously for short strings and offloads long pasted
+  /// blocks (> [isolateParseThreshold] chars) to a background isolate.
+  static Future<TextParseResult> parseInputAsync(String input) async {
+    if (input.length > isolateParseThreshold) {
+      return compute(_parseInputIsolateEntry, input);
+    }
+    return parseInput(input);
   }
 
   /// Splits input by newlines/commas into candidates and indicates whether

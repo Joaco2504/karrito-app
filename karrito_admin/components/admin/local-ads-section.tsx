@@ -220,7 +220,7 @@ export function LocalAdsSection({
       aria-label="Gestor de publicidad local"
       className="flex flex-col gap-5"
     >
-      <Card className="rounded-2xl border border-border bg-card shadow-xs">
+      <Card className="karrito-card-elevation rounded-3xl border border-border bg-card">
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg font-semibold">
@@ -262,7 +262,7 @@ export function LocalAdsSection({
             <Button
               type="button"
               onClick={handleOpenCreate}
-              className="min-h-[48px] rounded-[14px] px-5"
+              className="min-h-[48px] rounded-full px-6"
             >
               <PlusIcon data-icon="inline-start" />
               Nuevo anuncio

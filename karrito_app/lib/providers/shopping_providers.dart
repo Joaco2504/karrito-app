@@ -308,7 +308,8 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     } catch (error) {
       debugPrint('Karrito syncNow failed: $error');
       if (userTriggered) {
-        _emitFeedback(AppStrings.syncFailedError, isError: true);
+        final refCode = SupabaseSyncService.extractDiagnosticCode(error);
+        _emitFeedback(AppStrings.syncFailedWithRef(refCode), isError: true);
       }
     } finally {
       state = state.copyWith(isSyncing: false);
@@ -335,7 +336,16 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         ref.read(accountStatusProvider.notifier).refresh();
 
         if (outcome.switchedUid) {
-          await _repo.prepareLocalDataForAccountSwitch(outcome.userId);
+          final remapped = await _repo.prepareLocalDataForAccountSwitch(
+            outcome.userId,
+          );
+          final currentActiveId = ref.read(activeListIdProvider);
+          if (currentActiveId != null &&
+              remapped.containsKey(currentActiveId)) {
+            ref
+                .read(activeListIdProvider.notifier)
+                .select(remapped[currentActiveId]!);
+          }
         }
       } on AuthActionException catch (e) {
         _emitFeedback(e.message, isError: true);

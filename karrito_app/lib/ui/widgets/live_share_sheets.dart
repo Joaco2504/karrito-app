@@ -120,13 +120,12 @@ class _OptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
 
     return Material(
       color: karritoColors.fieldSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: karritoColors.border, width: 1),
       ),
       clipBehavior: Clip.antiAlias,
@@ -137,13 +136,13 @@ class _OptionCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  color: karritoColors.accentContainer,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: colorScheme.primary, size: 22),
+                child: Icon(icon, color: karritoColors.accentSoft, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -256,50 +255,100 @@ class LiveShareCodeSheet {
         final colorScheme = theme.colorScheme;
         final karritoColors = theme.extension<KarritoColors>()!;
 
+        final chars = shareCode.trim().split('');
+
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                AppStrings.liveShareTitle,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: karritoColors.accent,
+                  borderRadius: BorderRadius.circular(26),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                AppStrings.liveShareSubtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: karritoColors.textSecondary,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: karritoColors.lime,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            AppStrings.liveListBadge,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: karritoColors.onLime,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      AppStrings.liveShareTitle,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: karritoColors.onAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      AppStrings.liveShareSubtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: karritoColors.onAccent.withValues(alpha: 0.88),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppStrings.shareCodeLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: karritoColors.onAccent.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Semantics(
+                      label: shareCode,
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < chars.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 6),
+                            Expanded(
+                              child: Container(
+                                height: 52,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Text(
+                                  chars[i],
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: karritoColors.accentSoft,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
-              const KarritoFieldLabel(AppStrings.shareCodeLabel),
-              const SizedBox(height: 6),
-              Container(
-                constraints: const BoxConstraints(minHeight: 58),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: karritoColors.fieldSurface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: karritoColors.border, width: 1),
-                ),
-                child: SelectableText(
-                  shareCode,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 6,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
@@ -331,6 +380,10 @@ class LiveShareCodeSheet {
                   Expanded(
                     child: KarritoBounceButton(
                       child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: karritoColors.cta,
+                          foregroundColor: karritoColors.onCta,
+                        ),
                         onPressed: () async {
                           await SharePlus.instance.share(
                             ShareParams(

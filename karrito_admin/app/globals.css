@@ -13,6 +13,10 @@
   --color-field: var(--field);
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-brand-cta: var(--brand-cta);
+  --color-brand-cta-foreground: var(--brand-cta-foreground);
+  --color-brand-lime: var(--brand-lime);
+  --color-brand-lime-foreground: var(--brand-lime-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-switch-off-track: var(--switch-off-track);
@@ -68,141 +72,156 @@
     color-scheme: light;
   }
 
-  /* Paleta oficial Karrito 60-30-10 - Modo claro */
-  --background: #EEE3CC;
-  --foreground: #151515;
+  /* Sistema oficial "Electric Mercado" (DESIGN.md) - Modo claro */
+  --background: #F9F8F6;
+  --foreground: #13101E;
   --card: #FFFFFF;
-  --card-foreground: #151515;
+  --card-foreground: #13101E;
   --popover: #FFFFFF;
-  --popover-foreground: #151515;
-  --field: #F8F2E6;
-  --primary: #151515;
+  --popover-foreground: #13101E;
+  --field: #F2EFFB;
+  --primary: #531CB3;
   --primary-foreground: #FFFFFF;
-  --secondary: #F2E9D7;
-  --secondary-foreground: #151515;
-  --brand-accent: #00C2B5;
-  --brand-accent-foreground: #151515;
-  --success: #1E8E6E;
+  --secondary: #F2EFFB;
+  --secondary-foreground: #23005B;
+  --brand-accent: #531CB3;
+  --brand-accent-foreground: #FFFFFF;
+  --brand-cta: #FF6238;
+  --brand-cta-foreground: #13101E;
+  --brand-lime: #9AE600;
+  --brand-lime-foreground: #13101E;
+  --success: #315C00;
   --success-foreground: #FFFFFF;
-  --muted: #E8DEC8;
-  --muted-foreground: #5B5449;
-  --accent: #D6F5F2;
-  --accent-foreground: #0C4F4A;
-  --destructive: #C43E35;
+  --muted: #ECE5FA;
+  --muted-foreground: #4A4454;
+  --accent: #E9DDFF;
+  --accent-foreground: #23005B;
+  --destructive: #BA1A1A;
   --destructive-foreground: #FFFFFF;
-  --border: #D8CCB4;
-  --input: #D8CCB4;
-  --ring: #00C2B5;
-  --switch-off-track: #E4D8C1;
-  --switch-off-border: #C6B79B;
-  --switch-off-thumb: #5B5449;
-  --switch-on-thumb: #151515;
-  --chart-1: #151515;
-  --chart-2: #00C2B5;
-  --chart-3: #1E8E6E;
-  --chart-4: #5B5449;
-  --chart-5: #0C4F4A;
-  --radius: 0.75rem;
+  --border: #D8D0E6;
+  --input: #D8D0E6;
+  --ring: #531CB3;
+  --switch-off-track: #E4DDF2;
+  --switch-off-border: #BDB2D4;
+  --switch-off-thumb: #4A4454;
+  --switch-on-thumb: #FFFFFF;
+  --chart-1: #531CB3;
+  --chart-2: #FF6238;
+  --chart-3: #9AE600;
+  --chart-4: #4A4454;
+  --chart-5: #23005B;
+  --radius: 1rem;
+  --card-shadow: 0 4px 18px rgb(83 28 179 / 0.06);
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #151515;
-  --sidebar-primary: #151515;
+  --sidebar-foreground: #13101E;
+  --sidebar-primary: #531CB3;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #D6F5F2;
-  --sidebar-accent-foreground: #0C4F4A;
-  --sidebar-border: #D8CCB4;
-  --sidebar-ring: #00C2B5;
+  --sidebar-accent: #E9DDFF;
+  --sidebar-accent-foreground: #23005B;
+  --sidebar-border: #D8D0E6;
+  --sidebar-ring: #531CB3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    /* Paleta oficial Karrito 60-30-10 - Modo oscuro */
-    --background: #13285A;
-    --foreground: #ECE6DC;
-    --card: #1B3573;
-    --card-foreground: #ECE6DC;
-    --popover: #1B3573;
-    --popover-foreground: #ECE6DC;
-    --field: #22418A;
-    --primary: #FF5A12;
-    --primary-foreground: #13285A;
-    --secondary: #22418A;
-    --secondary-foreground: #ECE6DC;
-    --brand-accent: #FF5A12;
-    --brand-accent-foreground: #13285A;
-    --success: #38D39F;
-    --success-foreground: #082E22;
-    --muted: #18316B;
-    --muted-foreground: #B5C2DF;
-    --accent: #284896;
-    --accent-foreground: #ECE6DC;
-    --destructive: #FF8A80;
-    --destructive-foreground: #3A0A08;
-    --border: #2E4E99;
-    --input: #2E4E99;
-    --ring: #FF5A12;
-    --switch-off-track: #22418A;
-    --switch-off-border: #4163B5;
-    --switch-off-thumb: #ECE6DC;
-    --switch-on-thumb: #13285A;
-    --chart-1: #FF5A12;
-    --chart-2: #38D39F;
-    --chart-3: #ECE6DC;
-    --chart-4: #B5C2DF;
-    --chart-5: #284896;
-    --sidebar: #1B3573;
-    --sidebar-foreground: #ECE6DC;
-    --sidebar-primary: #FF5A12;
-    --sidebar-primary-foreground: #13285A;
-    --sidebar-accent: #284896;
-    --sidebar-accent-foreground: #ECE6DC;
-    --sidebar-border: #2E4E99;
-    --sidebar-ring: #FF5A12;
+    /* Sistema oficial "Electric Mercado" (DESIGN.md) - Modo oscuro */
+    --background: #0F0B1A;
+    --foreground: #F5EEFF;
+    --card: #1A1429;
+    --card-foreground: #F5EEFF;
+    --popover: #1A1429;
+    --popover-foreground: #F5EEFF;
+    --field: #251D38;
+    --primary: #7438F5;
+    --primary-foreground: #FFFFFF;
+    --secondary: #251D38;
+    --secondary-foreground: #F5EEFF;
+    --brand-accent: #7438F5;
+    --brand-accent-foreground: #FFFFFF;
+    --brand-cta: #FF6238;
+    --brand-cta-foreground: #13101E;
+    --brand-lime: #9AE600;
+    --brand-lime-foreground: #13101E;
+    --success: #9AE600;
+    --success-foreground: #13101E;
+    --muted: #211933;
+    --muted-foreground: #B9B0C9;
+    --accent: #2E1A5E;
+    --accent-foreground: #E9DDFF;
+    --destructive: #FFB4AB;
+    --destructive-foreground: #5C0A0A;
+    --border: #352B4D;
+    --input: #352B4D;
+    --ring: #9D6BFF;
+    --switch-off-track: #251D38;
+    --switch-off-border: #4E426E;
+    --switch-off-thumb: #E4DCF5;
+    --switch-on-thumb: #FFFFFF;
+    --chart-1: #7438F5;
+    --chart-2: #FF6238;
+    --chart-3: #9AE600;
+    --chart-4: #D1BCFF;
+    --chart-5: #B9B0C9;
+    --card-shadow: 0 6px 24px rgb(5 2 10 / 0.45);
+    --sidebar: #1A1429;
+    --sidebar-foreground: #F5EEFF;
+    --sidebar-primary: #7438F5;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #2E1A5E;
+    --sidebar-accent-foreground: #E9DDFF;
+    --sidebar-border: #352B4D;
+    --sidebar-ring: #9D6BFF;
   }
 }
 
 .dark {
-  /* Paleta oficial Karrito 60-30-10 - Modo oscuro */
-  --background: #13285A;
-  --foreground: #ECE6DC;
-  --card: #1B3573;
-  --card-foreground: #ECE6DC;
-  --popover: #1B3573;
-  --popover-foreground: #ECE6DC;
-  --field: #22418A;
-  --primary: #FF5A12;
-  --primary-foreground: #13285A;
-  --secondary: #22418A;
-  --secondary-foreground: #ECE6DC;
-  --brand-accent: #FF5A12;
-  --brand-accent-foreground: #13285A;
-  --success: #38D39F;
-  --success-foreground: #082E22;
-  --muted: #18316B;
-  --muted-foreground: #B5C2DF;
-  --accent: #284896;
-  --accent-foreground: #ECE6DC;
-  --destructive: #FF8A80;
-  --destructive-foreground: #3A0A08;
-  --border: #2E4E99;
-  --input: #2E4E99;
-  --ring: #FF5A12;
-  --switch-off-track: #22418A;
-  --switch-off-border: #4163B5;
-  --switch-off-thumb: #ECE6DC;
-  --switch-on-thumb: #13285A;
-  --chart-1: #FF5A12;
-  --chart-2: #38D39F;
-  --chart-3: #ECE6DC;
-  --chart-4: #B5C2DF;
-  --chart-5: #284896;
-  --sidebar: #1B3573;
-  --sidebar-foreground: #ECE6DC;
-  --sidebar-primary: #FF5A12;
-  --sidebar-primary-foreground: #13285A;
-  --sidebar-accent: #284896;
-  --sidebar-accent-foreground: #ECE6DC;
-  --sidebar-border: #2E4E99;
-  --sidebar-ring: #FF5A12;
+  /* Sistema oficial "Electric Mercado" (DESIGN.md) - Modo oscuro */
+  --background: #0F0B1A;
+  --foreground: #F5EEFF;
+  --card: #1A1429;
+  --card-foreground: #F5EEFF;
+  --popover: #1A1429;
+  --popover-foreground: #F5EEFF;
+  --field: #251D38;
+  --primary: #7438F5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #251D38;
+  --secondary-foreground: #F5EEFF;
+  --brand-accent: #7438F5;
+  --brand-accent-foreground: #FFFFFF;
+  --brand-cta: #FF6238;
+  --brand-cta-foreground: #13101E;
+  --brand-lime: #9AE600;
+  --brand-lime-foreground: #13101E;
+  --success: #9AE600;
+  --success-foreground: #13101E;
+  --muted: #211933;
+  --muted-foreground: #B9B0C9;
+  --accent: #2E1A5E;
+  --accent-foreground: #E9DDFF;
+  --destructive: #FFB4AB;
+  --destructive-foreground: #5C0A0A;
+  --border: #352B4D;
+  --input: #352B4D;
+  --ring: #9D6BFF;
+  --switch-off-track: #251D38;
+  --switch-off-border: #4E426E;
+  --switch-off-thumb: #E4DCF5;
+  --switch-on-thumb: #FFFFFF;
+  --chart-1: #7438F5;
+  --chart-2: #FF6238;
+  --chart-3: #9AE600;
+  --chart-4: #D1BCFF;
+  --chart-5: #B9B0C9;
+  --card-shadow: 0 6px 24px rgb(5 2 10 / 0.45);
+  --sidebar: #1A1429;
+  --sidebar-foreground: #F5EEFF;
+  --sidebar-primary: #7438F5;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2E1A5E;
+  --sidebar-accent-foreground: #E9DDFF;
+  --sidebar-border: #352B4D;
+  --sidebar-ring: #9D6BFF;
 }
 
 @layer base {
@@ -220,6 +239,10 @@
   textarea:user-invalid {
     border-color: var(--destructive);
   }
+}
+
+.karrito-card-elevation {
+  box-shadow: var(--card-shadow);
 }
 
 /* Tablas responsivas accesibles con encabezados fijos */

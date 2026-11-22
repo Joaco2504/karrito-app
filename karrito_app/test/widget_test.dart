@@ -318,30 +318,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.faqEntries.first.answer), findsOneWidget);
 
-      // Verify 60-30-10 official theme and SwitchThemeData colors in Light and Dark.
+      // Verify Electric Mercado official theme and SwitchThemeData colors in Light and Dark.
       final lightTheme = AppTheme.light();
       final darkTheme = AppTheme.dark();
-      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFEEE3CC));
-      expect(darkTheme.scaffoldBackgroundColor, const Color(0xFF13285A));
+      expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFF9F8F6));
+      expect(darkTheme.scaffoldBackgroundColor, const Color(0xFF0F0B1A));
       expect(
         lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFFE4D8C1),
+        const Color(0xFFE4DDF2),
       );
       expect(
         lightTheme.switchTheme.trackColor?.resolve(<WidgetState>{
           WidgetState.selected,
         }),
-        const Color(0xFF00C2B5),
+        const Color(0xFF531CB3),
       );
       expect(
         darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFF22418A),
+        const Color(0xFF251D38),
       );
       expect(
         darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{
           WidgetState.selected,
         }),
-        const Color(0xFFFF5A12),
+        const Color(0xFF7438F5),
       );
 
       // Flush pending toast auto-dismiss timer and unmount cleanly.

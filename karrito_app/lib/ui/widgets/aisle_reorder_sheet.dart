@@ -56,12 +56,12 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.78;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.80;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,7 +74,7 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                   Text(
                     AppStrings.reorderAislesTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -97,9 +97,16 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                 proxyDecorator: (child, index, animation) {
                   return Material(
                     color: Colors.transparent,
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(14),
-                    child: child,
+                    elevation: 8,
+                    shadowColor: karritoColors.cta.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: karritoColors.cta, width: 2),
+                      ),
+                      child: child,
+                    ),
                   );
                 },
                 itemBuilder: (context, index) {
@@ -110,14 +117,14 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                     child: ReorderableDragStartListener(
                       index: index,
                       child: Container(
-                        constraints: const BoxConstraints(minHeight: 48),
+                        constraints: const BoxConstraints(minHeight: 52),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
+                          horizontal: 14,
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
                           color: karritoColors.fieldSurface,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: karritoColors.border,
                             width: 1,
@@ -126,22 +133,26 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                         child: Row(
                           children: [
                             Container(
-                              width: 26,
-                              height: 26,
+                              width: 30,
+                              height: 30,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
+                                color: index == 0
+                                    ? karritoColors.lime
+                                    : karritoColors.accentContainer,
+                                shape: BoxShape.circle,
                               ),
                               child: Text(
                                 '${index + 1}',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
                                   fontFeatures: const [
                                     FontFeature.tabularFigures(),
                                   ],
-                                  color: colorScheme.onPrimaryContainer,
+                                  color: index == 0
+                                      ? karritoColors.onLime
+                                      : karritoColors.onAccentContainer,
                                 ),
                               ),
                             ),
@@ -151,14 +162,14 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                                 aisle,
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                   color: colorScheme.onSurface,
                                 ),
                               ),
                             ),
                             Icon(
-                              Icons.drag_handle_rounded,
-                              color: karritoColors.textSecondary,
+                              Icons.drag_indicator_rounded,
+                              color: karritoColors.accentSoft,
                             ),
                           ],
                         ),
@@ -168,7 +179,7 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(

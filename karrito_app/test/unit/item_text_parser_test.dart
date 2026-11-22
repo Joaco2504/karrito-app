@@ -99,5 +99,26 @@ void main() {
       );
       expect(ItemTextParser.parseInput('papa y cebolla').isComplex, isTrue);
     });
+
+    test(
+      'parseInputAsync offloads inputs longer than 300 chars via compute isolate',
+      () async {
+        final longLines = List<String>.generate(
+          25,
+          (i) => '${i + 1} kg de producto numero ${i + 1}',
+        ).join('\n');
+        expect(
+          longLines.length,
+          greaterThan(ItemTextParser.isolateParseThreshold),
+        );
+
+        final result = await ItemTextParser.parseInputAsync(longLines);
+        expect(result.isComplex, isFalse);
+        expect(result.candidates, hasLength(25));
+        expect(result.candidates.first.cleanName, 'Producto numero 1');
+        expect(result.candidates.last.quantity, 25.0);
+        expect(result.candidates.last.unit, 'kg');
+      },
+    );
   });
 }

@@ -29,6 +29,7 @@ class AisleSectionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final sortedItems = List<ShoppingItemEntity>.from(items)
       ..sort((a, b) {
@@ -42,91 +43,125 @@ class AisleSectionCard extends StatelessWidget {
     final totalCount = sortedItems.length;
     final allDone = pendingCount == 0 && totalCount > 0;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: allDone
+            ? karritoColors.completedContainer.withValues(
+                alpha: isDark ? 0.55 : 0.65,
+              )
+            : (isDark ? colorScheme.surface : karritoColors.fieldSurface),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: allDone
+              ? karritoColors.completed.withValues(alpha: 0.35)
+              : karritoColors.border.withValues(alpha: 0.75),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: karritoColors.shadowTint,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: onToggleExpand,
-            child: AnimatedContainer(
-              duration: disableAnimations
-                  ? Duration.zero
-                  : const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              color: allDone
-                  ? karritoColors.completedContainer.withValues(alpha: 0.65)
-                  : karritoColors.fieldSurface.withValues(alpha: 0.72),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      aisleName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onToggleExpand,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 13, 12, 11),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: allDone
-                            ? karritoColors.onCompletedContainer
-                            : colorScheme.onSurface,
+                            ? karritoColors.lime
+                            : karritoColors.accentSoft,
                       ),
                     ),
-                  ),
-                  AnimatedContainer(
-                    duration: disableAnimations
-                        ? Duration.zero
-                        : const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: allDone
-                          ? karritoColors.completed
-                          : karritoColors.accentContainer,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      AppStrings.pendingCountBadge(pendingCount, totalCount),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        color: allDone
-                            ? colorScheme.onTertiary
-                            : karritoColors.onAccentContainer,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        aisleName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.1,
+                          color: allDone
+                              ? karritoColors.onCompletedContainer
+                              : colorScheme.onSurface,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  AnimatedRotation(
-                    turns: isExpanded ? 0.5 : 0.0,
-                    duration: disableAnimations
-                        ? Duration.zero
-                        : const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    child: Icon(
-                      Icons.expand_more_rounded,
-                      color: colorScheme.onSurfaceVariant,
+                    AnimatedContainer(
+                      duration: disableAnimations
+                          ? Duration.zero
+                          : const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: allDone
+                            ? karritoColors.lime
+                            : karritoColors.accentContainer,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        AppStrings.pendingCountBadge(pendingCount, totalCount),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: allDone
+                              ? karritoColors.onLime
+                              : karritoColors.onAccentContainer,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0.0,
+                      duration: disableAnimations
+                          ? Duration.zero
+                          : const Duration(milliseconds: 200),
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        Icons.expand_more_rounded,
+                        color: karritoColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
-            secondChild: Column(
-              children: [
-                for (var i = 0; i < sortedItems.length; i++) ...[
-                  if (i > 0) const Divider(height: 1),
-                  _ShoppingItemTile(
-                    key: ValueKey<String>(sortedItems[i].id),
-                    item: sortedItems[i],
-                    onTap: () => onToggleItem(sortedItems[i]),
-                    onEdit: () => onEditItem(sortedItems[i]),
-                  ),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: Column(
+                children: [
+                  for (var i = 0; i < sortedItems.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 6),
+                    _ShoppingItemTile(
+                      key: ValueKey<String>(sortedItems[i].id),
+                      item: sortedItems[i],
+                      onTap: () => onToggleItem(sortedItems[i]),
+                      onEdit: () => onEditItem(sortedItems[i]),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             crossFadeState: isExpanded
                 ? CrossFadeState.showSecond
@@ -159,6 +194,7 @@ class _ShoppingItemTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     final isChecked = item.isChecked;
     final isPendingOffline = item.syncStatus == 'pending_ai';
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
@@ -166,113 +202,129 @@ class _ShoppingItemTile extends StatelessWidget {
         ? Duration.zero
         : const Duration(milliseconds: 200);
 
-    return InkWell(
-      onTap: onTap,
-      onLongPress: onEdit,
-      child: AnimatedContainer(
-        duration: animDuration,
-        curve: Curves.easeOutCubic,
-        color: isChecked
-            ? karritoColors.completedContainer.withValues(alpha: 0.45)
-            : Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: animDuration,
-              curve: Curves.easeOutBack,
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isChecked ? karritoColors.completed : Colors.transparent,
-                border: Border.all(
-                  color: isChecked
-                      ? karritoColors.completed
-                      : karritoColors.border,
-                  width: 2,
+    final tileBg = isChecked
+        ? (isDark
+              ? karritoColors.completedContainer.withValues(alpha: 0.65)
+              : karritoColors.completedContainer.withValues(alpha: 0.6))
+        : (isDark ? karritoColors.fieldSurface : colorScheme.surface);
+
+    return Material(
+      color: tileBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: isChecked
+              ? karritoColors.completed.withValues(alpha: 0.28)
+              : karritoColors.border.withValues(alpha: isDark ? 0.55 : 0.45),
+          width: 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: animDuration,
+                curve: Curves.easeOutBack,
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isChecked ? karritoColors.lime : Colors.transparent,
+                  border: Border.all(
+                    color: isChecked
+                        ? karritoColors.completed
+                        : karritoColors.accentSoft.withValues(alpha: 0.65),
+                    width: 2,
+                  ),
+                ),
+                child: AnimatedSwitcher(
+                  duration: animDuration,
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: isChecked
+                      ? Icon(
+                          Icons.check_rounded,
+                          key: const ValueKey<bool>(true),
+                          size: 16,
+                          color: karritoColors.onLime,
+                        )
+                      : const SizedBox.shrink(key: ValueKey<bool>(false)),
                 ),
               ),
-              child: AnimatedSwitcher(
-                duration: animDuration,
-                transitionBuilder: (child, animation) =>
-                    ScaleTransition(scale: animation, child: child),
-                child: isChecked
-                    ? Icon(
-                        Icons.check_rounded,
-                        key: const ValueKey<bool>(true),
-                        size: 15,
-                        color: colorScheme.onTertiary,
-                      )
-                    : const SizedBox.shrink(key: ValueKey<bool>(false)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimatedDefaultTextStyle(
-                    duration: animDuration,
-                    style:
-                        theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          decoration: isChecked
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          color: isChecked
-                              ? karritoColors.textSecondary
-                              : colorScheme.onSurface,
-                        ) ??
-                        const TextStyle(),
-                    child: Text(item.cleanName),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        '${ShareService.formatQuantity(item.quantity)} ${item.unit}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: karritoColors.textSecondary,
-                          fontWeight: FontWeight.w600,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedDefaultTextStyle(
+                      duration: animDuration,
+                      style:
+                          theme.textTheme.bodyLarge?.copyWith(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w600,
+                            decoration: isChecked
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            color: isChecked
+                                ? karritoColors.textSecondary
+                                : colorScheme.onSurface,
+                          ) ??
+                          const TextStyle(),
+                      child: Text(item.cleanName),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          '${ShareService.formatQuantity(item.quantity)} ${item.unit}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: karritoColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
-                      if (isPendingOffline) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: karritoColors.warningSurface,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            AppStrings.pendingOfflineBadge,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: karritoColors.warningText,
+                        if (isPendingOffline) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: karritoColors.ctaContainer,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              AppStrings.pendingOfflineBadge,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: karritoColors.onCtaContainer,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                size: 20,
-                color: karritoColors.textSecondary,
+              IconButton(
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 19,
+                  color: karritoColors.textSecondary,
+                ),
+                tooltip: AppStrings.editItemTitle,
+                onPressed: onEdit,
               ),
-              tooltip: AppStrings.editItemTitle,
-              onPressed: onEdit,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -334,7 +334,7 @@ class ShoppingRepository {
     required String rawInput,
     required bool isOnline,
   }) async {
-    final parseResult = ItemTextParser.parseInput(rawInput);
+    final parseResult = await ItemTextParser.parseInputAsync(rawInput);
     if (parseResult.originalText.isEmpty) {
       throw const ShoppingActionException(AppStrings.emptyInputError);
     }
@@ -609,22 +609,78 @@ class ShoppingRepository {
   // Account Migration Helper & Preferences
   // ---------------------------------------------------------------------------
 
-  /// Marks all local SQLite data as pending upload under [newOwnerId] when a
-  /// guest session transitions into an existing permanent Google account UID.
-  Future<void> prepareLocalDataForAccountSwitch(String newOwnerId) async {
-    await _db.transaction(() async {
-      await (_db.update(
-        _db.localLists,
-      )..where((t) => t.isJoinedRemote.equals(false))).write(
-        LocalListsCompanion(
-          ownerId: Value(newOwnerId),
-          syncStatus: const Value('pending'),
-        ),
-      );
+  /// Migrates local owned lists and preferences when a guest session switches
+  /// to an existing permanent Google account UID.
+  ///
+  /// Regenerates fresh UUIDs for all non-joined local lists and their items so
+  /// uploading them never collides with rows owned by the previous anonymous
+  /// UID in Supabase (`42501` RLS violation), and resets `lastSyncedAt` so the
+  /// first sync after switching pulls all remote data for the new account.
+  /// Returns a map of `oldListId -> newListId` for remapping active UI state.
+  Future<Map<String, String>> prepareLocalDataForAccountSwitch(
+    String newOwnerId,
+  ) async {
+    final remappedListIds = <String, String>{};
+    final now = DateTime.now();
 
-      await (_db.update(_db.localItems)
-            ..where((t) => t.syncStatus.equals('synced')))
-          .write(const LocalItemsCompanion(syncStatus: Value('pending')));
+    await _db.transaction(() async {
+      final ownedLists = await (_db.select(
+        _db.localLists,
+      )..where((t) => t.isJoinedRemote.equals(false))).get();
+
+      for (final oldList in ownedLists) {
+        final newListId = _uuid.v4();
+        remappedListIds[oldList.id] = newListId;
+
+        final oldItems = await (_db.select(
+          _db.localItems,
+        )..where((t) => t.listId.equals(oldList.id))).get();
+
+        await _db
+            .into(_db.localLists)
+            .insert(
+              LocalListsCompanion.insert(
+                id: newListId,
+                title: oldList.title,
+                ownerId: Value(newOwnerId),
+                isShared: const Value(false),
+                shareCode: const Value(null),
+                isJoinedRemote: const Value(false),
+                createdAt: oldList.createdAt,
+                updatedAt: now,
+                syncStatus: const Value('pending'),
+              ),
+            );
+
+        if (oldItems.isNotEmpty) {
+          final newItemCompanions = oldItems.map((item) {
+            return LocalItemsCompanion.insert(
+              id: _uuid.v4(),
+              listId: newListId,
+              rawText: item.rawText,
+              cleanName: item.cleanName,
+              quantity: Value(item.quantity),
+              unit: Value(item.unit),
+              storeCategory: item.storeCategory,
+              aisleName: item.aisleName,
+              isChecked: Value(item.isChecked),
+              position: Value(item.position),
+              updatedAt: now,
+              syncStatus: Value(
+                item.syncStatus == 'pending_ai' ? 'pending_ai' : 'pending',
+              ),
+            );
+          }).toList();
+
+          await _db.batch(
+            (b) => b.insertAll(_db.localItems, newItemCompanions),
+          );
+        }
+
+        await (_db.delete(
+          _db.localLists,
+        )..where((t) => t.id.equals(oldList.id))).go();
+      }
 
       await (_db.update(_db.localAisleOrder)
             ..where((t) => t.syncStatus.equals('synced')))
@@ -635,7 +691,16 @@ class ShoppingRepository {
       )..where((t) => t.syncStatus.equals('synced'))).write(
         const LocalLearnedItemsCompanion(syncStatus: Value('pending')),
       );
+
+      // Clear guest-session tombstones so they never attempt deletions on another account.
+      await _db.delete(_db.localPendingDeletions).go();
+
+      // Force a full initial pull on the newly signed-in account.
+      await (_db.update(_db.localPreferences)..where((t) => t.id.equals(1)))
+          .write(const LocalPreferencesCompanion(lastSyncedAt: Value(null)));
     });
+
+    return remappedListIds;
   }
 
   Future<void> updatePreferences({
