@@ -45,6 +45,36 @@ class StoreVisuals {
         color: Color(0xFF84CC16),
       );
     }
+    if (key.contains('bazar') || key.contains('hogar')) {
+      return const CategoryVisual(
+        icon: Icons.home_rounded,
+        color: Color(0xFFF59E0B),
+      );
+    }
+    if (key.contains('indument') || key.contains('calzad')) {
+      return const CategoryVisual(
+        icon: Icons.checkroom_rounded,
+        color: Color(0xFFEC4899),
+      );
+    }
+    if (key.contains('juguet') || key.contains('regal')) {
+      return const CategoryVisual(
+        icon: Icons.toys_rounded,
+        color: Color(0xFFA855F7),
+      );
+    }
+    if (key.contains('mascot') || key.contains('veterin')) {
+      return const CategoryVisual(
+        icon: Icons.pets_rounded,
+        color: Color(0xFFF97316),
+      );
+    }
+    if (key.contains('electr') || key.contains('celular')) {
+      return const CategoryVisual(
+        icon: Icons.devices_other_rounded,
+        color: Color(0xFF06B6D4),
+      );
+    }
     return const CategoryVisual(
       icon: Icons.category_rounded,
       color: Color(0xFF94A3B8),
@@ -149,10 +179,102 @@ class StoreVisuals {
         color: Color(0xFFEC4899),
       );
     }
-    if (key.contains('medic') || key.contains('auxil')) {
+    if (key.contains('medic') ||
+        key.contains('auxil') ||
+        key.contains('pipet')) {
       return const CategoryVisual(
         icon: Icons.medication_rounded,
         color: Color(0xFF10B981),
+      );
+    }
+    if (key.contains('cocin') || key.contains('vajill')) {
+      return const CategoryVisual(
+        icon: Icons.soup_kitchen_rounded,
+        color: Color(0xFFF59E0B),
+      );
+    }
+    if (key.contains('herm') || key.contains('organiz')) {
+      return const CategoryVisual(
+        icon: Icons.inventory_rounded,
+        color: Color(0xFF0EA5E9),
+      );
+    }
+    if (key.contains('termo') || key.contains('mate')) {
+      return const CategoryVisual(
+        icon: Icons.local_cafe_rounded,
+        color: Color(0xFF84CC16),
+      );
+    }
+    if (key.contains('decor') || key.contains('textil')) {
+      return const CategoryVisual(
+        icon: Icons.chair_rounded,
+        color: Color(0xFFD97706),
+      );
+    }
+    if (key.contains('ropa') || key.contains('media')) {
+      return const CategoryVisual(
+        icon: Icons.checkroom_rounded,
+        color: Color(0xFFEC4899),
+      );
+    }
+    if (key.contains('calzad')) {
+      return const CategoryVisual(
+        icon: Icons.hiking_rounded,
+        color: Color(0xFFF43F5E),
+      );
+    }
+    if (key.contains('juguet')) {
+      return const CategoryVisual(
+        icon: Icons.toys_rounded,
+        color: Color(0xFFA855F7),
+      );
+    }
+    if (key.contains('juego')) {
+      return const CategoryVisual(
+        icon: Icons.extension_rounded,
+        color: Color(0xFF8B5CF6),
+      );
+    }
+    if (key.contains('cotill') || key.contains('envolt')) {
+      return const CategoryVisual(
+        icon: Icons.card_giftcard_rounded,
+        color: Color(0xFFFF6238),
+      );
+    }
+    if (key.contains('balancead') || key.contains('piedrit')) {
+      return const CategoryVisual(
+        icon: Icons.pets_rounded,
+        color: Color(0xFFF97316),
+      );
+    }
+    if (key.contains('cargad') || key.contains('cable')) {
+      return const CategoryVisual(
+        icon: Icons.usb_rounded,
+        color: Color(0xFF06B6D4),
+      );
+    }
+    if (key.contains('pila') || key.contains('bater')) {
+      return const CategoryVisual(
+        icon: Icons.battery_charging_full_rounded,
+        color: Color(0xFFEAB308),
+      );
+    }
+    if (key.contains('audio')) {
+      return const CategoryVisual(
+        icon: Icons.headphones_rounded,
+        color: Color(0xFF6366F1),
+      );
+    }
+    if (key.contains('inform')) {
+      return const CategoryVisual(
+        icon: Icons.computer_rounded,
+        color: Color(0xFF3B82F6),
+      );
+    }
+    if (key.contains('accesor')) {
+      return const CategoryVisual(
+        icon: Icons.watch_rounded,
+        color: Color(0xFF9333EA),
       );
     }
     if (key.contains('sin señal') || key.contains('sin clasificar')) {

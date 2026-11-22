@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/services/share_code_helper.dart';
+import '../screens/qr_scanner_screen.dart';
 import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
 import 'karrito_toast.dart';
 
-enum ShareOptionChoice { text, live, openSettings }
+enum ShareOptionChoice { text, live, join, openSettings }
 
 class ShareOptionsSheet {
   static Future<ShareOptionChoice?> show({
@@ -57,6 +59,14 @@ class ShareOptionsSheet {
                 badgeText: AppStrings.liveListBadge,
                 onTap: () =>
                     Navigator.of(sheetContext).pop(ShareOptionChoice.live),
+              ),
+              const SizedBox(height: 10),
+              _OptionCard(
+                icon: Icons.qr_code_scanner_rounded,
+                title: AppStrings.shareJoinOption,
+                subtitle: AppStrings.shareJoinSubtitle,
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(ShareOptionChoice.join),
               ),
               if (isGuestAccount) ...[
                 const SizedBox(height: 14),
@@ -435,6 +445,54 @@ class LiveShareCodeSheet {
                           ],
                         ),
                         const SizedBox(height: 16),
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(22),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: QrImageView(
+                                  data: ShareCodeHelper.buildJoinUri(shareCode),
+                                  version: QrVersions.auto,
+                                  size: 172,
+                                  gapless: true,
+                                  backgroundColor: Colors.white,
+                                  padding: const EdgeInsets.all(6),
+                                  eyeStyle: const QrEyeStyle(
+                                    eyeShape: QrEyeShape.square,
+                                    color: Color(0xFF1D1A28),
+                                  ),
+                                  dataModuleStyle: const QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.square,
+                                    color: Color(0xFF1D1A28),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                AppStrings.liveQrCaption,
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: const Color(0xFFE9DDFF),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
@@ -618,10 +676,9 @@ class _JoinSharedListSheetState extends State<JoinSharedListSheet> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    final normalized = ShareCodeHelper.normalizeAndValidate(
-      _codeController.text,
-    );
+  Future<void> _submit([String? overrideCode]) async {
+    final source = overrideCode ?? _codeController.text;
+    final normalized = ShareCodeHelper.extractCodeFromQrOrText(source);
     if (normalized == null) {
       setState(() => _errorText = AppStrings.invalidShareCodeError);
       return;
@@ -646,12 +703,20 @@ class _JoinSharedListSheetState extends State<JoinSharedListSheet> {
     Navigator.of(context).pop(normalized);
   }
 
+  Future<void> _scanQrCode() async {
+    if (_isLoading) return;
+    final scannedCode = await QrCodeScannerScreen.open(context);
+    if (!mounted || scannedCode == null) return;
+    _codeController.text = scannedCode;
+    await _submit(scannedCode);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -686,7 +751,16 @@ class _JoinSharedListSheetState extends State<JoinSharedListSheet> {
             },
             onSubmitted: (_) => _submit(),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
+          KarritoBounceButton(
+            enabled: !_isLoading,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading ? null : _scanQrCode,
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+              label: const Text(AppStrings.scanQrButton),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -702,7 +776,7 @@ class _JoinSharedListSheetState extends State<JoinSharedListSheet> {
                 child: KarritoBounceButton(
                   enabled: !_isLoading,
                   child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
+                    onPressed: _isLoading ? null : () => _submit(),
                     child: _isLoading
                         ? SizedBox(
                             width: 18,

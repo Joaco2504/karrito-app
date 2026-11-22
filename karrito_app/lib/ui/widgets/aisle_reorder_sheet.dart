@@ -4,6 +4,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/store_visuals.dart';
+import 'karrito_asset_icon.dart';
 import 'karrito_bounce_button.dart';
 
 class AisleReorderSheet extends StatefulWidget {
@@ -79,7 +80,6 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
     final isDark = theme.brightness == Brightness.dark;
-    final storeVisual = StoreVisuals.forStore(widget.storeCategory);
     final maxHeight = MediaQuery.sizeOf(context).height * 0.86;
 
     return ConstrainedBox(
@@ -99,7 +99,11 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
               ),
               child: Row(
                 children: [
-                  Icon(storeVisual.icon, size: 18, color: karritoColors.cta),
+                  KarritoAssetIcon.store(
+                    widget.storeCategory,
+                    size: 18,
+                    color: karritoColors.cta,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Comercio:',
@@ -266,10 +270,12 @@ class _AisleReorderSheetState extends State<AisleReorderSheet> {
                                   ),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  visual.icon,
-                                  size: 20,
-                                  color: visual.color,
+                                child: Center(
+                                  child: KarritoAssetIcon.aisle(
+                                    aisle,
+                                    size: 20,
+                                    color: visual.color,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 11),

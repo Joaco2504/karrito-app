@@ -17,6 +17,52 @@ void main() {
       expect(ShareCodeHelper.normalizeAndValidate('AB!123'), isNull);
     });
 
+    test('buildJoinUri emits canonical karrito://join/<CODE> payload', () {
+      expect(ShareCodeHelper.buildJoinUri('k7m-4p9'), 'karrito://join/K7M4P9');
+      expect(ShareCodeHelper.buildJoinUri('AB12CD'), 'karrito://join/AB12CD');
+    });
+
+    test('extractCodeFromQrOrText handles raw codes and QR deep-links', () {
+      expect(ShareCodeHelper.extractCodeFromQrOrText('K7M4P9'), 'K7M4P9');
+      expect(ShareCodeHelper.extractCodeFromQrOrText(' k7m-4p9 '), 'K7M4P9');
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText('karrito://join/K7M4P9'),
+        'K7M4P9',
+      );
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText('KARRITO://JOIN/ab12cd/'),
+        'AB12CD',
+      );
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText(
+          'https://karrito.app/join/M9N8P7',
+        ),
+        'M9N8P7',
+      );
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText(
+          'https://karrito.app/share?code=Q2W3E4',
+        ),
+        'Q2W3E4',
+      );
+    });
+
+    test('extractCodeFromQrOrText rejects unrelated QR payloads', () {
+      expect(ShareCodeHelper.extractCodeFromQrOrText(''), isNull);
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText('https://google.com'),
+        isNull,
+      );
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText('karrito://join/123'),
+        isNull,
+      );
+      expect(
+        ShareCodeHelper.extractCodeFromQrOrText('WIFI:S:MiRed;P:clave;;'),
+        isNull,
+      );
+    });
+
     test('generateCode produces 6 valid uppercase alphanumeric characters', () {
       for (var i = 0; i < 20; i++) {
         final code = ShareCodeHelper.generateCode();

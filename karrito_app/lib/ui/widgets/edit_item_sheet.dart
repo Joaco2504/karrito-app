@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
+import 'karrito_asset_icon.dart';
 import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
 
@@ -457,10 +458,12 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                           ),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          storeVisual.icon,
-                          size: 16,
-                          color: storeVisual.color,
+                        child: Center(
+                          child: KarritoAssetIcon.store(
+                            _selectedStore,
+                            size: 16,
+                            color: storeVisual.color,
+                          ),
                         ),
                       ),
                       value: _selectedStore,
@@ -490,10 +493,12 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                           ),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          aisleVisual.icon,
-                          size: 16,
-                          color: aisleVisual.color,
+                        child: Center(
+                          child: KarritoAssetIcon.aisle(
+                            _selectedAisle,
+                            size: 16,
+                            color: aisleVisual.color,
+                          ),
                         ),
                       ),
                       value: aisleOptions.contains(_selectedAisle)

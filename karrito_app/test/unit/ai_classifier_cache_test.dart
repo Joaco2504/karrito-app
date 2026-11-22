@@ -22,6 +22,12 @@ class _FakeAuthService implements AuthService {
   String? get currentEmail => null;
 
   @override
+  String? get currentPhotoUrl => null;
+
+  @override
+  String? get currentDisplayName => null;
+
+  @override
   Stream<AuthState> get onAuthStateChange => _controller.stream;
 
   @override
@@ -29,6 +35,9 @@ class _FakeAuthService implements AuthService {
 
   @override
   Future<GoogleLinkOutcome?> linkOrSignInWithGoogle() async => null;
+
+  @override
+  Future<void> signOutToGuest() async {}
 
   void dispose() => _controller.close();
 }

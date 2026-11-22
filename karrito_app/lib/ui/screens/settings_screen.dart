@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/shopping_providers.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
+import '../widgets/profile_avatar_widget.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final currentTheme = prefs?.themeMode ?? 'system';
     final keepScreenOn = prefs?.keepScreenOn ?? true;
     final soundEnabled = prefs?.soundEnabled ?? true;
+    final vibrationEnabled = prefs?.vibrationEnabled ?? true;
+    final avatarChoice = prefs?.avatarChoice ?? KarritoAvatars.defaultChoice;
+    final googlePhotoUrl = prefs?.googlePhotoUrl ?? account.photoUrl;
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.settingsTitle)),
@@ -89,24 +93,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: account.isAnonymous
-                                        ? karritoColors.accentContainer
-                                        : karritoColors.lime,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    account.isAnonymous
-                                        ? Icons.person_outline_rounded
-                                        : Icons.cloud_done_outlined,
-                                    color: account.isAnonymous
-                                        ? karritoColors.accentSoft
-                                        : karritoColors.onLime,
-                                    size: 24,
-                                  ),
+                                KarritoProfileAvatar(
+                                  avatarChoice: avatarChoice,
+                                  googlePhotoUrl: googlePhotoUrl,
+                                  size: 48,
+                                  showLinkedDot: !account.isAnonymous,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -489,6 +480,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           value: soundEnabled,
                           showActiveBadge: true,
                           onChanged: controller.setSoundEnabled,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Divider(height: 1),
+                        ),
+                        _PreferenceToggleRow(
+                          icon: Icons.vibration_rounded,
+                          iconBg: vibrationEnabled
+                              ? karritoColors.accentContainer
+                              : karritoColors.fieldSurface,
+                          iconColor: vibrationEnabled
+                              ? karritoColors.accentSoft
+                              : karritoColors.textSecondary,
+                          title: AppStrings.settingsVibrationOnCheckTitle,
+                          subtitle: AppStrings.settingsVibrationOnCheckSubtitle,
+                          value: vibrationEnabled,
+                          showActiveBadge: true,
+                          onChanged: controller.setVibrationEnabled,
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 14),

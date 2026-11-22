@@ -23,6 +23,11 @@ class StoreHierarchy {
     'Farmacia',
     'Librería / Papelería',
     'Dietética / Naturista',
+    'Bazar y Hogar',
+    'Indumentaria y Calzado',
+    'Juguetería y Regalería',
+    'Mascotas y Veterinaria',
+    'Electrónica y Celulares',
     'Otros / Varios',
   ];
 
@@ -65,10 +70,39 @@ class StoreHierarchy {
       'Suplementos',
       'Sin TACC',
     ],
+    'Bazar y Hogar': <String>[
+      'Cocina y Vajilla',
+      'Herméticos y Organización',
+      'Termos y Mate',
+      'Decoración y Textil Hogar',
+    ],
+    'Indumentaria y Calzado': <String>[
+      'Ropa Cotidiana',
+      'Ropa Interior y Medias',
+      'Calzado',
+      'Accesorios',
+    ],
+    'Juguetería y Regalería': <String>[
+      'Juguetes',
+      'Juegos de Mesa',
+      'Cotillón y Envoltorios',
+    ],
+    'Mascotas y Veterinaria': <String>[
+      'Alimento Balanceado',
+      'Higiene y Piedritas',
+      'Salud y Pipetas',
+      'Accesorios Mascotas',
+    ],
+    'Electrónica y Celulares': <String>[
+      'Cargadores y Cables',
+      'Pilas y Baterías',
+      'Audio y Accesorios',
+      'Informática Básica',
+    ],
     'Otros / Varios': <String>[
-      'Bazar',
-      'Indumentaria',
-      'Juguetería',
+      'Varios',
+      'Automotor',
+      'Vivero',
       offlinePendingAisle,
     ],
   };
@@ -110,6 +144,23 @@ class StoreHierarchy {
     }
     if (cleaned.contains('dietet') || cleaned.contains('naturist')) {
       return 'Dietética / Naturista';
+    }
+    if (cleaned.contains('bazar') || cleaned.contains('hogar')) {
+      return 'Bazar y Hogar';
+    }
+    if (cleaned.contains('indument') ||
+        cleaned.contains('calzad') ||
+        cleaned.contains('ropa')) {
+      return 'Indumentaria y Calzado';
+    }
+    if (cleaned.contains('juguet') || cleaned.contains('regaler')) {
+      return 'Juguetería y Regalería';
+    }
+    if (cleaned.contains('mascot') || cleaned.contains('veterin')) {
+      return 'Mascotas y Veterinaria';
+    }
+    if (cleaned.contains('electron') || cleaned.contains('celular')) {
+      return 'Electrónica y Celulares';
     }
     return fallbackStore;
   }

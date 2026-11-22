@@ -32,10 +32,12 @@ class AppStrings {
   static const String onboardingNextButton = 'Siguiente';
   static const String onboardingBackButton = 'Anterior';
   static const String onboardingSkipButton = 'Saltar';
-  static const String startShoppingButton = 'Empezar lista';
+  static const String startShoppingButton = 'Empezar a armar mi lista';
+  static const String onboardingGoogleButton =
+      'Ingresar con mi cuenta de Google';
   static const String saveGuideButton = 'Volver a la app';
   static const String onboardingFooterNote =
-      'Sin registros obligatorios ni vueltas.';
+      'Podés entrar directo como invitado o sincronizar tus listas con Google.';
 
   // Main shopping screen
   static const String listSelectorTooltip = 'Elegir lista';
@@ -67,6 +69,29 @@ class AppStrings {
   static const String wakelockOffTooltip = 'Mantener pantalla encendida';
   static const String shareListTooltip = 'Compartir lista';
   static const String settingsTooltip = 'Abrir ajustes';
+  static const String profileMenuTooltip = 'Abrir menú de perfil';
+
+  // Profile menu & Guide/FAQ
+  static const String profileMenuTitle = 'Tu perfil';
+  static const String profileAvatarPickerLabel = 'Elegí tu avatar';
+  static const String profileGooglePhotoLabel = 'Foto de Google';
+  static const String profilePreferencesOption = 'Preferencias';
+  static const String profilePreferencesSubtitle =
+      'Tema, localidad, sonido, vibración y respaldo.';
+  static const String profileGuideFaqOption =
+      'Guía básica y preguntas frecuentes';
+  static const String profileGuideFaqSubtitle =
+      'Tutorial paso a paso y respuestas rápidas sobre Karrito.';
+  static const String profileSignOutOption = 'Cerrar sesión';
+  static const String profileSignOutSubtitle =
+      'Pasás a modo invitado sin borrar tus listas guardadas.';
+  static const String profileSignInGoogleOption = 'Ingresar con Google';
+  static const String profileSignInGoogleSubtitle =
+      'Respaldá y sincronizá tus listas en la nube.';
+  static const String signedOutNotice =
+      'Cerraste sesión. Seguís en modo invitado con todas tus listas guardadas en este teléfono.';
+  static const String guideFaqTitle = 'Guía básica y preguntas frecuentes';
+  static const String guideTutorialSectionTitle = 'Cómo aprovechar Karrito';
 
   // Aisle reordering
   static const String reorderAislesTitle = 'Ordenar pasillos';
@@ -152,29 +177,43 @@ class AppStrings {
   static const String shareHeader = 'Lista de compras - Karrito';
   static const String shareRemainingCheckedNote =
       'Solo se incluyeron los productos que faltan comprar.';
-  static const String shareOptionsTitle = 'Compartir lista';
-  static const String shareAsTextOption = 'Enviar texto por WhatsApp';
+  static const String shareOptionsTitle = 'Compartir y colaborar';
+  static const String shareAsTextOption = 'Enviar lista por WhatsApp';
   static const String shareAsTextSubtitle =
       'Manda los productos pendientes agrupados por comercio y pasillo.';
   static const String shareLiveOption = 'Compartir lista en vivo';
   static const String shareLiveSubtitle =
-      'Creá un código de 6 caracteres para que otra persona tache con vos en tiempo real.';
-  static const String joinWithCodeButton = 'Unirme con código';
-  static const String joinSheetTitle = 'Unirme con código';
+      'Generá un código de 6 caracteres y un QR para tachar juntos al instante.';
+  static const String shareJoinOption = 'Unirme a una lista';
+  static const String shareJoinSubtitle =
+      'Ingresá un código de 6 caracteres o escaneá el QR de otra persona.';
+  static const String joinWithCodeButton = 'Unirme a una lista';
+  static const String joinSheetTitle = 'Unirme a una lista';
   static const String joinCodeLabel = 'Código de 6 caracteres';
   static const String joinCodeHint = 'Ej: K7M4P9';
   static const String joinSubmitButton = 'Unirme';
+  static const String scanQrButton = 'Escanear código QR';
+  static const String qrScannerTitle = 'Escanear código QR';
+  static const String qrScannerHint =
+      'Apuntá la cámara al código QR de la lista compartida.';
+  static const String qrScannerInvalidCode =
+      'Ese código QR no corresponde a una lista de Karrito. Probá con otro QR o escribí el código a mano.';
+  static const String qrScannerPermissionError =
+      'No pudimos abrir la cámara. Habilitá el permiso de cámara en tu teléfono o ingresá el código de 6 caracteres a mano.';
+  static const String qrScannerTorchTooltip = 'Encender o apagar linterna';
+  static const String liveQrCaption =
+      'Escaneá este QR desde Karrito para unirte al instante';
   static const String invalidShareCodeError =
       'Escribí un código válido de 6 letras o números para unirte a la lista.';
   static const String liveOfflineError =
       'No tenés conexión a internet ahora. Probá de nuevo cuando vuelva la señal para usar listas en vivo.';
   static const String liveShareTitle = 'Lista compartida en vivo';
   static const String liveShareSubtitle =
-      'Pasale este código a quien haga las compras con vos para ver y tachar productos al instante.';
+      'Mostrá este QR o pasale el código a quien haga las compras con vos para tachar productos al instante.';
   static const String shareCodeLabel = 'Código para compartir';
   static const String copyCodeButton = 'Copiar código';
   static const String codeCopiedNotice = 'Código copiado para compartir.';
-  static const String sendInviteButton = 'Enviar código';
+  static const String sendInviteButton = 'Enviar por WhatsApp';
   static const String proLiveSheetTitle = 'Listas en vivo en el plan Pro';
   static const String proLiveSheetBody =
       'Crear listas colaborativas en vivo con código compartido forma parte del plan Pro (\$ 3 USD por mes). Igual podés unirte gratis a la lista de otra persona si te pasan un código.';
@@ -269,7 +308,10 @@ class AppStrings {
       'Evita que el teléfono se bloquee mientras recorrés las góndolas.';
   static const String settingsSoundOnCheckTitle = 'Sonido al tachar';
   static const String settingsSoundOnCheckSubtitle =
-      'Reproduce un aviso suave y vibración cuando tachás un producto.';
+      'Reproduce un pulso corto y limpio cuando tachás un producto.';
+  static const String settingsVibrationOnCheckTitle = 'Vibración al tachar';
+  static const String settingsVibrationOnCheckSubtitle =
+      'Acompaña cada producto tachado con una vibración breve.';
   static const String settingsActiveBadge = 'Activo';
   static const String settingsLocalBadge = 'Local';
   static const String settingsNoBackupBadge = 'Sin respaldo';

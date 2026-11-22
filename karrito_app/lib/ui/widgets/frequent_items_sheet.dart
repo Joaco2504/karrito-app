@@ -7,6 +7,7 @@ import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../domain/services/item_text_parser.dart';
 import '../../providers/shopping_providers.dart';
+import 'karrito_asset_icon.dart';
 import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
 import 'karrito_toast.dart';
@@ -261,8 +262,8 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
-                          avatar: Icon(
-                            StoreVisuals.forStore(store).icon,
+                          avatar: KarritoAssetIcon.store(
+                            store,
                             size: 15,
                             color: effectiveStoreFilter == store
                                 ? karritoColors.onAccent
@@ -398,10 +399,12 @@ class _FrequentItemsSheetState extends ConsumerState<FrequentItemsSheet> {
                                     ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(
-                                    aisleVisual.icon,
-                                    size: 20,
-                                    color: aisleVisual.color,
+                                  child: Center(
+                                    child: KarritoAssetIcon.aisle(
+                                      item.preferredAisle,
+                                      size: 20,
+                                      color: aisleVisual.color,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 11),

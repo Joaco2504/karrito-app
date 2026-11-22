@@ -13,11 +13,19 @@ import '../data/services/sync_service.dart';
 import 'core_providers.dart';
 
 class AccountStatus {
-  const AccountStatus({required this.isAnonymous, this.email, this.userId});
+  const AccountStatus({
+    required this.isAnonymous,
+    this.email,
+    this.userId,
+    this.photoUrl,
+    this.displayName,
+  });
 
   final bool isAnonymous;
   final String? email;
   final String? userId;
+  final String? photoUrl;
+  final String? displayName;
 }
 
 class AccountStatusNotifier extends Notifier<AccountStatus> {
@@ -33,6 +41,8 @@ class AccountStatusNotifier extends Notifier<AccountStatus> {
       isAnonymous: auth.isAnonymous,
       email: auth.currentEmail,
       userId: auth.currentUserId,
+      photoUrl: auth.currentPhotoUrl,
+      displayName: auth.currentDisplayName,
     );
   }
 
@@ -42,6 +52,8 @@ class AccountStatusNotifier extends Notifier<AccountStatus> {
       isAnonymous: auth.isAnonymous,
       email: auth.currentEmail,
       userId: auth.currentUserId,
+      photoUrl: auth.currentPhotoUrl,
+      displayName: auth.currentDisplayName,
     );
   }
 }
@@ -316,11 +328,14 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     }
   }
 
-  Future<void> linkGoogleAccount() async {
-    if (state.isLinkingGoogle) return;
+  Future<bool> linkGoogleAccount({
+    bool completeOnboardingAfter = false,
+    String? city,
+  }) async {
+    if (state.isLinkingGoogle) return false;
     if (!ref.read(isOnlineProvider)) {
       _emitFeedback(AppStrings.googleOfflineError, isError: true);
-      return;
+      return false;
     }
 
     state = state.copyWith(isLinkingGoogle: true);
@@ -329,11 +344,28 @@ class ShoppingController extends Notifier<ShoppingUiState> {
       try {
         outcome = await ref.read(authServiceProvider).linkOrSignInWithGoogle();
         if (outcome == null) {
-          return;
+          return false;
         }
 
         // Immediately refresh UI so the linked account shows up even if sync fails.
         ref.read(accountStatusProvider.notifier).refresh();
+
+        final currentPrefs = ref.read(preferencesProvider).value;
+        final hasGooglePhoto =
+            outcome.photoUrl != null && outcome.photoUrl!.trim().isNotEmpty;
+        final currentChoice = currentPrefs?.avatarChoice ?? 'avatar_1';
+        final nextAvatarChoice =
+            hasGooglePhoto &&
+                (currentChoice == 'avatar_1' || currentChoice == 'google')
+            ? 'google'
+            : null;
+
+        await _repo.updatePreferences(
+          city: city,
+          onboardingCompleted: completeOnboardingAfter ? true : null,
+          googlePhotoUrl: hasGooglePhoto ? outcome.photoUrl!.trim() : null,
+          avatarChoice: nextAvatarChoice,
+        );
 
         if (outcome.switchedUid) {
           final remapped = await _repo.prepareLocalDataForAccountSwitch(
@@ -349,11 +381,11 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         }
       } on AuthActionException catch (e) {
         _emitFeedback(e.message, isError: true);
-        return;
+        return false;
       } catch (error) {
         debugPrint('Karrito linkGoogleAccount auth error: $error');
         _emitFeedback(AppStrings.googleTokenError, isError: true);
-        return;
+        return false;
       }
 
       try {
@@ -367,6 +399,41 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         ref.read(accountStatusProvider.notifier).refresh();
         _emitFeedback(AppStrings.googleLinkedSyncPendingNotice);
       }
+      return true;
+    } finally {
+      state = state.copyWith(isLinkingGoogle: false);
+    }
+  }
+
+  Future<void> signOutToGuest() async {
+    if (state.isLinkingGoogle) return;
+    state = state.copyWith(isLinkingGoogle: true);
+    try {
+      await ref.read(authServiceProvider).signOutToGuest();
+      ref.read(accountStatusProvider.notifier).refresh();
+
+      final newGuestUid = ref.read(authServiceProvider).currentUserId;
+      final remapped = await _repo.prepareLocalDataForAccountSwitch(
+        newGuestUid,
+      );
+      final currentActiveId = ref.read(activeListIdProvider);
+      if (currentActiveId != null && remapped.containsKey(currentActiveId)) {
+        ref
+            .read(activeListIdProvider.notifier)
+            .select(remapped[currentActiveId]!);
+      }
+
+      final currentChoice =
+          ref.read(preferencesProvider).value?.avatarChoice ?? 'avatar_1';
+      await _repo.updatePreferences(
+        clearGooglePhotoUrl: true,
+        avatarChoice: currentChoice == 'google' ? 'avatar_1' : null,
+      );
+
+      _emitFeedback(AppStrings.signedOutNotice);
+    } catch (error) {
+      debugPrint('Karrito signOutToGuest warning: $error');
+      _emitFeedback(AppStrings.signedOutNotice);
     } finally {
       state = state.copyWith(isLinkingGoogle: false);
     }
@@ -412,11 +479,17 @@ class ShoppingController extends Notifier<ShoppingUiState> {
   Future<void> toggleItemChecked(ShoppingItemEntity item) async {
     final willCheck = !item.isChecked;
     if (willCheck) {
-      final soundEnabled =
-          ref.read(preferencesProvider).value?.soundEnabled ?? true;
-      if (soundEnabled) {
+      final prefs = ref.read(preferencesProvider).value;
+      final soundEnabled = prefs?.soundEnabled ?? true;
+      final vibrationEnabled = prefs?.vibrationEnabled ?? true;
+      if (soundEnabled || vibrationEnabled) {
         unawaited(
-          ref.read(soundFeedbackServiceProvider).playItemCheckedFeedback(),
+          ref
+              .read(soundFeedbackServiceProvider)
+              .playItemCheckedFeedback(
+                playSound: soundEnabled,
+                triggerVibration: vibrationEnabled,
+              ),
         );
       }
     }
@@ -511,6 +584,14 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
   Future<void> setSoundEnabled(bool enabled) async {
     await _repo.updatePreferences(soundEnabled: enabled);
+  }
+
+  Future<void> setVibrationEnabled(bool enabled) async {
+    await _repo.updatePreferences(vibrationEnabled: enabled);
+  }
+
+  Future<void> setAvatarChoice(String avatarChoice) async {
+    await _repo.updatePreferences(avatarChoice: avatarChoice);
   }
 
   Future<void> setKeepScreenOn(bool enabled, {bool notify = false}) async {

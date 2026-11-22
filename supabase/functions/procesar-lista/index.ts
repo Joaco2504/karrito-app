@@ -47,10 +47,39 @@ const STORE_AISLES = {
     "Suplementos",
     "Sin TACC",
   ],
+  "Bazar y Hogar": [
+    "Cocina y Vajilla",
+    "Herméticos y Organización",
+    "Termos y Mate",
+    "Decoración y Textil Hogar",
+  ],
+  "Indumentaria y Calzado": [
+    "Ropa Cotidiana",
+    "Ropa Interior y Medias",
+    "Calzado",
+    "Accesorios",
+  ],
+  "Juguetería y Regalería": [
+    "Juguetes",
+    "Juegos de Mesa",
+    "Cotillón y Envoltorios",
+  ],
+  "Mascotas y Veterinaria": [
+    "Alimento Balanceado",
+    "Higiene y Piedritas",
+    "Salud y Pipetas",
+    "Accesorios Mascotas",
+  ],
+  "Electrónica y Celulares": [
+    "Cargadores y Cables",
+    "Pilas y Baterías",
+    "Audio y Accesorios",
+    "Informática Básica",
+  ],
   "Otros / Varios": [
-    "Bazar",
-    "Indumentaria",
-    "Juguetería",
+    "Varios",
+    "Automotor",
+    "Vivero",
   ],
 } as const;
 
@@ -116,7 +145,7 @@ function buildStoreBranchSchema(
         ? {
           type: "string",
           description:
-            "Preferí Bazar, Indumentaria o Juguetería; si no encaja en ninguno, usá una categoría corta en español (máximo 3 palabras).",
+            "Usá Varios, Automotor, Vivero o una categoría corta en español (máximo 3 palabras) si el producto no encaja en ninguno de los otros rubros.",
         }
         : {
           type: "string",
@@ -167,7 +196,17 @@ Comercios y pasillos exactos permitidos:
    - Tafirol, ibuprofeno, amoxicilina, jarabe, pastillas -> "Medicamentos". Alcohol, gasas, curitas, agua oxigenada -> "Primeros Auxilios". Pañales, mamadera, óleo calcáreo -> "Bebés y Maternidad".
 4. "Librería / Papelería": "Útiles Escolares", "Oficina", "Artística".
 5. "Dietética / Naturista": "Frutos Secos y Semillas", "Harinas y Cereales", "Suplementos", "Sin TACC".
-6. "Otros / Varios": "Bazar", "Indumentaria", "Juguetería", o una categoría corta de máximo 3 palabras si el producto no entra en los rubros anteriores (ej: "Automotor", "Vivero", "Regalería").`;
+6. "Bazar y Hogar": "Cocina y Vajilla", "Herméticos y Organización", "Termos y Mate", "Decoración y Textil Hogar".
+   - Ollas, sartenes, platos, vasos, cubiertos -> "Cocina y Vajilla". Tuppers, frascos, organizadores -> "Herméticos y Organización". Termo, mate, bombilla -> "Termos y Mate". Sábanas, toallas, cortinas, repasadores -> "Decoración y Textil Hogar".
+7. "Indumentaria y Calzado": "Ropa Cotidiana", "Ropa Interior y Medias", "Calzado", "Accesorios".
+   - Remeras, pantalones, buzos, camperas -> "Ropa Cotidiana". Medias, bombachas, boxers -> "Ropa Interior y Medias". Zapatillas, ojotas, botas -> "Calzado". Gorras, cinturones, bufandas -> "Accesorios".
+8. "Juguetería y Regalería": "Juguetes", "Juegos de Mesa", "Cotillón y Envoltorios".
+   - Pelotas, muñecos, autitos -> "Juguetes". Cartas, rompecabezas, ajedrez -> "Juegos de Mesa". Globos, velitas, papel de regalo, bolsas -> "Cotillón y Envoltorios".
+9. "Mascotas y Veterinaria": "Alimento Balanceado", "Higiene y Piedritas", "Salud y Pipetas", "Accesorios Mascotas".
+   - Comida para perro o gato por bolsa grande o específica de veterinaria/pet shop -> "Alimento Balanceado". Piedras sanitarias, shampoo para perro -> "Higiene y Piedritas". Pipeta, antiparasitario -> "Salud y Pipetas". Collar, correa, comedero -> "Accesorios Mascotas". (Si el usuario claramente pide algo chico de góndola junto a compras del súper, puede ir en "Supermercado" -> "Mascotas", pero ante pedido específico de mascotas o veterinaria preferí "Mascotas y Veterinaria").
+10. "Electrónica y Celulares": "Cargadores y Cables", "Pilas y Baterías", "Audio y Accesorios", "Informática Básica".
+   - Cargador USB-C, cable de celular, adaptador -> "Cargadores y Cables". Pilas AA/AAA, baterías -> "Pilas y Baterías". Auriculares, parlante, funda o vidrio templado -> "Audio y Accesorios". Mouse, pendrive, teclado -> "Informática Básica".
+11. "Otros / Varios": "Varios", "Automotor", "Vivero", o una categoría corta de máximo 3 palabras si el producto no entra en ninguno de los 10 rubros anteriores.`;
 
 function jsonResponse(
   body: Record<string, unknown>,

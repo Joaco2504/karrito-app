@@ -2221,6 +2221,44 @@ class $LocalPreferencesTable extends LocalPreferences
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _vibrationEnabledMeta = const VerificationMeta(
+    'vibrationEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> vibrationEnabled = GeneratedColumn<bool>(
+    'vibration_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("vibration_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _avatarChoiceMeta = const VerificationMeta(
+    'avatarChoice',
+  );
+  @override
+  late final GeneratedColumn<String> avatarChoice = GeneratedColumn<String>(
+    'avatar_choice',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('avatar_1'),
+  );
+  static const VerificationMeta _googlePhotoUrlMeta = const VerificationMeta(
+    'googlePhotoUrl',
+  );
+  @override
+  late final GeneratedColumn<String> googlePhotoUrl = GeneratedColumn<String>(
+    'google_photo_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
     'lastSyncedAt',
   );
@@ -2240,6 +2278,9 @@ class $LocalPreferencesTable extends LocalPreferences
     onboardingCompleted,
     keepScreenOn,
     soundEnabled,
+    vibrationEnabled,
+    avatarChoice,
+    googlePhotoUrl,
     lastSyncedAt,
   ];
   @override
@@ -2296,6 +2337,33 @@ class $LocalPreferencesTable extends LocalPreferences
         ),
       );
     }
+    if (data.containsKey('vibration_enabled')) {
+      context.handle(
+        _vibrationEnabledMeta,
+        vibrationEnabled.isAcceptableOrUnknown(
+          data['vibration_enabled']!,
+          _vibrationEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('avatar_choice')) {
+      context.handle(
+        _avatarChoiceMeta,
+        avatarChoice.isAcceptableOrUnknown(
+          data['avatar_choice']!,
+          _avatarChoiceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('google_photo_url')) {
+      context.handle(
+        _googlePhotoUrlMeta,
+        googlePhotoUrl.isAcceptableOrUnknown(
+          data['google_photo_url']!,
+          _googlePhotoUrlMeta,
+        ),
+      );
+    }
     if (data.containsKey('last_synced_at')) {
       context.handle(
         _lastSyncedAtMeta,
@@ -2338,6 +2406,18 @@ class $LocalPreferencesTable extends LocalPreferences
         DriftSqlType.bool,
         data['${effectivePrefix}sound_enabled'],
       )!,
+      vibrationEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}vibration_enabled'],
+      )!,
+      avatarChoice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar_choice'],
+      )!,
+      googlePhotoUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}google_photo_url'],
+      ),
       lastSyncedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_synced_at'],
@@ -2359,6 +2439,9 @@ class UserPreferencesEntity extends DataClass
   final bool onboardingCompleted;
   final bool keepScreenOn;
   final bool soundEnabled;
+  final bool vibrationEnabled;
+  final String avatarChoice;
+  final String? googlePhotoUrl;
   final DateTime? lastSyncedAt;
   const UserPreferencesEntity({
     required this.id,
@@ -2367,6 +2450,9 @@ class UserPreferencesEntity extends DataClass
     required this.onboardingCompleted,
     required this.keepScreenOn,
     required this.soundEnabled,
+    required this.vibrationEnabled,
+    required this.avatarChoice,
+    this.googlePhotoUrl,
     this.lastSyncedAt,
   });
   @override
@@ -2378,6 +2464,11 @@ class UserPreferencesEntity extends DataClass
     map['onboarding_completed'] = Variable<bool>(onboardingCompleted);
     map['keep_screen_on'] = Variable<bool>(keepScreenOn);
     map['sound_enabled'] = Variable<bool>(soundEnabled);
+    map['vibration_enabled'] = Variable<bool>(vibrationEnabled);
+    map['avatar_choice'] = Variable<String>(avatarChoice);
+    if (!nullToAbsent || googlePhotoUrl != null) {
+      map['google_photo_url'] = Variable<String>(googlePhotoUrl);
+    }
     if (!nullToAbsent || lastSyncedAt != null) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
     }
@@ -2392,6 +2483,11 @@ class UserPreferencesEntity extends DataClass
       onboardingCompleted: Value(onboardingCompleted),
       keepScreenOn: Value(keepScreenOn),
       soundEnabled: Value(soundEnabled),
+      vibrationEnabled: Value(vibrationEnabled),
+      avatarChoice: Value(avatarChoice),
+      googlePhotoUrl: googlePhotoUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(googlePhotoUrl),
       lastSyncedAt: lastSyncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncedAt),
@@ -2412,6 +2508,9 @@ class UserPreferencesEntity extends DataClass
       ),
       keepScreenOn: serializer.fromJson<bool>(json['keepScreenOn']),
       soundEnabled: serializer.fromJson<bool>(json['soundEnabled']),
+      vibrationEnabled: serializer.fromJson<bool>(json['vibrationEnabled']),
+      avatarChoice: serializer.fromJson<String>(json['avatarChoice']),
+      googlePhotoUrl: serializer.fromJson<String?>(json['googlePhotoUrl']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
@@ -2425,6 +2524,9 @@ class UserPreferencesEntity extends DataClass
       'onboardingCompleted': serializer.toJson<bool>(onboardingCompleted),
       'keepScreenOn': serializer.toJson<bool>(keepScreenOn),
       'soundEnabled': serializer.toJson<bool>(soundEnabled),
+      'vibrationEnabled': serializer.toJson<bool>(vibrationEnabled),
+      'avatarChoice': serializer.toJson<String>(avatarChoice),
+      'googlePhotoUrl': serializer.toJson<String?>(googlePhotoUrl),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
@@ -2436,6 +2538,9 @@ class UserPreferencesEntity extends DataClass
     bool? onboardingCompleted,
     bool? keepScreenOn,
     bool? soundEnabled,
+    bool? vibrationEnabled,
+    String? avatarChoice,
+    Value<String?> googlePhotoUrl = const Value.absent(),
     Value<DateTime?> lastSyncedAt = const Value.absent(),
   }) => UserPreferencesEntity(
     id: id ?? this.id,
@@ -2444,6 +2549,11 @@ class UserPreferencesEntity extends DataClass
     onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     keepScreenOn: keepScreenOn ?? this.keepScreenOn,
     soundEnabled: soundEnabled ?? this.soundEnabled,
+    vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
+    avatarChoice: avatarChoice ?? this.avatarChoice,
+    googlePhotoUrl: googlePhotoUrl.present
+        ? googlePhotoUrl.value
+        : this.googlePhotoUrl,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
   );
   UserPreferencesEntity copyWithCompanion(LocalPreferencesCompanion data) {
@@ -2460,6 +2570,15 @@ class UserPreferencesEntity extends DataClass
       soundEnabled: data.soundEnabled.present
           ? data.soundEnabled.value
           : this.soundEnabled,
+      vibrationEnabled: data.vibrationEnabled.present
+          ? data.vibrationEnabled.value
+          : this.vibrationEnabled,
+      avatarChoice: data.avatarChoice.present
+          ? data.avatarChoice.value
+          : this.avatarChoice,
+      googlePhotoUrl: data.googlePhotoUrl.present
+          ? data.googlePhotoUrl.value
+          : this.googlePhotoUrl,
       lastSyncedAt: data.lastSyncedAt.present
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
@@ -2475,6 +2594,9 @@ class UserPreferencesEntity extends DataClass
           ..write('onboardingCompleted: $onboardingCompleted, ')
           ..write('keepScreenOn: $keepScreenOn, ')
           ..write('soundEnabled: $soundEnabled, ')
+          ..write('vibrationEnabled: $vibrationEnabled, ')
+          ..write('avatarChoice: $avatarChoice, ')
+          ..write('googlePhotoUrl: $googlePhotoUrl, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
@@ -2488,6 +2610,9 @@ class UserPreferencesEntity extends DataClass
     onboardingCompleted,
     keepScreenOn,
     soundEnabled,
+    vibrationEnabled,
+    avatarChoice,
+    googlePhotoUrl,
     lastSyncedAt,
   );
   @override
@@ -2500,6 +2625,9 @@ class UserPreferencesEntity extends DataClass
           other.onboardingCompleted == this.onboardingCompleted &&
           other.keepScreenOn == this.keepScreenOn &&
           other.soundEnabled == this.soundEnabled &&
+          other.vibrationEnabled == this.vibrationEnabled &&
+          other.avatarChoice == this.avatarChoice &&
+          other.googlePhotoUrl == this.googlePhotoUrl &&
           other.lastSyncedAt == this.lastSyncedAt);
 }
 
@@ -2510,6 +2638,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
   final Value<bool> onboardingCompleted;
   final Value<bool> keepScreenOn;
   final Value<bool> soundEnabled;
+  final Value<bool> vibrationEnabled;
+  final Value<String> avatarChoice;
+  final Value<String?> googlePhotoUrl;
   final Value<DateTime?> lastSyncedAt;
   const LocalPreferencesCompanion({
     this.id = const Value.absent(),
@@ -2518,6 +2649,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
     this.soundEnabled = const Value.absent(),
+    this.vibrationEnabled = const Value.absent(),
+    this.avatarChoice = const Value.absent(),
+    this.googlePhotoUrl = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   });
   LocalPreferencesCompanion.insert({
@@ -2527,6 +2661,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.onboardingCompleted = const Value.absent(),
     this.keepScreenOn = const Value.absent(),
     this.soundEnabled = const Value.absent(),
+    this.vibrationEnabled = const Value.absent(),
+    this.avatarChoice = const Value.absent(),
+    this.googlePhotoUrl = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   });
   static Insertable<UserPreferencesEntity> custom({
@@ -2536,6 +2673,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Expression<bool>? onboardingCompleted,
     Expression<bool>? keepScreenOn,
     Expression<bool>? soundEnabled,
+    Expression<bool>? vibrationEnabled,
+    Expression<String>? avatarChoice,
+    Expression<String>? googlePhotoUrl,
     Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
@@ -2546,6 +2686,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
         'onboarding_completed': onboardingCompleted,
       if (keepScreenOn != null) 'keep_screen_on': keepScreenOn,
       if (soundEnabled != null) 'sound_enabled': soundEnabled,
+      if (vibrationEnabled != null) 'vibration_enabled': vibrationEnabled,
+      if (avatarChoice != null) 'avatar_choice': avatarChoice,
+      if (googlePhotoUrl != null) 'google_photo_url': googlePhotoUrl,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
@@ -2557,6 +2700,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Value<bool>? onboardingCompleted,
     Value<bool>? keepScreenOn,
     Value<bool>? soundEnabled,
+    Value<bool>? vibrationEnabled,
+    Value<String>? avatarChoice,
+    Value<String?>? googlePhotoUrl,
     Value<DateTime?>? lastSyncedAt,
   }) {
     return LocalPreferencesCompanion(
@@ -2566,6 +2712,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
+      avatarChoice: avatarChoice ?? this.avatarChoice,
+      googlePhotoUrl: googlePhotoUrl ?? this.googlePhotoUrl,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
@@ -2591,6 +2740,15 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     if (soundEnabled.present) {
       map['sound_enabled'] = Variable<bool>(soundEnabled.value);
     }
+    if (vibrationEnabled.present) {
+      map['vibration_enabled'] = Variable<bool>(vibrationEnabled.value);
+    }
+    if (avatarChoice.present) {
+      map['avatar_choice'] = Variable<String>(avatarChoice.value);
+    }
+    if (googlePhotoUrl.present) {
+      map['google_photo_url'] = Variable<String>(googlePhotoUrl.value);
+    }
     if (lastSyncedAt.present) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
@@ -2606,6 +2764,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
           ..write('onboardingCompleted: $onboardingCompleted, ')
           ..write('keepScreenOn: $keepScreenOn, ')
           ..write('soundEnabled: $soundEnabled, ')
+          ..write('vibrationEnabled: $vibrationEnabled, ')
+          ..write('avatarChoice: $avatarChoice, ')
+          ..write('googlePhotoUrl: $googlePhotoUrl, ')
           ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
@@ -4361,6 +4522,9 @@ typedef $$LocalPreferencesTableCreateCompanionBuilder =
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
       Value<bool> soundEnabled,
+      Value<bool> vibrationEnabled,
+      Value<String> avatarChoice,
+      Value<String?> googlePhotoUrl,
       Value<DateTime?> lastSyncedAt,
     });
 typedef $$LocalPreferencesTableUpdateCompanionBuilder =
@@ -4371,6 +4535,9 @@ typedef $$LocalPreferencesTableUpdateCompanionBuilder =
       Value<bool> onboardingCompleted,
       Value<bool> keepScreenOn,
       Value<bool> soundEnabled,
+      Value<bool> vibrationEnabled,
+      Value<String> avatarChoice,
+      Value<String?> googlePhotoUrl,
       Value<DateTime?> lastSyncedAt,
     });
 
@@ -4410,6 +4577,21 @@ class $$LocalPreferencesTableFilterComposer
 
   ColumnFilters<bool> get soundEnabled => $composableBuilder(
     column: $table.soundEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get vibrationEnabled => $composableBuilder(
+    column: $table.vibrationEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatarChoice => $composableBuilder(
+    column: $table.avatarChoice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get googlePhotoUrl => $composableBuilder(
+    column: $table.googlePhotoUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4458,6 +4640,21 @@ class $$LocalPreferencesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get vibrationEnabled => $composableBuilder(
+    column: $table.vibrationEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avatarChoice => $composableBuilder(
+    column: $table.avatarChoice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get googlePhotoUrl => $composableBuilder(
+    column: $table.googlePhotoUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4494,6 +4691,21 @@ class $$LocalPreferencesTableAnnotationComposer
 
   GeneratedColumn<bool> get soundEnabled => $composableBuilder(
     column: $table.soundEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get vibrationEnabled => $composableBuilder(
+    column: $table.vibrationEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get avatarChoice => $composableBuilder(
+    column: $table.avatarChoice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get googlePhotoUrl => $composableBuilder(
+    column: $table.googlePhotoUrl,
     builder: (column) => column,
   );
 
@@ -4546,6 +4758,9 @@ class $$LocalPreferencesTableTableManager
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
                 Value<bool> soundEnabled = const Value.absent(),
+                Value<bool> vibrationEnabled = const Value.absent(),
+                Value<String> avatarChoice = const Value.absent(),
+                Value<String?> googlePhotoUrl = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion(
                 id: id,
@@ -4554,6 +4769,9 @@ class $$LocalPreferencesTableTableManager
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
                 soundEnabled: soundEnabled,
+                vibrationEnabled: vibrationEnabled,
+                avatarChoice: avatarChoice,
+                googlePhotoUrl: googlePhotoUrl,
                 lastSyncedAt: lastSyncedAt,
               ),
           createCompanionCallback:
@@ -4564,6 +4782,9 @@ class $$LocalPreferencesTableTableManager
                 Value<bool> onboardingCompleted = const Value.absent(),
                 Value<bool> keepScreenOn = const Value.absent(),
                 Value<bool> soundEnabled = const Value.absent(),
+                Value<bool> vibrationEnabled = const Value.absent(),
+                Value<String> avatarChoice = const Value.absent(),
+                Value<String?> googlePhotoUrl = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => LocalPreferencesCompanion.insert(
                 id: id,
@@ -4572,6 +4793,9 @@ class $$LocalPreferencesTableTableManager
                 onboardingCompleted: onboardingCompleted,
                 keepScreenOn: keepScreenOn,
                 soundEnabled: soundEnabled,
+                vibrationEnabled: vibrationEnabled,
+                avatarChoice: avatarChoice,
+                googlePhotoUrl: googlePhotoUrl,
                 lastSyncedAt: lastSyncedAt,
               ),
           withReferenceMapper: (p0) => p0

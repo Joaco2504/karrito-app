@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/shopping_providers.dart';
@@ -12,9 +11,12 @@ import '../widgets/aisle_reorder_sheet.dart';
 import '../widgets/aisle_section_card.dart';
 import '../widgets/edit_item_sheet.dart';
 import '../widgets/frequent_items_sheet.dart';
+import '../widgets/karrito_asset_icon.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/list_selector_sheet.dart';
 import '../widgets/live_share_sheets.dart';
+import '../widgets/profile_avatar_widget.dart';
+import '../widgets/profile_menu_sheet.dart';
 import 'settings_screen.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
@@ -149,6 +151,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             .shareActiveListAsText();
       case ShareOptionChoice.live:
         await _handleShareLive();
+      case ShareOptionChoice.join:
+        await _handleJoinWithCode();
       case ShareOptionChoice.openSettings:
         await Navigator.of(
           context,
@@ -189,13 +193,17 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
         ref.watch(aisleOrderMapProvider).value ??
         const <(String, String), int>{};
     final prefs = ref.watch(preferencesProvider).value;
+    final account = ref.watch(accountStatusProvider);
     final isOnline = ref.watch(isOnlineProvider);
     final pendingAiCount =
         ref.watch(activeListPendingAiCountProvider).value ?? 0;
 
     final keepScreenOn = prefs?.keepScreenOn ?? true;
+    final avatarChoice = prefs?.avatarChoice ?? KarritoAvatars.defaultChoice;
+    final googlePhotoUrl = prefs?.googlePhotoUrl ?? account.photoUrl;
     final lists = listsAsync.value ?? const <ShoppingListEntity>[];
     final items = itemsAsync.value ?? const <ShoppingItemEntity>[];
+    final totalPendingCount = items.where((i) => !i.isChecked).length;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -253,67 +261,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 16,
-        title: activeList == null
-            ? const Text(AppStrings.appName)
-            : Tooltip(
-                message: AppStrings.listSelectorTooltip,
-                child: KarritoBounceButton(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(999),
-                    onTap: () => _openListSelector(lists, activeList),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? karritoColors.aisleCardSurface
-                            : karritoColors.fieldSurface,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: karritoColors.border,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (activeList.isShared) ...[
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: karritoColors.lime,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                          ],
-                          Flexible(
-                            child: Text(
-                              activeList.title,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w800,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                            color: karritoColors.accentSoft,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+        title: const KarritoBrandLogo(height: 30),
         actions: [
           Semantics(
             button: true,
@@ -326,9 +274,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   ? AppStrings.switchToLightTooltip
                   : AppStrings.switchToDarkTooltip,
               style: IconButton.styleFrom(
-                backgroundColor: isDark
-                    ? karritoColors.fieldSurface
-                    : karritoColors.fieldSurface,
+                backgroundColor: karritoColors.fieldSurface,
               ),
               icon: AnimatedSwitcher(
                 duration: disableAnimations
@@ -397,22 +343,27 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             icon: const Icon(Icons.share_rounded, size: 19),
             onPressed: _openShareOptions,
           ),
-          const SizedBox(width: 2),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            tooltip: AppStrings.settingsTooltip,
-            style: IconButton.styleFrom(
-              backgroundColor: karritoColors.fieldSurface,
-              foregroundColor: colorScheme.onSurface,
+          const SizedBox(width: 6),
+          Semantics(
+            button: true,
+            label: AppStrings.profileMenuTooltip,
+            child: Tooltip(
+              message: AppStrings.profileMenuTooltip,
+              child: KarritoBounceButton(
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => ProfileMenuSheet.show(context),
+                  child: KarritoProfileAvatar(
+                    avatarChoice: avatarChoice,
+                    googlePhotoUrl: googlePhotoUrl,
+                    size: 40,
+                    showLinkedDot: !account.isAnonymous,
+                  ),
+                ),
+              ),
             ),
-            icon: const Icon(Icons.settings_outlined, size: 20),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-              );
-            },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 14),
         ],
       ),
       body: SafeArea(
@@ -422,6 +373,107 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (activeList != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Tooltip(
+                            message: AppStrings.listSelectorTooltip,
+                            child: KarritoBounceButton(
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(999),
+                                onTap: () =>
+                                    _openListSelector(lists, activeList),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 13,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? karritoColors.aisleCardSurface
+                                        : karritoColors.fieldSurface,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: karritoColors.border,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (activeList.isShared) ...[
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: karritoColors.lime,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 7),
+                                      ],
+                                      Flexible(
+                                        child: Text(
+                                          activeList.title,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w800,
+                                                color: colorScheme.onSurface,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 20,
+                                        color: karritoColors.accentSoft,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        if (items.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: totalPendingCount == 0
+                                  ? karritoColors.lime
+                                  : karritoColors.accentContainer,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              AppStrings.pendingCountBadge(
+                                totalPendingCount,
+                                items.length,
+                              ),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                                color: totalPendingCount == 0
+                                    ? karritoColors.onLime
+                                    : karritoColors.onAccentContainer,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 if (!isOnline)
                   _StatusBanner(
                     backgroundColor: karritoColors.warningSurface,
@@ -677,7 +729,6 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             .where((item) => !item.isChecked)
                             .length;
                         final isSelected = store == effectiveStore;
-                        final storeVisual = StoreVisuals.forStore(store);
 
                         return KarritoBounceButton(
                           child: ChoiceChip(
@@ -694,8 +745,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                   : karritoColors.border,
                               width: isSelected ? 1.4 : 1.0,
                             ),
-                            avatar: Icon(
-                              storeVisual.icon,
+                            avatar: KarritoAssetIcon.store(
+                              store,
                               size: 16,
                               color: isSelected
                                   ? karritoColors.onAccent

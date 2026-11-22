@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
+import 'karrito_asset_icon.dart';
 
 class AisleSectionCard extends StatelessWidget {
   const AisleSectionCard({
@@ -93,10 +94,18 @@ class AisleSectionCard extends StatelessWidget {
                                 alpha: isDark ? 0.22 : 0.16,
                               ),
                       ),
-                      child: Icon(
-                        allDone ? Icons.check_rounded : visual.icon,
-                        size: 17,
-                        color: allDone ? karritoColors.onLime : visual.color,
+                      child: Center(
+                        child: allDone
+                            ? Icon(
+                                Icons.check_rounded,
+                                size: 17,
+                                color: karritoColors.onLime,
+                              )
+                            : KarritoAssetIcon.aisle(
+                                aisleName,
+                                size: 17,
+                                color: visual.color,
+                              ),
                       ),
                     ),
                     const SizedBox(width: 10),

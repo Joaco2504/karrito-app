@@ -18,11 +18,15 @@ class GoogleLinkOutcome {
     required this.userId,
     required this.email,
     required this.switchedUid,
+    this.photoUrl,
+    this.displayName,
   });
 
   final String userId;
   final String? email;
   final bool switchedUid;
+  final String? photoUrl;
+  final String? displayName;
 }
 
 /// Handles silent anonymous login and native Google Sign-In linking.
@@ -36,7 +40,35 @@ class AuthService {
   String? get currentUserId => _client.auth.currentUser?.id;
   bool get isAnonymous => _client.auth.currentUser?.isAnonymous ?? true;
   String? get currentEmail => _client.auth.currentUser?.email;
+  String? get currentPhotoUrl =>
+      extractPhotoUrlFromMetadata(_client.auth.currentUser?.userMetadata);
+  String? get currentDisplayName =>
+      extractDisplayNameFromMetadata(_client.auth.currentUser?.userMetadata);
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+
+  static String? extractPhotoUrlFromMetadata(Map<String, dynamic>? metadata) {
+    if (metadata == null) return null;
+    for (final key in const <String>['avatar_url', 'picture']) {
+      final raw = metadata[key];
+      if (raw is String && raw.trim().isNotEmpty) {
+        return raw.trim();
+      }
+    }
+    return null;
+  }
+
+  static String? extractDisplayNameFromMetadata(
+    Map<String, dynamic>? metadata,
+  ) {
+    if (metadata == null) return null;
+    for (final key in const <String>['full_name', 'name']) {
+      final raw = metadata[key];
+      if (raw is String && raw.trim().isNotEmpty) {
+        return raw.trim();
+      }
+    }
+    return null;
+  }
 
   /// Returns `true` when [linkIdentityWithIdToken] rejected linking because
   /// the Google identity already belongs to an existing Supabase user or
@@ -179,10 +211,19 @@ class AuthService {
         throw const AuthActionException(AppStrings.googleTokenError);
       }
 
+      final resolvedPhotoUrl =
+          extractPhotoUrlFromMetadata(newUser.userMetadata) ??
+          googleUser.photoUrl;
+      final resolvedName =
+          extractDisplayNameFromMetadata(newUser.userMetadata) ??
+          googleUser.displayName;
+
       return GoogleLinkOutcome(
         userId: newUser.id,
         email: newUser.email ?? googleUser.email,
         switchedUid: switchedUid,
+        photoUrl: resolvedPhotoUrl,
+        displayName: resolvedName,
       );
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled ||
@@ -208,6 +249,8 @@ class AuthService {
           userId: activeUser.id,
           email: activeUser.email,
           switchedUid: false,
+          photoUrl: extractPhotoUrlFromMetadata(activeUser.userMetadata),
+          displayName: extractDisplayNameFromMetadata(activeUser.userMetadata),
         );
       }
       throw const AuthActionException(AppStrings.googleTokenError);
@@ -215,5 +258,24 @@ class AuthService {
       debugPrint('Karrito unexpected Google sign-in error: $e');
       throw const AuthActionException(AppStrings.googleTokenError);
     }
+  }
+
+  /// Signs out from Google and Supabase and quietly restores an anonymous guest
+  /// session so the user keeps working locally without losing any Drift lists.
+  Future<void> signOutToGuest() async {
+    try {
+      await _ensureGoogleInitialized();
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('Karrito Google signOut skipped: $e');
+    }
+
+    try {
+      await _client.auth.signOut();
+    } catch (e) {
+      debugPrint('Karrito Supabase signOut warning: $e');
+    }
+
+    await ensureSignedInSilently();
   }
 }

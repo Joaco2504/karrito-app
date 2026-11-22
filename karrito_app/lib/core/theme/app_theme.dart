@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Custom semantic colors for Karrito aligned with `.agents/figma_ref/`
-/// (`electric_mercado_1` Light & `electric_mercado_2` Dark AMOLED).
+/// Custom semantic colors for Karrito extracted directly from
+/// `.agents/figma_ref/electric_mercado_1/DESIGN.md` (Light) and
+/// `.agents/figma_ref/electric_mercado_2/DESIGN.md` (Dark AMOLED).
 @immutable
 class KarritoColors extends ThemeExtension<KarritoColors> {
   const KarritoColors({
@@ -40,13 +41,13 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   final Color accentContainer;
   final Color onAccentContainer;
 
-  /// Neon Papaya (`#FF6238`) — high-energy secondary CTA, drag highlight, offline alert.
+  /// Neon Papaya (`#FF6238`) — high-energy secondary CTA, drag highlight, alerts.
   final Color cta;
   final Color onCta;
   final Color ctaContainer;
   final Color onCtaContainer;
 
-  /// Electric Lime (`#ABF926` Light / `#CCFF00` Dark) — live tags, 1-tap & count highlights.
+  /// Electric Lime (`#ABF926` Light / `#CCFF00` Dark) — live tags & highlights.
   final Color lime;
   final Color onLime;
 
@@ -55,11 +56,11 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   final Color completedContainer;
   final Color onCompletedContainer;
 
-  /// Tinted surface & border for checked shopping items (matching Figma folder 2).
+  /// Tinted surface & border for checked shopping items.
   final Color checkedTileSurface;
   final Color checkedTileBorder;
 
-  /// Outer tonal container for aisle cards (Light `#F8F1FF`, Dark `#181522`).
+  /// Outer tonal container for aisle cards (`#F8F1FF` Light / `#161422` Dark).
   final Color aisleCardSurface;
 
   final Color border;
@@ -73,25 +74,25 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   static const light = KarritoColors(
     accent: Color(0xFF531CB3),
     onAccent: Color(0xFFFFFFFF),
-    accentSoft: Color(0xFF531CB3),
+    accentSoft: Color(0xFF3A008C),
     accentContainer: Color(0xFFE9DDFF),
     onAccentContainer: Color(0xFF23005B),
     cta: Color(0xFFFF6238),
     onCta: Color(0xFFFFFFFF),
-    ctaContainer: Color(0xFFFFEDE8),
+    ctaContainer: Color(0xFFFFDBD2),
     onCtaContainer: Color(0xFF881F00),
     lime: Color(0xFFABF926),
     onLime: Color(0xFF111F00),
     completed: Color(0xFF314D00),
     completedContainer: Color(0xFFECFFD0),
-    onCompletedContainer: Color(0xFF1A2E00),
-    checkedTileSurface: Color(0xFFF1EAFD),
-    checkedTileBorder: Color(0xFFD9C7FA),
-    aisleCardSurface: Color(0xFFF6F0FF),
-    border: Color(0xFFDCD3EB),
-    textSecondary: Color(0xFF524A60),
+    onCompletedContainer: Color(0xFF203500),
+    checkedTileSurface: Color(0xFFF2EBFF),
+    checkedTileBorder: Color(0xFFD1BCFF),
+    aisleCardSurface: Color(0xFFF8F1FF),
+    border: Color(0xFFCBC3D6),
+    textSecondary: Color(0xFF4A4454),
     fieldSurface: Color(0xFFF2EBFF),
-    warningSurface: Color(0xFFFFEDE8),
+    warningSurface: Color(0xFFFFDBD2),
     warningText: Color(0xFF881F00),
     softDestructive: Color(0xFFBA1A1A),
     shadowTint: Color(0x14531CB3),
@@ -111,13 +112,13 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
     onLime: Color(0xFF161E00),
     completed: Color(0xFFABD600),
     completedContainer: Color(0xFF1F2B0D),
-    onCompletedContainer: Color(0xFFD4FF4D),
+    onCompletedContainer: Color(0xFFC3F400),
     checkedTileSurface: Color(0xFF221A36),
-    checkedTileBorder: Color(0xFF3E2D69),
-    aisleCardSurface: Color(0xFF181522),
-    border: Color(0xFF322C45),
-    textSecondary: Color(0xFFBBB0CC),
-    fieldSurface: Color(0xFF252033),
+    checkedTileBorder: Color(0xFF4A3778),
+    aisleCardSurface: Color(0xFF161422),
+    border: Color(0xFF494454),
+    textSecondary: Color(0xFFCBC3D7),
+    fieldSurface: Color(0xFF252135),
     warningSurface: Color(0xFF2D1815),
     warningText: Color(0xFFFFB4A1),
     softDestructive: Color(0xFFFFB4AB),
@@ -235,8 +236,8 @@ class KarritoColors extends ThemeExtension<KarritoColors> {
   }
 }
 
-/// Material 3 Light & Dark themes for Karrito replicating
-/// `electric_mercado_1` (Light) and `electric_mercado_2` (AMOLED Dark).
+/// Material 3 Light & Dark themes for Karrito using the exact color tokens from
+/// `electric_mercado_1/DESIGN.md` (Light) and `electric_mercado_2/DESIGN.md` (Dark).
 class AppTheme {
   AppTheme._();
 
@@ -249,25 +250,27 @@ class AppTheme {
   static const Color lightLime = Color(0xFFABF926);
   static const Color lightCompleted = Color(0xFF314D00);
   static const Color lightTextPrimary = Color(0xFF1D1A28);
-  static const Color lightTextSecondary = Color(0xFF524A60);
-  static const Color lightBorder = Color(0xFFDCD3EB);
+  static const Color lightTextSecondary = Color(0xFF4A4454);
+  static const Color lightBorder = Color(0xFFCBC3D6);
   static const Color lightSwitchTrackOff = Color(0xFFE6DFF4);
   static const Color lightSwitchBorderOff = Color(0xFFCBC3D6);
+  static const Color lightSwitchThumbOn = Color(0xFFFFFFFF);
 
   // Electric Mercado 2 — Dark AMOLED palette
   static const Color darkBackground = Color(0xFF12111A);
-  static const Color darkSurface = Color(0xFF1D1A29);
-  static const Color darkFieldSurface = Color(0xFF252033);
+  static const Color darkSurface = Color(0xFF1E1B29);
+  static const Color darkFieldSurface = Color(0xFF252135);
   static const Color darkPrimary = Color(0xFF8B5CF6);
-  static const Color darkPrimaryFocus = Color(0xFFA78BFA);
+  static const Color darkPrimaryFocus = Color(0xFFA078FF);
   static const Color darkSecondary = Color(0xFFFF6238);
   static const Color darkLime = Color(0xFFCCFF00);
-  static const Color darkTextPrimary = Color(0xFFF5EEFF);
-  static const Color darkTextSecondary = Color(0xFFBBB0CC);
-  static const Color darkBorder = Color(0xFF322C45);
-  static const Color darkSwitchTrackOff = Color(0xFF252234);
+  static const Color darkTextPrimary = Color(0xFFE5E0EE);
+  static const Color darkTextSecondary = Color(0xFFCBC3D7);
+  static const Color darkBorder = Color(0xFF494454);
+  static const Color darkSwitchTrackOff = Color(0xFF161422);
   static const Color darkSwitchBorderOff = Color(0xFF494454);
   static const Color darkSwitchThumbOff = Color(0xFFE5E0EE);
+  static const Color darkSwitchThumbOn = Color(0xFFCCFF00);
 
   static ThemeData light() {
     const colorScheme = ColorScheme(
@@ -278,16 +281,16 @@ class AppTheme {
       onPrimaryContainer: Color(0xFF23005B),
       secondary: lightSecondary,
       onSecondary: Color(0xFFFFFFFF),
-      secondaryContainer: Color(0xFFFFEDE8),
+      secondaryContainer: Color(0xFFFFDBD2),
       onSecondaryContainer: Color(0xFF881F00),
       tertiary: lightLime,
       onTertiary: Color(0xFF111F00),
       tertiaryContainer: Color(0xFFECFFD0),
-      onTertiaryContainer: Color(0xFF1A2E00),
+      onTertiaryContainer: Color(0xFF203500),
       error: Color(0xFFBA1A1A),
       onError: Color(0xFFFFFFFF),
       errorContainer: Color(0xFFFFDAD6),
-      onErrorContainer: Color(0xFF8C1010),
+      onErrorContainer: Color(0xFF93000A),
       surface: lightSurface,
       onSurface: lightTextPrimary,
       onSurfaceVariant: lightTextSecondary,
@@ -296,8 +299,8 @@ class AppTheme {
       surfaceContainer: lightFieldSurface,
       surfaceContainerHigh: Color(0xFFECE5FA),
       surfaceContainerHighest: Color(0xFFE6DFF4),
-      outline: lightBorder,
-      outlineVariant: Color(0xFFE8E0F4),
+      outline: Color(0xFF7B7485),
+      outlineVariant: lightBorder,
       shadow: Color(0x18531CB3),
     );
 
@@ -313,6 +316,7 @@ class AppTheme {
       switchTrackOff: lightSwitchTrackOff,
       switchBorderOff: lightSwitchBorderOff,
       switchThumbOff: lightTextSecondary,
+      switchThumbOn: lightSwitchThumbOn,
     );
   }
 
@@ -330,21 +334,21 @@ class AppTheme {
       tertiary: darkLime,
       onTertiary: Color(0xFF161E00),
       tertiaryContainer: Color(0xFF1F2B0D),
-      onTertiaryContainer: Color(0xFFD4FF4D),
+      onTertiaryContainer: Color(0xFFC3F400),
       error: Color(0xFFFFB4AB),
       onError: Color(0xFF690005),
-      errorContainer: Color(0xFF4A1317),
+      errorContainer: Color(0xFF93000A),
       onErrorContainer: Color(0xFFFFDAD6),
       surface: darkSurface,
       onSurface: darkTextPrimary,
       onSurfaceVariant: darkTextSecondary,
       surfaceContainerLowest: Color(0xFF0E0D16),
-      surfaceContainerLow: Color(0xFF181522),
-      surfaceContainer: Color(0xFF201E28),
+      surfaceContainerLow: Color(0xFF161422),
+      surfaceContainer: darkSurface,
       surfaceContainerHigh: darkFieldSurface,
       surfaceContainerHighest: Color(0xFF35343E),
-      outline: darkBorder,
-      outlineVariant: Color(0xFF2B273D),
+      outline: Color(0xFF958EA0),
+      outlineVariant: darkBorder,
       shadow: Color(0x6605030B),
     );
 
@@ -360,6 +364,7 @@ class AppTheme {
       switchTrackOff: darkSwitchTrackOff,
       switchBorderOff: darkSwitchBorderOff,
       switchThumbOff: darkSwitchThumbOff,
+      switchThumbOn: darkSwitchThumbOn,
     );
   }
 
@@ -375,6 +380,7 @@ class AppTheme {
     required Color switchTrackOff,
     required Color switchBorderOff,
     required Color switchThumbOff,
+    required Color switchThumbOn,
   }) {
     final base = ThemeData(
       useMaterial3: true,
@@ -446,7 +452,7 @@ class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(
-        color: borderColor,
+        color: borderColor.withValues(alpha: 0.65),
         thickness: 1,
         space: 1,
       ),
@@ -471,7 +477,7 @@ class AppTheme {
         }),
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return Colors.white;
+            return switchThumbOn;
           }
           return switchThumbOff;
         }),

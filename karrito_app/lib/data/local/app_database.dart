@@ -95,6 +95,11 @@ class LocalPreferences extends Table {
       boolean().withDefault(const Constant(false))();
   BoolColumn get keepScreenOn => boolean().withDefault(const Constant(true))();
   BoolColumn get soundEnabled => boolean().withDefault(const Constant(true))();
+  BoolColumn get vibrationEnabled =>
+      boolean().withDefault(const Constant(true))();
+  TextColumn get avatarChoice =>
+      text().withDefault(const Constant('avatar_1'))();
+  TextColumn get googlePhotoUrl => text().nullable()();
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   @override
@@ -130,7 +135,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -159,6 +164,15 @@ class AppDatabase extends _$AppDatabase {
         if (from < 4) {
           await m.addColumn(localPreferences, localPreferences.soundEnabled);
         }
+        if (from < 5) {
+          await m.addColumn(
+            localPreferences,
+            localPreferences.vibrationEnabled,
+          );
+          await m.addColumn(localPreferences, localPreferences.avatarChoice);
+          await m.addColumn(localPreferences, localPreferences.googlePhotoUrl);
+          await _seedAisleOrderOnly();
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
@@ -185,7 +199,7 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<void> _seedInitialData() async {
+  Future<void> _seedAisleOrderOnly() async {
     final aisleEntries = StoreHierarchy.seedAisleOrder()
         .map(
           (entry) => LocalAisleOrderCompanion.insert(
@@ -204,6 +218,10 @@ class AppDatabase extends _$AppDatabase {
         mode: InsertMode.insertOrIgnore,
       );
     });
+  }
+
+  Future<void> _seedInitialData() async {
+    await _seedAisleOrderOnly();
 
     final now = DateTime.now();
     await into(localLists).insert(
@@ -225,6 +243,8 @@ class AppDatabase extends _$AppDatabase {
         onboardingCompleted: const Value(false),
         keepScreenOn: const Value(true),
         soundEnabled: const Value(true),
+        vibrationEnabled: const Value(true),
+        avatarChoice: const Value('avatar_1'),
       ),
       mode: InsertMode.insertOrIgnore,
     );

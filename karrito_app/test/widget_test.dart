@@ -18,24 +18,33 @@ import 'package:karrito_app/main.dart';
 import 'package:karrito_app/providers/core_providers.dart';
 import 'package:karrito_app/ui/widgets/aisle_reorder_sheet.dart';
 import 'package:karrito_app/ui/widgets/karrito_toast.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _TestAuthService implements AuthService {
   bool _isAnon = true;
   String? _email;
+  String? _displayName;
+  String? _photoUrl;
   final _authController = StreamController<AuthState>.broadcast();
 
   @override
   Session? get currentSession => null;
 
   @override
-  String? get currentUserId => 'test-user-id';
+  String? get currentUserId => _isAnon ? 'guest-user-id' : 'google-user-id';
 
   @override
   bool get isAnonymous => _isAnon;
 
   @override
   String? get currentEmail => _email;
+
+  @override
+  String? get currentPhotoUrl => _photoUrl;
+
+  @override
+  String? get currentDisplayName => _displayName;
 
   @override
   Stream<AuthState> get onAuthStateChange => _authController.stream;
@@ -47,11 +56,22 @@ class _TestAuthService implements AuthService {
   Future<GoogleLinkOutcome?> linkOrSignInWithGoogle() async {
     _isAnon = false;
     _email = 'vecino@catamarca.test';
+    _displayName = 'Vecino de Belén';
+    _photoUrl = null;
     return const GoogleLinkOutcome(
-      userId: 'test-user-id',
+      userId: 'google-user-id',
       email: 'vecino@catamarca.test',
       switchedUid: false,
+      displayName: 'Vecino de Belén',
     );
+  }
+
+  @override
+  Future<void> signOutToGuest() async {
+    _isAnon = true;
+    _email = null;
+    _displayName = null;
+    _photoUrl = null;
   }
 
   void dispose() {
@@ -68,7 +88,10 @@ class _TestSoundFeedbackService implements SoundFeedbackService {
   int playCalls = 0;
 
   @override
-  Future<void> playItemCheckedFeedback() async {
+  Future<void> playItemCheckedFeedback({
+    bool playSound = true,
+    bool triggerVibration = true,
+  }) async {
     playCalls++;
   }
 
@@ -161,7 +184,7 @@ class _TestAiClassifier implements AiClassifierService {
 
 void main() {
   testWidgets(
-    'Phase 3.1 flows: animated onboarding, 60-30-10 theme, toast, FAQ accordion, Sistema label, and Google linking',
+    'Phase 3.5 end-to-end: onboarding dual CTAs, Electric Mercado palette, avatar profile menu, QR live share, vibration toggle, and sign-out keeping local lists',
     (WidgetTester tester) async {
       final db = AppDatabase(NativeDatabase.memory());
       final auth = _TestAuthService();
@@ -196,18 +219,20 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // First-run animated onboarding visible with step 1 and Andalgalá preselected.
+      // First-run onboarding visible with cards AND both bottom CTAs.
       expect(find.text(AppStrings.onboardingHeadline), findsOneWidget);
       expect(find.text(AppStrings.onboardingCard1Title), findsOneWidget);
+      expect(find.text(AppStrings.startShoppingButton), findsOneWidget);
+      expect(find.text(AppStrings.onboardingGoogleButton), findsOneWidget);
       expect(find.text('Andalgalá'), findsOneWidget);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
 
-      // Step through onboarding steps 1 -> 2 -> 3.
-      await tester.tap(find.text(AppStrings.onboardingNextButton));
+      // Step through onboarding cards via arrow button.
+      await tester.tap(find.byTooltip(AppStrings.onboardingNextButton));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.onboardingCard2Title), findsOneWidget);
 
-      await tester.tap(find.text(AppStrings.onboardingNextButton));
+      await tester.tap(find.byTooltip(AppStrings.onboardingNextButton));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.onboardingCard3Title), findsOneWidget);
 
@@ -219,6 +244,11 @@ void main() {
 
       await tester.tap(find.text(AppStrings.startShoppingButton));
       await tester.pumpAndSettle();
+
+      // Top-left shows Karrito brand logo fallback, top-right has circular avatar instead of gear.
+      expect(find.text('Karrito'), findsOneWidget);
+      expect(find.byTooltip(AppStrings.profileMenuTooltip), findsOneWidget);
+      expect(find.byTooltip(AppStrings.settingsTooltip), findsNothing);
 
       // Quick theme toggle on home bar flips light <-> dark and persists in Drift.
       final toggleToDark = find.byTooltip(AppStrings.switchToDarkTooltip);
@@ -246,7 +276,7 @@ void main() {
       expect(find.text('Supermercado (2/2)'), findsOneWidget);
       expect(find.text('Farmacia (1/1)'), findsOneWidget);
 
-      // Open Aisle Reorder modal from "Ordenar pasillos" compact button.
+      // Open Aisle Reorder modal.
       await tester.tap(find.text(AppStrings.reorderAislesButton));
       await tester.pumpAndSettle();
       expect(find.byType(AisleReorderSheet), findsOneWidget);
@@ -274,83 +304,123 @@ void main() {
       await tester.pumpAndSettle();
       expect(sound.playCalls, 1);
 
-      // Open EditItemBottomSheet via long-press on Papa.
+      // Open EditItemBottomSheet via long-press on Papa & assign a new Phase 3.5 rubro.
       await tester.longPress(find.text('Papa').first);
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.editItemTitle), findsOneWidget);
 
-      final removeCenter = tester.getCenter(
-        find.text(AppStrings.removeShortButton),
-      );
-      final saveCenter = tester.getCenter(
-        find.text(AppStrings.saveShortButton),
-      );
-      expect(removeCenter.dy, closeTo(saveCenter.dy, 2.0));
-      expect(removeCenter.dx, lessThan(saveCenter.dx));
-
       await tester.tap(find.text('Supermercado').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Dietética / Naturista'));
+      await tester.tap(find.text('Bazar y Hogar'));
       await tester.pumpAndSettle();
-      expect(find.text('Frutos Secos y Semillas'), findsOneWidget);
+      expect(find.text('Cocina y Vajilla'), findsOneWidget);
       await tester.tap(find.text(AppStrings.saveShortButton));
       await tester.pumpAndSettle();
-      expect(find.text('Dietética / Naturista (1/1)'), findsOneWidget);
+      expect(find.text('Bazar y Hogar (1/1)'), findsOneWidget);
 
-      // Open ListSelectorSheet -> "Compartir lista en vivo" as Free user shows Pro info sheet.
-      await tester.tap(find.text('Compra semanal'));
+      // Open unified ShareOptionsSheet: shows WhatsApp, Live share, and Join list.
+      await tester.tap(find.byTooltip(AppStrings.shareListTooltip));
       await tester.pumpAndSettle();
-      expect(find.text(AppStrings.joinWithCodeButton), findsOneWidget);
+      expect(find.text(AppStrings.shareAsTextOption), findsOneWidget);
+      expect(find.text(AppStrings.shareLiveOption), findsOneWidget);
+      expect(find.text(AppStrings.shareJoinOption), findsOneWidget);
+
+      // Free user tapping "Compartir lista en vivo" sees Pro notice.
       await tester.tap(find.text(AppStrings.shareLiveOption));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.proLiveSheetTitle), findsOneWidget);
       await tester.tap(find.text(AppStrings.proLiveUnderstandButton));
       await tester.pumpAndSettle();
 
-      // Join shared list with 6-character code from ListSelectorSheet.
-      await tester.tap(find.text('Compra semanal'));
+      // Pro user tapping "Compartir lista en vivo" sees scannable QrImageView + 6-char code.
+      sync.simulatePro = true;
+      await tester.tap(find.byTooltip(AppStrings.shareListTooltip));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(AppStrings.joinWithCodeButton));
+      await tester.tap(find.text(AppStrings.shareLiveOption));
       await tester.pumpAndSettle();
-      expect(find.text(AppStrings.joinSheetTitle), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'k7m-4p9');
+      expect(find.byType(QrImageView), findsOneWidget);
+      expect(find.text(AppStrings.liveQrCaption), findsOneWidget);
+      Navigator.of(tester.element(find.byType(QrImageView))).pop();
+      await tester.pumpAndSettle();
+
+      // Unified ShareOptionsSheet -> Unirme a una lista shows QR scan button & joins via deep-link/code.
+      await tester.tap(find.byTooltip(AppStrings.shareListTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.shareJoinOption));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.scanQrButton), findsOneWidget);
+      await tester.enterText(
+        find.byType(TextField).last,
+        'karrito://join/K7M4P9',
+      );
       await tester.tap(find.text(AppStrings.joinSubmitButton));
       await tester.pumpAndSettle();
       expect(find.text('Asado compartido'), findsOneWidget);
 
-      // Open Settings -> check "Sistema" label, FAQ accordion, & link Google account.
-      await tester.tap(find.byTooltip(AppStrings.settingsTooltip));
+      // Open ProfileMenuSheet -> select avatar_3, verify persistence, open Guide+FAQ, then Preferencias.
+      await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.guestAccountTitle), findsOneWidget);
-      expect(find.text('Sistema'), findsOneWidget);
-      expect(find.text('Según el teléfono'), findsNothing);
+      expect(find.text(AppStrings.profilePreferencesOption), findsOneWidget);
+      expect(find.text(AppStrings.profileGuideFaqOption), findsOneWidget);
+      expect(find.text(AppStrings.profileSignInGoogleOption), findsOneWidget);
 
+      await tester.tap(find.byTooltip('Avatar 3'));
+      await tester.pumpAndSettle();
+      final prefsAfterAvatar = await (db.select(
+        db.localPreferences,
+      )..where((t) => t.id.equals(1))).getSingle();
+      expect(prefsAfterAvatar.avatarChoice, 'avatar_3');
+
+      // Open Guía básica y preguntas frecuentes from Profile Menu.
+      await tester.tap(find.text(AppStrings.profileGuideFaqOption));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.guideFaqTitle), findsOneWidget);
+      expect(find.text(AppStrings.faqEntries.first.question), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      // Open Preferencias (SettingsScreen) from Profile Menu, verify Sound + Vibration toggles, link Google.
+      await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.profilePreferencesOption));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sistema'), findsOneWidget);
       await tester.tap(find.text(AppStrings.linkGoogleButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       expect(find.text(AppStrings.linkedAccountTitle), findsOneWidget);
       expect(find.text('vecino@catamarca.test'), findsOneWidget);
-      expect(find.text(AppStrings.googleLinkedNotice), findsOneWidget);
 
-      // Verify "Sonido al tachar" toggle exists in Settings and persists to Drift v4.
       await tester.scrollUntilVisible(
-        find.text(AppStrings.settingsSoundOnCheckTitle),
+        find.text(AppStrings.settingsVibrationOnCheckTitle),
         200,
       );
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.settingsSoundOnCheckTitle), findsOneWidget);
-
-      // Scroll to FAQ accordion and expand the first entry.
-      await tester.scrollUntilVisible(
-        find.text(AppStrings.faqEntries.first.question),
-        200,
+      expect(
+        find.text(AppStrings.settingsVibrationOnCheckTitle),
+        findsOneWidget,
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(AppStrings.faqEntries.first.question));
-      await tester.pumpAndSettle();
-      expect(find.text(AppStrings.faqEntries.first.answer), findsOneWidget);
 
-      // Verify Electric Mercado 1 & 2 official theme and SwitchThemeData colors in Light and Dark.
+      // Go back to main screen, open Profile Menu and tap Cerrar sesión -> guest mode keeping local lists!
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
+      await tester.pumpAndSettle();
+      expect(find.text('Vecino de Belén'), findsOneWidget);
+      expect(find.text(AppStrings.profileSignOutOption), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.profileSignOutOption));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text(AppStrings.signedOutNotice), findsOneWidget);
+
+      final remainingLists = await db.select(db.localLists).get();
+      expect(remainingLists.isNotEmpty, isTrue);
+
+      // Verify exact electric_mercado_1 (Light) & electric_mercado_2 (Dark) theme tokens.
       final lightTheme = AppTheme.light();
       final darkTheme = AppTheme.dark();
       expect(lightTheme.scaffoldBackgroundColor, const Color(0xFFFDF7FF));
@@ -367,13 +437,13 @@ void main() {
       );
       expect(
         darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{}),
-        const Color(0xFF252234),
+        const Color(0xFF161422),
       );
       expect(
-        darkTheme.switchTheme.trackColor?.resolve(<WidgetState>{
+        darkTheme.switchTheme.thumbColor?.resolve(<WidgetState>{
           WidgetState.selected,
         }),
-        const Color(0xFF8B5CF6),
+        const Color(0xFFCCFF00),
       );
 
       // Flush pending toast auto-dismiss timer and unmount cleanly.

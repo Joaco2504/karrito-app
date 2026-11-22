@@ -14,6 +14,7 @@ import 'providers/core_providers.dart';
 import 'providers/shopping_providers.dart';
 import 'ui/screens/onboarding_screen.dart';
 import 'ui/screens/shopping_list_screen.dart';
+import 'ui/widgets/karrito_asset_icon.dart';
 import 'ui/widgets/karrito_toast.dart';
 
 Future<void> main() async {
@@ -48,6 +49,7 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   @override
   void initState() {
     super.initState();
+    unawaited(KarritoAssetRegistry.warmUp());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _syncService = ref.read(syncServiceProvider);
@@ -88,9 +90,28 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   }
 
   Future<void> _bootstrapOnlineSync() async {
-    await ref.read(authServiceProvider).ensureSignedInSilently();
+    final auth = ref.read(authServiceProvider);
+    await auth.ensureSignedInSilently();
     if (!mounted) return;
     ref.read(accountStatusProvider.notifier).refresh();
+    final photoUrl = auth.currentPhotoUrl;
+    final currentPrefs = ref.read(preferencesProvider).value;
+    if (!auth.isAnonymous &&
+        photoUrl != null &&
+        photoUrl.isNotEmpty &&
+        currentPrefs != null &&
+        currentPrefs.googlePhotoUrl != photoUrl) {
+      unawaited(
+        ref
+            .read(shoppingRepositoryProvider)
+            .updatePreferences(
+              googlePhotoUrl: photoUrl,
+              avatarChoice: currentPrefs.avatarChoice == 'avatar_1'
+                  ? 'google'
+                  : null,
+            ),
+      );
+    }
     await ref
         .read(shoppingControllerProvider.notifier)
         .reprocessPendingAi(userTriggered: false);
@@ -148,7 +169,8 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
     if (msg == AppStrings.savedOfflineNotice ||
         msg == AppStrings.wakelockEnabledNotice ||
         msg == AppStrings.wakelockDisabledNotice ||
-        msg == AppStrings.googleLinkedSyncPendingNotice) {
+        msg == AppStrings.googleLinkedSyncPendingNotice ||
+        msg == AppStrings.signedOutNotice) {
       return KarritoToastType.info;
     }
     return KarritoToastType.success;

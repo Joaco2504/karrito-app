@@ -5,6 +5,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/google_mark_icon.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
 
@@ -62,6 +63,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _handleSignInWithGoogle() async {
+    final controller = ref.read(shoppingControllerProvider.notifier);
+    await controller.linkGoogleAccount(
+      completeOnboardingAfter: !widget.isReviewMode,
+      city: _selectedCity,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -70,6 +79,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final isLastPage = _currentPage == _totalSteps - 1;
+    final uiState = ref.watch(shoppingControllerProvider);
 
     return Scaffold(
       appBar: widget.isReviewMode
@@ -258,7 +268,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
                   child: KarritoSelectorField<String>(
                     label: AppStrings.cityLabel,
                     sheetTitle: AppStrings.selectCityTitle,
@@ -273,92 +283,82 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
-                  child: Row(
-                    children: [
-                      if (_currentPage > 0) ...[
-                        KarritoBounceButton(
-                          child: OutlinedButton(
-                            onPressed: () => _goToPage(_currentPage - 1),
-                            child: const Text(AppStrings.onboardingBackButton),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        child: KarritoBounceButton(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: karritoColors.accent.withValues(
-                                    alpha: isDark ? 0.42 : 0.25,
-                                  ),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
+                  padding: const EdgeInsets.fromLTRB(20, 2, 20, 12),
+                  child: widget.isReviewMode
+                      ? KarritoBounceButton(
+                          child: FilledButton(
+                            onPressed: _handleFinish,
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(50),
                             ),
-                            child: FilledButton(
-                              onPressed: isLastPage
-                                  ? _handleFinish
-                                  : () => _goToPage(_currentPage + 1),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(54),
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: disableAnimations
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 180),
-                                child: Row(
-                                  key: ValueKey<bool>(isLastPage),
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      isLastPage
-                                          ? (widget.isReviewMode
-                                                ? AppStrings.saveGuideButton
-                                                : AppStrings
-                                                      .startShoppingButton)
-                                          : AppStrings.onboardingNextButton,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: 20,
+                            child: const Text(AppStrings.saveGuideButton),
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            KarritoBounceButton(
+                              enabled: !uiState.isLinkingGoogle,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: karritoColors.accent.withValues(
+                                        alpha: isDark ? 0.42 : 0.25,
+                                      ),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
                                     ),
                                   ],
                                 ),
+                                child: FilledButton.icon(
+                                  onPressed: uiState.isLinkingGoogle
+                                      ? null
+                                      : _handleFinish,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(50),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 19,
+                                  ),
+                                  iconAlignment: IconAlignment.end,
+                                  label: const Text(
+                                    AppStrings.startShoppingButton,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 10),
+                            KarritoBounceButton(
+                              enabled: !uiState.isLinkingGoogle,
+                              child: OutlinedButton.icon(
+                                onPressed: uiState.isLinkingGoogle
+                                    ? null
+                                    : _handleSignInWithGoogle,
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                icon: uiState.isLinkingGoogle
+                                    ? SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: karritoColors.accentSoft,
+                                        ),
+                                      )
+                                    : const GoogleMarkIcon(size: 19),
+                                label: Text(
+                                  uiState.isLinkingGoogle
+                                      ? AppStrings.linkingGoogleLabel
+                                      : AppStrings.onboardingGoogleButton,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 2, 20, 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.verified_user_outlined,
-                        size: 15,
-                        color: karritoColors.accentSoft,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppStrings.onboardingFooterNote,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: karritoColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

@@ -62,6 +62,8 @@ class ShoppingRepository {
             onboardingCompleted: false,
             keepScreenOn: true,
             soundEnabled: true,
+            vibrationEnabled: true,
+            avatarChoice: 'avatar_1',
           ),
     );
   }
@@ -619,7 +621,7 @@ class ShoppingRepository {
   /// first sync after switching pulls all remote data for the new account.
   /// Returns a map of `oldListId -> newListId` for remapping active UI state.
   Future<Map<String, String>> prepareLocalDataForAccountSwitch(
-    String newOwnerId,
+    String? newOwnerId,
   ) async {
     final remappedListIds = <String, String>{};
     final now = DateTime.now();
@@ -710,6 +712,10 @@ class ShoppingRepository {
     bool? onboardingCompleted,
     bool? keepScreenOn,
     bool? soundEnabled,
+    bool? vibrationEnabled,
+    String? avatarChoice,
+    String? googlePhotoUrl,
+    bool clearGooglePhotoUrl = false,
   }) async {
     await _db
         .into(_db.localPreferences)
@@ -729,6 +735,17 @@ class ShoppingRepository {
             soundEnabled: soundEnabled != null
                 ? Value(soundEnabled)
                 : const Value.absent(),
+            vibrationEnabled: vibrationEnabled != null
+                ? Value(vibrationEnabled)
+                : const Value.absent(),
+            avatarChoice: avatarChoice != null
+                ? Value(avatarChoice)
+                : const Value.absent(),
+            googlePhotoUrl: clearGooglePhotoUrl
+                ? const Value<String?>(null)
+                : (googlePhotoUrl != null
+                      ? Value<String?>(googlePhotoUrl)
+                      : const Value.absent()),
           ),
         );
   }
