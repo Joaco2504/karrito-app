@@ -13,7 +13,10 @@ class _FakeAiClassifier implements AiClassifierService {
   late ProcesarListaResponse Function(String text) handler;
 
   @override
-  Future<ProcesarListaResponse> classifyText(String text) async {
+  Future<ProcesarListaResponse> classifyText(
+    String text, {
+    bool isRecipe = false,
+  }) async {
     callCount++;
     sentTexts.add(text);
     if (shouldThrowOffline) {
@@ -34,6 +37,8 @@ class _FakeAiClassifier implements AiClassifierService {
   Future<ProcesarListaResponse> classifyImage({
     required String imageBase64,
     String mimeType = 'image/jpeg',
+    bool isRecipe = false,
+    String? textHint,
   }) async {
     return handler('image');
   }

@@ -92,6 +92,7 @@ interface ParsedShoppingItem {
   unit: string;
   store_category: StoreCategory;
   aisle_name: string;
+  recipe_note?: string;
 }
 
 interface UserProfileRow {
@@ -108,6 +109,7 @@ interface ProcessRequestPayload {
   audio_mime_type?: unknown;
   image_base64?: unknown;
   image_mime_type?: unknown;
+  is_recipe?: unknown;
 }
 
 const ITEM_BASE_PROPERTIES = {
@@ -119,12 +121,17 @@ const ITEM_BASE_PROPERTIES = {
   quantity: {
     type: "number",
     description:
-      "Cantidad numérica positiva solicitada. Si no se indica cantidad, usar 1.",
+      "Cantidad numérica positiva a comprar en el comercio (en modo receta, normalizada a un empaque comercial real argentino). Si no se indica cantidad, usar 1.",
   },
   unit: {
     type: "string",
     description:
       "Unidad corta en español: unidad, kg, g, litro, ml, paquete, caja, blíster, docena, metro, lata, botella.",
+  },
+  recipe_note: {
+    type: "string",
+    description:
+      "Solo cuando is_recipe=true: cantidad exacta original que pide la receta (ej: '100 g para el flan', '150 ml para la masa'). En listas comunes dejar vacío.",
   },
 };
 
@@ -207,6 +214,23 @@ Comercios y pasillos exactos permitidos:
 10. "Electrónica y Celulares": "Cargadores y Cables", "Pilas y Baterías", "Audio y Accesorios", "Informática Básica".
    - Cargador USB-C, cable de celular, adaptador -> "Cargadores y Cables". Pilas AA/AAA, baterías -> "Pilas y Baterías". Auriculares, parlante, funda o vidrio templado -> "Audio y Accesorios". Mouse, pendrive, teclado -> "Informática Básica".
 11. "Otros / Varios": "Varios", "Automotor", "Vivero", o una categoría corta de máximo 3 palabras si el producto no entra en ninguno de los 10 rubros anteriores.`;
+
+const RECIPE_SYSTEM_ADDENDUM = `
+
+MODO RECETA ACTIVO (is_recipe = true):
+El usuario ingresó el nombre de una comida, una receta escrita o una foto/captura de una receta.
+1. Si el usuario solo nombró un plato y cantidad de personas (ej: "Flan casero para 6 personas" o "Empanadas catamarqueñas para 4"), generá la lista completa de ingredientes típicos en Argentina. Si adjuntó texto o foto de una receta, extraé todos sus ingredientes.
+2. NORMALIZACIÓN OBLIGATORIA A EMPAQUES COMERCIALES REALES DE ARGENTINA: nunca devuelvas micro-cantidades imposibles de comprar sueltas en un supermercado argentino. Convertí cada ingrediente al empaque comercial mínimo estándar:
+   - Azúcar, harina, arroz, polenta: 100 g / 250 g / 500 g -> quantity: 1, unit: "kg".
+   - Aceite o vinagre: 50 ml / 150 ml / 200 ml -> quantity: 1, unit: "litro" (o 900 ml).
+   - Leche líquida: 250 ml / 500 ml -> quantity: 1, unit: "litro".
+   - Huevos: 1 a 5 huevos -> quantity: 6, unit: "unidad" (media docena); 7 a 12 -> quantity: 12, unit: "unidad" (o 1 docena).
+   - Manteca / margarina: hasta 100 g -> quantity: 100, unit: "g"; entre 101 g y 200 g -> quantity: 200, unit: "g".
+   - Crema de leche: hasta 200 ml -> quantity: 200, unit: "ml".
+   - Sal fina/gruesa: hasta 500 g -> quantity: 500, unit: "g".
+   - Especias, esencia de vainilla, polvo de hornear, levadura: "1 cdita", "una pizca" -> quantity: 1, unit: "paquete" o "botella" o "unidad".
+   - Verduras, frutas y carnes que sí se venden al peso: mantené el peso real (ej: 0.5 kg cebolla, 1 kg carne picada).
+3. En recipe_note escribí SIEMPRE la cantidad exacta que pide la receta original en forma breve y clara en español argentino (ej: "100 g para el flan", "150 ml para la mezcla", "4 u para el flan", "1 cdita para el caramelo").`;
 
 function jsonResponse(
   body: Record<string, unknown>,
@@ -320,12 +344,17 @@ function sanitizeItems(rawItems: unknown): ParsedShoppingItem[] {
         : STORE_AISLES[matchedStore][0];
     }
 
+    const rawNote = typeof obj.recipe_note === "string"
+      ? obj.recipe_note.trim().slice(0, 120)
+      : "";
+
     sanitized.push({
       clean_name: rawName,
       quantity,
       unit,
       store_category: matchedStore,
       aisle_name: aisleName,
+      ...(rawNote ? { recipe_note: rawNote } : {}),
     });
   }
 
@@ -366,10 +395,18 @@ function buildGeminiInput(
   audioMimeType: string,
   imageBase64: string,
   imageMimeType: string,
+  isRecipe: boolean,
 ) {
   const parts: Array<Record<string, unknown>> = [];
 
-  if (text) {
+  if (isRecipe) {
+    parts.push({
+      type: "text",
+      text: text
+        ? `Analizá la siguiente receta o comida, extraé sus ingredientes normalizados a empaques reales de comercios argentinos, anotá la cantidad exacta original en recipe_note y clasificalos por comercio y pasillo:\n\n${text}`
+        : "Leé la receta de la imagen adjunta, extraé todos sus ingredientes normalizados a empaques reales de comercios argentinos, anotá la cantidad exacta original en recipe_note y clasificalos por comercio y pasillo.",
+    });
+  } else if (text) {
     parts.push({
       type: "text",
       text: `Extraé y clasificá todos los productos de compra del siguiente pedido:\n\n${text}`,
@@ -525,6 +562,7 @@ Deno.serve(async (req: Request) => {
   const text = typeof payload.text === "string" ? payload.text.trim() : "";
   const audioBase64 = cleanBase64(payload.audio_base64);
   const imageBase64 = cleanBase64(payload.image_base64);
+  const isRecipe = payload.is_recipe === true;
 
   if (!text && !audioBase64 && !imageBase64) {
     return jsonResponse(
@@ -609,13 +647,16 @@ Deno.serve(async (req: Request) => {
     });
     const interaction = await ai.interactions.create({
       model: GEMINI_MODEL,
-      system_instruction: SYSTEM_INSTRUCTION,
+      system_instruction: isRecipe
+        ? `${SYSTEM_INSTRUCTION}${RECIPE_SYSTEM_ADDENDUM}`
+        : SYSTEM_INSTRUCTION,
       input: buildGeminiInput(
         text,
         audioBase64,
         audioMimeType ?? "audio/m4a",
         imageBase64,
         imageMimeType ?? "image/jpeg",
+        isRecipe,
       ) as never,
       generation_config: {
         thinking_level: "low",

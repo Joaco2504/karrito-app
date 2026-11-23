@@ -17,7 +17,10 @@ import 'package:karrito_app/ui/widgets/profile_avatar_widget.dart';
 
 class _NoopAi implements AiClassifierService {
   @override
-  Future<ProcesarListaResponse> classifyText(String text) async {
+  Future<ProcesarListaResponse> classifyText(
+    String text, {
+    bool isRecipe = false,
+  }) async {
     return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
   }
 
@@ -33,6 +36,8 @@ class _NoopAi implements AiClassifierService {
   Future<ProcesarListaResponse> classifyImage({
     required String imageBase64,
     String mimeType = 'image/jpeg',
+    bool isRecipe = false,
+    String? textHint,
   }) async {
     return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
   }

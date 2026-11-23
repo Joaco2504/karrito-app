@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../domain/services/item_text_parser.dart';
+import '../../domain/services/recipe_package_normalizer.dart';
 import '../local/app_database.dart';
 import '../models/procesar_lista_response.dart';
 import '../services/ai_classifier_service.dart';
@@ -571,10 +572,32 @@ class ShoppingRepository {
   }
 
   /// Imports a recipe or hardware/DIY project text block (Pro feature).
-  /// Still consults `local_learned_items` first when the pasted lines are simple,
-  /// otherwise sends to `procesar-lista` to extract ingredients/materials.
   Future<AddItemsOutcome> importRecipeOrProject({
     required String listId,
+    required String rawText,
+    required bool isOnline,
+  }) async {
+    final normalizedItems = await previewRecipeFromText(
+      rawText: rawText,
+      isOnline: isOnline,
+    );
+    final aiAdded = await _insertAiItemsAndLearn(
+      listId: listId,
+      rawText: rawText.trim(),
+      items: normalizedItems,
+    );
+    return AddItemsOutcome(
+      addedCount: aiAdded,
+      fromLocalCount: 0,
+      fromAiCount: aiAdded,
+      savedOfflineCount: 0,
+    );
+  }
+
+  /// Calls `procesar-lista` with `is_recipe: true` and returns the normalized
+  /// commercial-package ingredient preview so the user can pick which items to
+  /// add before writing to Drift.
+  Future<List<ProcessedAiItem>> previewRecipeFromText({
     required String rawText,
     required bool isOnline,
   }) async {
@@ -586,18 +609,49 @@ class ShoppingRepository {
       throw const ShoppingActionException(AppStrings.proMediaOfflineError);
     }
 
-    final response = await _aiClassifier.classifyText(trimmed);
-    final aiAdded = await _insertAiItemsAndLearn(
-      listId: listId,
-      rawText: trimmed,
-      items: response.items,
+    final response = await _aiClassifier.classifyText(trimmed, isRecipe: true);
+    return RecipePackageNormalizer.normalizeRecipeItems(
+      response.items,
+      dishLabel: trimmed,
     );
-    return AddItemsOutcome(
-      addedCount: aiAdded,
-      fromLocalCount: 0,
-      fromAiCount: aiAdded,
-      savedOfflineCount: 0,
-      quotaInfo: response.quota,
+  }
+
+  /// Calls `procesar-lista` with an uploaded recipe photo/screenshot
+  /// (`is_recipe: true`, JPEG <= 1024 px 75%) and returns the normalized
+  /// commercial-package ingredient preview.
+  Future<List<ProcessedAiItem>> previewRecipeFromImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+    String? dishHint,
+    required bool isOnline,
+  }) async {
+    if (!isOnline) {
+      throw const ShoppingActionException(AppStrings.proMediaOfflineError);
+    }
+
+    final response = await _aiClassifier.classifyImage(
+      imageBase64: imageBase64,
+      mimeType: mimeType,
+      isRecipe: true,
+      textHint: dishHint,
+    );
+    return RecipePackageNormalizer.normalizeRecipeItems(
+      response.items,
+      dishLabel: dishHint,
+    );
+  }
+
+  /// Persists the user-checked ingredients from the recipe preview into Drift
+  /// (preserving each item's original recipe note and updating learned items).
+  Future<int> addSelectedProcessedItems({
+    required String listId,
+    required List<ProcessedAiItem> items,
+    String fallbackRawText = 'Receta importada',
+  }) {
+    return _insertAiItemsAndLearn(
+      listId: listId,
+      rawText: fallbackRawText,
+      items: items,
     );
   }
 
@@ -1220,7 +1274,10 @@ class ShoppingRepository {
           LocalItemsCompanion.insert(
             id: _uuid.v4(),
             listId: listId,
-            rawText: rawText,
+            rawText: RecipePackageNormalizer.encodeRawText(
+              fallbackRawText: rawText,
+              recipeNote: item.recipeNote,
+            ),
             cleanName: item.cleanName,
             quantity: Value(item.quantity),
             unit: Value(item.unit),

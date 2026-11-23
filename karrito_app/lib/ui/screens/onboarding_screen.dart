@@ -213,7 +213,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: const [
                       _OnboardingStepSlide(
                         stepNumber: 1,
-                        badgeLabel: 'Orden automático',
+                        badgeLabel: 'Carga rápida',
                         badgeIcon: Icons.auto_fix_high_rounded,
                         title: AppStrings.onboardingCard1Title,
                         body: AppStrings.onboardingCard1Body,
@@ -229,11 +229,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       ),
                       _OnboardingStepSlide(
                         stepNumber: 3,
-                        badgeLabel: 'Modo sin señal',
-                        badgeIcon: Icons.wifi_off_rounded,
+                        badgeLabel: 'Recetas a paquetes',
+                        badgeIcon: Icons.restaurant_menu_rounded,
                         title: AppStrings.onboardingCard3Title,
                         body: AppStrings.onboardingCard3Body,
-                        illustration: _OfflineChecklistFlowIllustration(),
+                        illustration: _RecipeConversionFlowIllustration(),
                       ),
                     ],
                   ),
@@ -305,8 +305,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   borderRadius: BorderRadius.circular(999),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: karritoColors.accent.withValues(
-                                        alpha: isDark ? 0.42 : 0.25,
+                                      color: karritoColors.cta.withValues(
+                                        alpha: isDark ? 0.44 : 0.3,
                                       ),
                                       blurRadius: 18,
                                       offset: const Offset(0, 6),
@@ -314,11 +314,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   ],
                                 ),
                                 child: FilledButton.icon(
+                                  key: const ValueKey<String>(
+                                    'onboarding_start_button',
+                                  ),
                                   onPressed: uiState.isLinkingGoogle
                                       ? null
                                       : _handleFinish,
                                   style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
+                                    backgroundColor: karritoColors.cta,
+                                    foregroundColor: karritoColors.onCta,
+                                    minimumSize: const Size.fromHeight(52),
                                   ),
                                   icon: const Icon(
                                     Icons.arrow_forward_rounded,
@@ -334,23 +339,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             const SizedBox(height: 10),
                             KarritoBounceButton(
                               enabled: !uiState.isLinkingGoogle,
-                              child: OutlinedButton.icon(
+                              child: FilledButton.icon(
+                                key: const ValueKey<String>(
+                                  'onboarding_google_button',
+                                ),
                                 onPressed: uiState.isLinkingGoogle
                                     ? null
                                     : _handleSignInWithGoogle,
-                                style: OutlinedButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(48),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF7438F5)
+                                      : const Color(0xFF531CB3),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(50),
                                 ),
                                 icon: uiState.isLinkingGoogle
-                                    ? SizedBox(
+                                    ? const SizedBox(
                                         width: 18,
                                         height: 18,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: karritoColors.accentSoft,
+                                          color: Colors.white,
                                         ),
                                       )
-                                    : const GoogleMarkIcon(size: 19),
+                                    : Container(
+                                        width: 26,
+                                        height: 26,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: const GoogleMarkIcon(size: 16),
+                                      ),
                                 label: Text(
                                   uiState.isLinkingGoogle
                                       ? AppStrings.linkingGoogleLabel
@@ -510,7 +531,7 @@ class _OnboardingStepSlide extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _OnboardingVisualFrame(
+                OnboardingVisualFrame(
                   stepNumber: stepNumber,
                   semanticLabel: title,
                   fallbackIllustration: illustration,
@@ -543,11 +564,14 @@ class _OnboardingStepSlide extends StatelessWidget {
   }
 }
 
-class _OnboardingVisualFrame extends StatelessWidget {
-  const _OnboardingVisualFrame({
+/// Reusable 24 px rounded shadow frame displaying `assets/onboarding/step_N.png`
+/// with automatic fallback illustration if the asset is not present.
+class OnboardingVisualFrame extends StatelessWidget {
+  const OnboardingVisualFrame({
     required this.stepNumber,
     required this.semanticLabel,
     required this.fallbackIllustration,
+    super.key,
   });
 
   final int stepNumber;
@@ -832,8 +856,8 @@ class _StoreGroupingFlowIllustration extends StatelessWidget {
   }
 }
 
-class _OfflineChecklistFlowIllustration extends StatelessWidget {
-  const _OfflineChecklistFlowIllustration();
+class _RecipeConversionFlowIllustration extends StatelessWidget {
+  const _RecipeConversionFlowIllustration();
 
   @override
   Widget build(BuildContext context) {
@@ -847,48 +871,34 @@ class _OfflineChecklistFlowIllustration extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: karritoColors.checkedTileSurface,
+            color: isDark ? karritoColors.fieldSurface : colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: karritoColors.checkedTileBorder),
+            border: Border.all(color: karritoColors.border),
           ),
           child: Row(
             children: [
               Container(
-                width: 24,
-                height: 24,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: karritoColors.accent,
+                  color: karritoColors.ctaContainer,
                 ),
                 child: Icon(
-                  Icons.check_rounded,
-                  size: 15,
-                  color: karritoColors.onAccent,
+                  Icons.restaurant_menu_rounded,
+                  size: 16,
+                  color: karritoColors.cta,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Papa 2 kg',
+                  'Receta: 100 g azúcar · 150 ml aceite',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.lineThrough,
-                    color: karritoColors.textSecondary,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                decoration: BoxDecoration(
-                  color: karritoColors.ctaContainer,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Sin señal',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: karritoColors.onCtaContainer,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -897,39 +907,41 @@ class _OfflineChecklistFlowIllustration extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
-            color: isDark ? karritoColors.fieldSurface : colorScheme.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: karritoColors.border),
+            color: karritoColors.lime,
+            shape: BoxShape.circle,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: karritoColors.accentSoft, width: 2),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Leche descremada 1 l',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.stay_current_portrait_rounded,
-                size: 18,
-                color: karritoColors.accentSoft,
-              ),
-            ],
+          child: Icon(
+            Icons.arrow_downward_rounded,
+            size: 16,
+            color: karritoColors.onLime,
           ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _PreviewChipCard(
+                icon: Icons.inventory_2_outlined,
+                iconBg: karritoColors.accentContainer,
+                iconColor: karritoColors.accentSoft,
+                title: 'Azúcar 1 kg',
+                subtitle: '100 g para el flan',
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _PreviewChipCard(
+                icon: Icons.local_drink_outlined,
+                iconBg: karritoColors.ctaContainer,
+                iconColor: karritoColors.cta,
+                title: 'Aceite 1 l',
+                subtitle: '150 ml para el flan',
+              ),
+            ),
+          ],
         ),
       ],
     );

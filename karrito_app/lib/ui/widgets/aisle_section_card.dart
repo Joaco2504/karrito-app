@@ -8,6 +8,7 @@ import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
 import '../../domain/services/currency_formatter.dart';
+import '../../domain/services/recipe_package_normalizer.dart';
 import 'karrito_asset_icon.dart';
 
 class AisleSectionCard extends StatelessWidget {
@@ -280,6 +281,9 @@ class _ShoppingItemTileState extends State<_ShoppingItemTile>
     final isDark = theme.brightness == Brightness.dark;
     final isChecked = widget.item.isChecked;
     final isPendingOffline = widget.item.syncStatus == 'pending_ai';
+    final recipeNote = RecipePackageNormalizer.extractRecipeNote(
+      widget.item.rawText,
+    );
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final animDuration = disableAnimations
         ? Duration.zero
@@ -457,6 +461,30 @@ class _ShoppingItemTileState extends State<_ShoppingItemTile>
                           ],
                         ],
                       ),
+                      if (recipeNote != null) ...[
+                        const SizedBox(height: 3),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: karritoColors.accentContainer.withValues(
+                              alpha: isDark ? 0.65 : 0.85,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            recipeNote,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: karritoColors.onAccentContainer,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

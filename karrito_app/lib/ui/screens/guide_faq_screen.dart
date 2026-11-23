@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/karrito_bounce_button.dart';
+import 'onboarding_screen.dart';
 
-/// Combined interactive basic guide (3-step carousel) and expandable FAQ
-/// accordion opened from the profile menu.
+/// Combined interactive basic guide (3-step illustrated carousel) and expandable
+/// 9-question FAQ accordion opened from the profile menu.
 class GuideFaqScreen extends StatefulWidget {
   const GuideFaqScreen({super.key});
 
@@ -37,12 +38,24 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
       tip: AppStrings.onboardingCard2Example,
     ),
     (
-      icon: Icons.wifi_off_rounded,
-      badge: 'Paso 3 · Sin señal',
+      icon: Icons.restaurant_menu_rounded,
+      badge: 'Paso 3 · Recetas a paquetes',
       title: AppStrings.onboardingCard3Title,
       body: AppStrings.onboardingCard3Body,
       tip: AppStrings.onboardingCard3Example,
     ),
+  ];
+
+  static const List<IconData> _faqIcons = <IconData>[
+    Icons.shopping_cart_outlined,
+    Icons.restaurant_menu_rounded,
+    Icons.qr_code_2_rounded,
+    Icons.wifi_off_rounded,
+    Icons.reorder_rounded,
+    Icons.location_on_outlined,
+    Icons.edit_outlined,
+    Icons.cleaning_services_outlined,
+    Icons.workspace_premium_outlined,
   ];
 
   @override
@@ -69,7 +82,12 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final textScale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
+      1.0,
+      1.35,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.guideFaqTitle)),
@@ -78,6 +96,7 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: ListView(
+              key: const ValueKey<String>('guide_faq_list_view'),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
                 Padding(
@@ -103,119 +122,166 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 224,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _steps.length,
-                    onPageChanged: (index) {
-                      setState(() => _currentStep = index);
-                    },
-                    itemBuilder: (context, index) {
-                      final step = _steps[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: karritoColors.aisleCardSurface,
-                            borderRadius: BorderRadius.circular(26),
-                            border: Border.all(
-                              color: karritoColors.border,
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final imageWidth = (constraints.maxWidth - 40).clamp(
+                      220.0,
+                      560.0,
+                    );
+                    final imageHeight = imageWidth * (460 / 800);
+                    final cardHeight = imageHeight + (215 * textScale);
+
+                    return SizedBox(
+                      height: cardHeight,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _steps.length,
+                        onPageChanged: (index) {
+                          setState(() => _currentStep = index);
+                        },
+                        itemBuilder: (context, index) {
+                          final step = _steps[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colorScheme.surfaceContainerLow
+                                    : karritoColors.aisleCardSurface,
+                                borderRadius: BorderRadius.circular(28),
+                                border: Border.all(
+                                  color: karritoColors.border,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: karritoColors.shadowTint,
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: karritoColors.accentContainer,
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          step.icon,
-                                          size: 14,
-                                          color: karritoColors.accentSoft,
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          step.badge,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                                color: karritoColors
-                                                    .onAccentContainer,
-                                              ),
+                                        decoration: BoxDecoration(
+                                          color: karritoColors.accentContainer,
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                         ),
-                                      ],
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              step.icon,
+                                              size: 14,
+                                              color: karritoColors.accentSoft,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              step.badge,
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w800,
+                                                    color: karritoColors
+                                                        .onAccentContainer,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '${index + 1}/${_steps.length}',
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color:
+                                                  karritoColors.textSecondary,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  OnboardingVisualFrame(
+                                    stepNumber: index + 1,
+                                    semanticLabel: step.title,
+                                    fallbackIllustration: Container(
+                                      height: 92,
+                                      decoration: BoxDecoration(
+                                        color: karritoColors.fieldSurface,
+                                        borderRadius: BorderRadius.circular(24),
+                                        border: Border.all(
+                                          color: karritoColors.border,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        step.icon,
+                                        size: 36,
+                                        color: karritoColors.accentSoft,
+                                      ),
                                     ),
                                   ),
-                                  const Spacer(),
+                                  const SizedBox(height: 12),
                                   Text(
-                                    '${index + 1}/${_steps.length}',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: karritoColors.textSecondary,
-                                      fontWeight: FontWeight.w800,
+                                    step.title,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Expanded(
+                                    child: Text(
+                                      step.body,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: karritoColors.textSecondary,
+                                            height: 1.38,
+                                          ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: karritoColors.fieldSurface,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: karritoColors.border,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      step.tip,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurface,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                step.title,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Expanded(
-                                child: Text(
-                                  step.body,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: karritoColors.textSecondary,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: karritoColors.fieldSurface,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: karritoColors.border,
-                                  ),
-                                ),
-                                child: Text(
-                                  step.tip,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurface,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -261,7 +327,7 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Row(
@@ -281,13 +347,32 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
                           color: karritoColors.accentSoft,
                         ),
                       ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: karritoColors.accentContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '${AppStrings.faqEntries.length} temas',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: karritoColors.onAccentContainer,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 for (var i = 0; i < AppStrings.faqEntries.length; i++) ...[
                   if (i > 0) const SizedBox(height: 10),
                   _GuideFaqCard(
+                    icon: _faqIcons[i % _faqIcons.length],
                     question: AppStrings.faqEntries[i].question,
                     answer: AppStrings.faqEntries[i].answer,
                     isOpen: _openFaqIndex == i,
@@ -309,12 +394,14 @@ class _GuideFaqScreenState extends State<GuideFaqScreen> {
 
 class _GuideFaqCard extends StatelessWidget {
   const _GuideFaqCard({
+    required this.icon,
     required this.question,
     required this.answer,
     required this.isOpen,
     required this.onTap,
   });
 
+  final IconData icon;
   final String question;
   final String answer;
   final bool isOpen;
@@ -325,21 +412,31 @@ class _GuideFaqCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
     final disableAnimations = MediaQuery.disableAnimationsOf(context);
     final duration = disableAnimations
         ? Duration.zero
-        : const Duration(milliseconds: 220);
+        : const Duration(milliseconds: 230);
 
     return AnimatedContainer(
       duration: duration,
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
+        color: isDark ? karritoColors.aisleCardSurface : colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isOpen ? karritoColors.accentSoft : karritoColors.border,
           width: isOpen ? 1.5 : 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: karritoColors.shadowTint.withValues(
+              alpha: isOpen ? (isDark ? 0.42 : 0.16) : (isDark ? 0.24 : 0.08),
+            ),
+            blurRadius: isOpen ? 18 : 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -347,7 +444,7 @@ class _GuideFaqCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -355,13 +452,21 @@ class _GuideFaqCard extends StatelessWidget {
                   children: [
                     AnimatedContainer(
                       duration: duration,
-                      width: 9,
-                      height: 9,
+                      curve: Curves.easeOutCubic,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isOpen
-                            ? karritoColors.lime
-                            : karritoColors.border,
+                            ? karritoColors.accent
+                            : karritoColors.accentContainer,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 19,
+                        color: isOpen
+                            ? karritoColors.onAccent
+                            : karritoColors.accentSoft,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -369,23 +474,36 @@ class _GuideFaqCard extends StatelessWidget {
                       child: Text(
                         question,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          height: 1.28,
                           color: colorScheme.onSurface,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    AnimatedRotation(
-                      turns: isOpen ? 0.5 : 0.0,
+                    const SizedBox(width: 10),
+                    AnimatedContainer(
                       duration: duration,
                       curve: Curves.easeOutCubic,
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 22,
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: isOpen
-                            ? karritoColors.accentSoft
-                            : karritoColors.textSecondary,
+                            ? karritoColors.ctaContainer
+                            : karritoColors.fieldSurface,
+                      ),
+                      child: AnimatedRotation(
+                        turns: isOpen ? 0.5 : 0.0,
+                        duration: duration,
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 21,
+                          color: isOpen
+                              ? karritoColors.cta
+                              : karritoColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -393,7 +511,12 @@ class _GuideFaqCard extends StatelessWidget {
                 AnimatedCrossFade(
                   firstChild: const SizedBox.shrink(),
                   secondChild: Padding(
-                    padding: const EdgeInsets.only(left: 21, top: 10, right: 4),
+                    padding: const EdgeInsets.only(
+                      left: 50,
+                      top: 10,
+                      right: 6,
+                      bottom: 2,
+                    ),
                     child: Text(
                       answer,
                       style: theme.textTheme.bodyMedium?.copyWith(

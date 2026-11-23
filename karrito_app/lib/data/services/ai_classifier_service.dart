@@ -43,7 +43,10 @@ class AiProcessingException extends AiClassifierException {
 }
 
 abstract interface class AiClassifierService {
-  Future<ProcesarListaResponse> classifyText(String text);
+  Future<ProcesarListaResponse> classifyText(
+    String text, {
+    bool isRecipe = false,
+  });
   Future<ProcesarListaResponse> classifyAudio({
     required String audioBase64,
     String mimeType = 'audio/m4a',
@@ -51,6 +54,8 @@ abstract interface class AiClassifierService {
   Future<ProcesarListaResponse> classifyImage({
     required String imageBase64,
     String mimeType = 'image/jpeg',
+    bool isRecipe = false,
+    String? textHint,
   });
 }
 
@@ -129,13 +134,17 @@ class SupabaseAiClassifierService implements AiClassifierService {
   final AiFunctionInvoker? _invoker;
 
   @override
-  Future<ProcesarListaResponse> classifyText(String text) async {
+  Future<ProcesarListaResponse> classifyText(
+    String text, {
+    bool isRecipe = false,
+  }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) {
       throw const AiProcessingException(AppStrings.emptyInputError);
     }
 
-    final cached = _cache.get(trimmed);
+    final cacheKey = isRecipe ? 'recipe::$trimmed' : trimmed;
+    final cached = _cache.get(cacheKey);
     if (cached != null) {
       return cached;
     }
@@ -152,14 +161,17 @@ class SupabaseAiClassifierService implements AiClassifierService {
           : (await _client!.functions
                     .invoke(
                       'procesar-lista',
-                      body: <String, dynamic>{'text': trimmed},
+                      body: <String, dynamic>{
+                        'text': trimmed,
+                        if (isRecipe) 'is_recipe': true,
+                      },
                     )
-                    .timeout(const Duration(seconds: 25)))
+                    .timeout(const Duration(seconds: 30)))
                 .data;
 
       final payload = _normalizeJsonMap(rawData);
       final parsed = ProcesarListaResponse.fromJson(payload);
-      _cache.put(trimmed, parsed);
+      _cache.put(cacheKey, parsed);
       return parsed;
     } on TimeoutException {
       throw const AiOfflineOrNetworkException();
@@ -199,9 +211,12 @@ class SupabaseAiClassifierService implements AiClassifierService {
 
       if (e.status == 401 && _client != null) {
         // Attempt one silent session refresh/re-auth before failing.
-        final recovered = await _recoverSessionAndRetry(trimmed);
+        final recovered = await _recoverSessionAndRetry(
+          trimmed,
+          isRecipe: isRecipe,
+        );
         if (recovered != null) {
-          _cache.put(trimmed, recovered);
+          _cache.put(cacheKey, recovered);
           return recovered;
         }
       }
@@ -241,10 +256,15 @@ class SupabaseAiClassifierService implements AiClassifierService {
   Future<ProcesarListaResponse> classifyImage({
     required String imageBase64,
     String mimeType = 'image/jpeg',
+    bool isRecipe = false,
+    String? textHint,
   }) {
+    final trimmedHint = textHint?.trim();
     return _invokeMediaPayload(<String, dynamic>{
       'image_base64': imageBase64,
       'image_mime_type': mimeType,
+      if (isRecipe) 'is_recipe': true,
+      if (trimmedHint != null && trimmedHint.isNotEmpty) 'text': trimmedHint,
     });
   }
 
@@ -315,14 +335,23 @@ class SupabaseAiClassifierService implements AiClassifierService {
     }
   }
 
-  Future<ProcesarListaResponse?> _recoverSessionAndRetry(String text) async {
+  Future<ProcesarListaResponse?> _recoverSessionAndRetry(
+    String text, {
+    bool isRecipe = false,
+  }) async {
     final client = _client;
     if (client == null) return null;
     try {
       await client.auth.signInAnonymously();
       final retry = await client.functions
-          .invoke('procesar-lista', body: <String, dynamic>{'text': text})
-          .timeout(const Duration(seconds: 25));
+          .invoke(
+            'procesar-lista',
+            body: <String, dynamic>{
+              'text': text,
+              if (isRecipe) 'is_recipe': true,
+            },
+          )
+          .timeout(const Duration(seconds: 30));
       return ProcesarListaResponse.fromJson(_normalizeJsonMap(retry.data));
     } catch (_) {
       return null;

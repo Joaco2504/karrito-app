@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_strings.dart';
 import '../core/constants/store_hierarchy.dart';
 import '../data/local/app_database.dart';
+import '../data/models/procesar_lista_response.dart';
 import '../data/repositories/shopping_repository.dart';
 import '../data/services/ads_cascade_service.dart';
 import '../data/services/ai_classifier_service.dart';
@@ -795,6 +796,47 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     } finally {
       state = state.copyWith(isSubmitting: false);
     }
+  }
+
+  /// Generates a normalized ingredient preview for a typed recipe or meal name.
+  Future<List<ProcessedAiItem>> previewRecipeFromText(String rawText) {
+    return _repo.previewRecipeFromText(
+      rawText: rawText,
+      isOnline: ref.read(isOnlineProvider),
+    );
+  }
+
+  /// Generates a normalized ingredient preview from a compressed recipe photo
+  /// or screenshot (`karrito-media-guard`: <= 1024 px JPEG 75%).
+  Future<List<ProcessedAiItem>> previewRecipeFromImage(
+    EncodedImagePayload payload, {
+    String? dishHint,
+  }) {
+    return _repo.previewRecipeFromImage(
+      imageBase64: payload.base64Data,
+      mimeType: payload.mimeType,
+      dishHint: dishHint,
+      isOnline: ref.read(isOnlineProvider),
+    );
+  }
+
+  /// Saves only the ingredients selected in the recipe preview checklist.
+  Future<bool> addSelectedRecipeItems(
+    List<ProcessedAiItem> selectedItems, {
+    String fallbackRawText = 'Receta importada',
+  }) async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null || selectedItems.isEmpty) return false;
+    final added = await _repo.addSelectedProcessedItems(
+      listId: activeList.id,
+      items: selectedItems,
+      fallbackRawText: fallbackRawText,
+    );
+    if (added > 0) {
+      _emitFeedback(AppStrings.addedItemsNotice(added));
+      _triggerBackgroundSync();
+    }
+    return added > 0;
   }
 
   Future<bool> purchaseMonthlyPlan(String targetTier) async {

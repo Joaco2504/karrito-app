@@ -8,6 +8,7 @@ class ProcessedAiItem {
     required this.unit,
     required this.storeCategory,
     required this.aisleName,
+    this.recipeNote,
   });
 
   final String cleanName;
@@ -15,6 +16,7 @@ class ProcessedAiItem {
   final String unit;
   final String storeCategory;
   final String aisleName;
+  final String? recipeNote;
 
   factory ProcessedAiItem.fromJson(Map<String, dynamic> json) {
     final rawName = (json['clean_name'] ?? '').toString().trim();
@@ -39,12 +41,16 @@ class ProcessedAiItem {
       json['aisle_name']?.toString(),
     );
 
+    final rawNote = json['recipe_note']?.toString().trim();
+    final recipeNote = (rawNote != null && rawNote.isNotEmpty) ? rawNote : null;
+
     return ProcessedAiItem(
       cleanName: cleanName,
       quantity: quantity,
       unit: unit,
       storeCategory: storeCategory,
       aisleName: aisleName,
+      recipeNote: recipeNote,
     );
   }
 }

@@ -315,8 +315,33 @@ class _TestAiClassifier implements AiClassifierService {
   int callCount = 0;
 
   @override
-  Future<ProcesarListaResponse> classifyText(String text) async {
+  Future<ProcesarListaResponse> classifyText(
+    String text, {
+    bool isRecipe = false,
+  }) async {
     callCount++;
+    if (isRecipe) {
+      return const ProcesarListaResponse(
+        items: <ProcessedAiItem>[
+          ProcessedAiItem(
+            cleanName: 'Azúcar',
+            quantity: 100,
+            unit: 'g',
+            storeCategory: 'Supermercado',
+            aisleName: 'Almacén',
+            recipeNote: '100 g para el flan',
+          ),
+          ProcessedAiItem(
+            cleanName: 'Aceite de girasol',
+            quantity: 150,
+            unit: 'ml',
+            storeCategory: 'Supermercado',
+            aisleName: 'Almacén',
+            recipeNote: '150 ml para el flan',
+          ),
+        ],
+      );
+    }
     return const ProcesarListaResponse(
       items: <ProcessedAiItem>[
         ProcessedAiItem(
@@ -354,7 +379,9 @@ class _TestAiClassifier implements AiClassifierService {
   Future<ProcesarListaResponse> classifyImage({
     required String imageBase64,
     String mimeType = 'image/jpeg',
-  }) async => classifyText('image');
+    bool isRecipe = false,
+    String? textHint,
+  }) async => classifyText(textHint ?? 'image', isRecipe: isRecipe);
 }
 
 void main() {
@@ -576,6 +603,17 @@ void main() {
       await tester.tap(find.text(AppStrings.profileGuideFaqOption));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.guideFaqTitle), findsOneWidget);
+      final guideScrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey<String>('guide_faq_list_view')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.faqEntries.first.question),
+        220,
+        scrollable: guideScrollable,
+      );
       expect(find.text(AppStrings.faqEntries.first.question), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
@@ -913,6 +951,213 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
       expect(push.cancelledCount, greaterThan(cancelledBefore));
+
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      dbClosed = true;
+      await db.close();
+    },
+  );
+
+  testWidgets(
+    'Phase 5.3 polish: nano-banana onboarding CTAs, SliverAppBar hide-on-scroll, Pro Recetas preview checklist & 9 extended FAQs',
+    (WidgetTester tester) async {
+      // 1. Verify all 3 nano-banana onboarding illustrations exist on disk.
+      expect(File('assets/onboarding/step_1.png').existsSync(), isTrue);
+      expect(File('assets/onboarding/step_2.png').existsSync(), isTrue);
+      expect(File('assets/onboarding/step_3.png').existsSync(), isTrue);
+      expect(AppStrings.faqEntries, hasLength(9));
+
+      final db = AppDatabase(NativeDatabase.memory());
+      final auth = _TestAuthService();
+      final ai = _TestAiClassifier();
+      final sync = _TestSyncService(db)..simulatePro = true;
+      final sound = _TestSoundFeedbackService();
+      final ads = _TestAdsCascadeService(db);
+      final push = _TestPushNotificationService();
+      var dbClosed = false;
+
+      addTearDown(() async {
+        KarritoToast.dismissCurrent();
+        auth.dispose();
+        if (!dbClosed) {
+          dbClosed = true;
+          await db.close();
+        }
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supabaseInitializerProvider.overrideWithValue(() async => true),
+            appDatabaseProvider.overrideWithValue(db),
+            authServiceProvider.overrideWithValue(auth),
+            wakelockServiceProvider.overrideWithValue(_TestWakelockService()),
+            soundFeedbackServiceProvider.overrideWithValue(sound),
+            aiClassifierServiceProvider.overrideWithValue(ai),
+            syncServiceProvider.overrideWithValue(sync),
+            adsCascadeServiceProvider.overrideWithValue(ads),
+            subscriptionServiceProvider.overrideWithValue(
+              _TestSubscriptionService(),
+            ),
+            mediaCaptureServiceProvider.overrideWithValue(
+              _TestMediaCaptureService(),
+            ),
+            pushNotificationServiceProvider.overrideWithValue(push),
+            isOnlineProvider.overrideWithValue(true),
+          ],
+          child: const KarritoApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 2. Onboarding primary CTA is Neon Papaya (#FF6238) and Google CTA is Violet (#531CB3).
+      final startBtn = tester.widget<FilledButton>(
+        find.byKey(const ValueKey<String>('onboarding_start_button')),
+      );
+      expect(
+        startBtn.style?.backgroundColor?.resolve(<WidgetState>{}),
+        const Color(0xFFFF6238),
+      );
+      final googleBtn = tester.widget<FilledButton>(
+        find.byKey(const ValueKey<String>('onboarding_google_button')),
+      );
+      expect(
+        googleBtn.style?.backgroundColor?.resolve(<WidgetState>{}),
+        const Color(0xFF531CB3),
+      );
+
+      // Enter app and upgrade local preference tier to Pro.
+      await tester.tap(find.text(AppStrings.startShoppingButton));
+      await tester.pumpAndSettle();
+      await (db.update(db.localPreferences)..where((t) => t.id.equals(1)))
+          .write(const LocalPreferencesCompanion(planTier: Value('pro_3usd')));
+      await tester.pumpAndSettle();
+
+      // 3. Verify SliverAppBar(floating: true, snap: true) inside CustomScrollView.
+      final sliverAppBar = tester.widget<SliverAppBar>(
+        find.byType(SliverAppBar),
+      );
+      expect(sliverAppBar.floating, isTrue);
+      expect(sliverAppBar.snap, isTrue);
+
+      // 4. Tap wide "Recetas" button -> preview checklist with Argentine retail packages.
+      final recipesBtn = find.byKey(
+        const ValueKey<String>('wide_recipes_button'),
+      );
+      expect(recipesBtn, findsOneWidget);
+      await tester.tap(recipesBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.importRecipeTitle), findsOneWidget);
+      expect(find.text(AppStrings.importRecipeCameraButton), findsOneWidget);
+      expect(find.text(AppStrings.importRecipeGalleryButton), findsOneWidget);
+
+      await tester.enterText(
+        find.byType(TextField).last,
+        'Flan casero para 6 personas',
+      );
+      await tester.tap(find.text(AppStrings.importRecipeSubmitButton));
+      await tester.pumpAndSettle();
+
+      // Preview checklist renders normalized packages (1 kg, 1 l) + recipe notes.
+      expect(find.text('Azúcar'), findsOneWidget);
+      expect(find.text('1 kg'), findsOneWidget);
+      expect(find.text('Receta: 100 g para el flan'), findsOneWidget);
+      expect(find.text('Aceite de girasol'), findsOneWidget);
+      expect(find.text('1 l'), findsOneWidget);
+      expect(find.text(AppStrings.importRecipeAddSelected(2)), findsOneWidget);
+
+      // Uncheck Aceite de girasol -> only 1 ingredient selected.
+      await tester.tap(find.text('Aceite de girasol'));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.importRecipeAddSelected(1)), findsOneWidget);
+
+      // Confirm saving only selected item.
+      await tester.tap(find.text(AppStrings.importRecipeAddSelected(1)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Azúcar'), findsOneWidget);
+      expect(find.text('100 g para el flan'), findsOneWidget);
+      expect(find.text('Aceite de girasol'), findsNothing);
+
+      // 5. Populate enough items to verify hide-on-scroll collapses SliverAppBar cleanly.
+      final activeList = (await db.select(db.localLists).get()).first;
+      final now = DateTime.now().toUtc();
+      for (var i = 1; i <= 16; i++) {
+        await db
+            .into(db.localItems)
+            .insert(
+              LocalItemsCompanion.insert(
+                id: 'scroll-item-$i',
+                listId: activeList.id,
+                rawText: 'Producto $i',
+                cleanName: 'Producto extra $i',
+                quantity: const Value(1),
+                unit: const Value('u'),
+                storeCategory: 'Supermercado',
+                aisleName: 'Almacén',
+                updatedAt: now,
+              ),
+            );
+      }
+      await tester.pumpAndSettle();
+
+      final initialRecipesRect = tester.getRect(recipesBtn);
+      await tester.drag(
+        find.byKey(const ValueKey<String>('shopping_list_scroll_view')),
+        const Offset(0, -450),
+      );
+      await tester.pumpAndSettle();
+      // Header hides off-screen or moves upward out of viewport.
+      final afterScrollFinder = find.byKey(
+        const ValueKey<String>('wide_recipes_button'),
+      );
+      if (afterScrollFinder.evaluate().isNotEmpty) {
+        expect(
+          tester.getRect(afterScrollFinder).top,
+          lessThan(initialRecipesRect.top),
+        );
+      }
+
+      // Swipe back down -> floating/snap header snaps back into view immediately.
+      await tester.drag(
+        find.byKey(const ValueKey<String>('shopping_list_scroll_view')),
+        const Offset(0, 260),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('wide_recipes_button')),
+        findsOneWidget,
+      );
+
+      // 6. Open Profile Menu -> Guide & FAQ -> verify all 9 extended FAQs exist and expand.
+      await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.profileGuideFaqOption));
+      await tester.pumpAndSettle();
+
+      final guideScrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey<String>('guide_faq_list_view')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      for (final entry in AppStrings.faqEntries) {
+        await tester.scrollUntilVisible(
+          find.text(entry.question),
+          220,
+          scrollable: guideScrollable,
+        );
+        expect(find.text(entry.question), findsOneWidget);
+      }
+
+      // Tap last FAQ ("¿Tiene costo usar la aplicación?") -> expands answer.
+      await tester.tap(find.text(AppStrings.faqEntries.last.question));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.faqEntries.last.answer), findsOneWidget);
 
       KarritoToast.dismissCurrent();
       await tester.pumpAndSettle();

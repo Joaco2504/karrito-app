@@ -16,19 +16,20 @@ class AppStrings {
   static const String cityLabel = 'Localidad';
   static const String onboardingCard1Title = 'Volcá todo mezclado';
   static const String onboardingCard1Body =
-      'Escribí o pegá lo que necesitás en un renglón, aunque juntes comida, remedios y tornillos.';
+      'Escribí, pegá de WhatsApp o dictá lo que necesitás en un renglón, aunque juntes comida, remedios y tornillos.';
   static const String onboardingCard1Example =
       '2 kg de papa, leche, 10 tornillos, ibuprofeno';
   static const String onboardingCard2Title = 'Separá por comercio y pasillo';
   static const String onboardingCard2Body =
-      'Karrito agrupa cada producto en su rubro y lo ordena según los pasillos reales de tu local.';
+      'Karrito agrupa cada producto en su rubro, lo ordena según las góndolas reales y funciona en el súper incluso sin señal.';
   static const String onboardingCard2Example =
-      'Supermercado: Verdulería y Lácteos  ·  Ferretería: Fijaciones';
-  static const String onboardingCard3Title = 'Tachá en el súper sin señal';
+      'Supermercado: Verdulería y Lácteos  ·  Funciona sin conexión';
+  static const String onboardingCard3Title =
+      'Convertí recetas en paquetes reales';
   static const String onboardingCard3Body =
-      'Tus listas quedan guardadas en el teléfono. Tachá en la góndola aunque se corte internet y sincronizá al volver.';
+      'Cargá el nombre de una comida o subí una foto: Karrito pasa 100 g de azúcar a 1 kg y anota cuánto pide la receta para no comprar de más.';
   static const String onboardingCard3Example =
-      'Funciona offline con pantalla siempre encendida';
+      '100 g de azúcar -> 1 kg en Almacén (100 g para el flan)';
   static const String onboardingNextButton = 'Siguiente';
   static const String onboardingBackButton = 'Anterior';
   static const String onboardingSkipButton = 'Saltar';
@@ -379,29 +380,54 @@ class AppStrings {
   static const String editItemLearnTip =
       'Si cambiás el comercio o el pasillo, Karrito lo recuerda para tu próxima compra.';
 
-  // FAQ
+  // FAQ (9 preguntas extendidas en español argentino para testers y usuarios)
   static const String faqSectionTitle = 'Preguntas frecuentes';
   static const List<({String question, String answer})>
   faqEntries = <({String question, String answer})>[
     (
-      question: '¿Funciona si me quedo sin señal en el súper?',
+      question: '¿Qué es Karrito y para qué sirve?',
       answer:
-          'Sí. Todas tus listas y productos están guardados en el teléfono. Podés tachar, editar y agregar productos conocidos sin conexión. Si escribís algo nuevo sin internet, queda guardado en "Sin clasificar (sin señal)" y se ordena solo apenas recuperás señal.',
+          'Karrito arma tu lista de compras ordenada por comercio y por pasillo. Escribís o pegás todo de corrido, aunque mezcles comida, remedios y tornillos, y la app separa cada producto según el local donde se compra.',
     ),
     (
-      question: '¿Cómo aprende Karrito mis correcciones?',
+      question: '¿Cómo me ayuda en las recetas?',
       answer:
-          'Cada vez que movés un producto a otro pasillo o comercio desde el menú de edición, la app recuerda tu preferencia. La próxima vez que lo cargues va directo adonde vos elegiste, sin gastar consultas.',
+          'Tocás el botón Recetas, escribís un plato (por ejemplo "Flan casero para 6 personas") o subís una foto de la receta. Karrito convierte cantidades chicas como 100 g de azúcar o 150 ml de aceite en paquetes enteros del súper (1 kg o 1 litro) y anota cuánto lleva la receta para no comprar de más.',
     ),
     (
-      question: '¿Para qué sirve vincular mi cuenta de Google?',
+      question: '¿Cómo comparto la lista en vivo?',
       answer:
-          'Si vinculás tu Google en Ajustes, tus listas, pasillos ordenados y productos frecuentes se sincronizan con la nube. Así no perdés nada si cambiás de celular.',
+          'Con el plan Pro tocás Compartir y elegís "Compartir lista en vivo" para generar un código de 6 caracteres y un código QR. La otra persona escanea el QR o carga el código desde "Unirme a una lista" y ambos tachan productos al instante.',
     ),
     (
-      question: '¿Puedo unirme gratis a una lista compartida en vivo?',
+      question: '¿Puedo usar la app sin conexión?',
       answer:
-          'Sí. Si otra persona con plan Pro comparte un código de 6 caracteres, podés tocar "Unirme a una lista" desde Compartir o el selector de listas y tachar productos en vivo con cuenta gratuita o en modo invitado.',
+          'Sí. Todas tus listas y productos se guardan primero en el teléfono. Podés tachar, editar y agregar productos conocidos en el súper aunque se corte internet; cuando vuelve la señal, Karrito ordena los pendientes y sincroniza solo.',
+    ),
+    (
+      question: '¿Cómo se acomodan los pasillos?',
+      answer:
+          'Tocá "Ordenar pasillos" arriba de las góndolas. Mantené presionado cada pasillo y arrastralo en el orden en que recorrés tu local habitual; Karrito recuerda ese recorrido por separado para cada comercio.',
+    ),
+    (
+      question: '¿Por qué me pide elegir mi localidad?',
+      answer:
+          'Elegís tu localidad a mano (por ejemplo Andalgalá, Belén, Saujil o Santa María) para ver ofertas y anuncios de comercios de tu zona. Karrito nunca te pide permiso de GPS ni rastrea tu ubicación.',
+    ),
+    (
+      question: '¿Cómo borro o edito un ítem?',
+      answer:
+          'Mantené presionado cualquier producto o tocá el ícono del lápiz a la derecha. Ahí podés cambiar el nombre, la cantidad, el comercio o el pasillo, o quitarlo de la lista. Cuando corregís un pasillo, Karrito recuerda tu elección para la próxima compra.',
+    ),
+    (
+      question: '¿Cómo elimino los productos tachados?',
+      answer:
+          'Cuando tenés uno o más productos tachados aparece arriba el botón "Limpiar tachados". Al tocarlo y confirmar, borra los productos ya comprados para liberar espacio rápido y deja solo lo que falta.',
+    ),
+    (
+      question: '¿Tiene costo usar la aplicación?',
+      answer:
+          'Karrito es gratuita con anuncios y hasta 3 listas activas. El Plan Básico (\$ 2 USD por mes) saca toda la publicidad y amplía a 10 listas; el Plan Pro (\$ 3 USD por mes) suma listas ilimitadas, dictado por voz, escaneo de fotos y recetas, calculadora de carrito y listas en vivo.',
     ),
   ];
 
@@ -455,15 +481,30 @@ class AppStrings {
   static const String proMediaOfflineError =
       'Necesitás conexión a internet para procesar audios, fotos o recetas con IA. Probá de nuevo cuando vuelva la señal.';
   static const String importRecipeButton = 'Recetas';
-  static const String importRecipeTitle = 'Importar receta o proyecto';
+  static const String importRecipeBannerSubtitle =
+      'Pasá de una comida o foto a paquetes reales del súper';
+  static const String importRecipeTitle = 'Armar compras desde una receta';
   static const String importRecipeSubtitle =
-      'Pegá los ingredientes de una comida o los materiales de un arreglo y Karrito los agrupa por comercio.';
-  static const String importRecipeLabel = 'Receta o lista de materiales';
+      'Escribí una comida o subí la foto de una receta. Karrito convierte 100 g o 150 ml en paquetes reales y anota cuánto pide la receta.';
+  static const String importRecipeLabel = 'Nombre de la comida o ingredientes';
   static const String importRecipeHint =
-      'Ej: Para empanadas catamarqueñas: 1 kg carne picada, 1 kg cebolla, comino, pimentón, 2 docenas tapas...';
-  static const String importRecipeSubmitButton = 'Importar a la lista';
+      'Ej: Flan casero para 6 personas, o pegá los ingredientes acá...';
+  static const String importRecipeSubmitButton = 'Generar ingredientes';
+  static const String importRecipeCameraButton = 'Sacar foto';
+  static const String importRecipeGalleryButton = 'Galería o captura';
+  static const String importRecipeAnalyzingLabel =
+      'Normalizando ingredientes a paquetes reales...';
+  static const String importRecipePreviewHeading =
+      'Elegí qué ingredientes sumar';
+  static const String importRecipeSelectAll = 'Marcar todos';
+  static const String importRecipeClearAll = 'Desmarcar';
+  static String importRecipeAddSelected(int count) =>
+      count == 1 ? 'Agregar 1 ingrediente' : 'Agregar $count ingredientes';
+  static const String importRecipeBackToEdit = 'Cambiar receta';
+  static const String recipeNoItemsDetectedError =
+      'No detectamos ingredientes claros en esa receta. Probá escribir el nombre del plato o sacar una foto con mejor luz.';
   static const String recipeEmptyError =
-      'Pegá el texto de una receta o proyecto para poder extraer los productos.';
+      'Escribí el nombre de una comida o subí una foto de la receta para extraer los ingredientes.';
 
   // Phase 5: Cart price calculator & monthly expenses
   static const String cartPriceLabel = 'Precio en ARS (opcional)';
