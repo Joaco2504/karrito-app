@@ -34,12 +34,24 @@ class AiUserBannedException extends AiClassifierException {
   const AiUserBannedException(super.userMessage);
 }
 
+class AiProRequiredException extends AiClassifierException {
+  const AiProRequiredException(super.userMessage);
+}
+
 class AiProcessingException extends AiClassifierException {
   const AiProcessingException(super.userMessage);
 }
 
 abstract interface class AiClassifierService {
   Future<ProcesarListaResponse> classifyText(String text);
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  });
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  });
 }
 
 class _AiCacheEntry {
@@ -169,6 +181,14 @@ class SupabaseAiClassifierService implements AiClassifierService {
         );
       }
 
+      if (code == 'PRO_PLAN_REQUIRED') {
+        throw AiProRequiredException(
+          (serverMessage != null && serverMessage.isNotEmpty)
+              ? serverMessage
+              : 'El dictado por voz y el escaneo de fotos están disponibles en el plan Pro.',
+        );
+      }
+
       if (code == 'USER_BANNED' || e.status == 403) {
         throw AiUserBannedException(
           (serverMessage != null && serverMessage.isNotEmpty)
@@ -186,6 +206,95 @@ class SupabaseAiClassifierService implements AiClassifierService {
         }
       }
 
+      throw AiProcessingException(
+        (serverMessage != null && serverMessage.isNotEmpty)
+            ? serverMessage
+            : AppStrings.genericProcessingError,
+      );
+    } on FormatException {
+      throw const AiProcessingException(AppStrings.genericProcessingError);
+    } catch (e) {
+      final lower = e.toString().toLowerCase();
+      if (lower.contains('socket') ||
+          lower.contains('host lookup') ||
+          lower.contains('network') ||
+          lower.contains('connection') ||
+          lower.contains('clientexception')) {
+        throw const AiOfflineOrNetworkException();
+      }
+      throw const AiProcessingException(AppStrings.genericProcessingError);
+    }
+  }
+
+  @override
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) {
+    return _invokeMediaPayload(<String, dynamic>{
+      'audio_base64': audioBase64,
+      'audio_mime_type': mimeType,
+    });
+  }
+
+  @override
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) {
+    return _invokeMediaPayload(<String, dynamic>{
+      'image_base64': imageBase64,
+      'image_mime_type': mimeType,
+    });
+  }
+
+  Future<ProcesarListaResponse> _invokeMediaPayload(
+    Map<String, dynamic> body,
+  ) async {
+    final hasSession = await _authService.ensureSignedInSilently();
+    if (!hasSession || _client == null) {
+      throw const AiOfflineOrNetworkException();
+    }
+
+    try {
+      final response = await _client.functions
+          .invoke('procesar-lista', body: body)
+          .timeout(const Duration(seconds: 40));
+      final payload = _normalizeJsonMap(response.data);
+      return ProcesarListaResponse.fromJson(payload);
+    } on TimeoutException {
+      throw const AiOfflineOrNetworkException();
+    } on SocketException {
+      throw const AiOfflineOrNetworkException();
+    } on FunctionException catch (e) {
+      if (e.status == 0) {
+        throw const AiOfflineOrNetworkException();
+      }
+      final details = _tryNormalizeJsonMap(e.details);
+      final code = details?['code']?.toString();
+      final serverMessage = details?['error']?.toString().trim();
+
+      if (code == 'PRO_PLAN_REQUIRED') {
+        throw AiProRequiredException(
+          (serverMessage != null && serverMessage.isNotEmpty)
+              ? serverMessage
+              : 'El dictado por voz y el escaneo de fotos están disponibles en el plan Pro.',
+        );
+      }
+      if (code == 'DAILY_LIMIT_REACHED' || e.status == 429) {
+        throw AiQuotaExceededException(
+          (serverMessage != null && serverMessage.isNotEmpty)
+              ? serverMessage
+              : AppStrings.dailyLimitError,
+        );
+      }
+      if (code == 'USER_BANNED' || e.status == 403) {
+        throw AiUserBannedException(
+          (serverMessage != null && serverMessage.isNotEmpty)
+              ? serverMessage
+              : 'Tu cuenta no puede usar el asistente en este momento.',
+        );
+      }
       throw AiProcessingException(
         (serverMessage != null && serverMessage.isNotEmpty)
             ? serverMessage

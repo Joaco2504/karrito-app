@@ -5,18 +5,25 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:karrito_app/core/constants/app_strings.dart';
 import 'package:karrito_app/core/theme/app_theme.dart';
 import 'package:karrito_app/data/local/app_database.dart';
 import 'package:karrito_app/data/models/procesar_lista_response.dart';
+import 'package:karrito_app/data/services/ads_cascade_service.dart';
 import 'package:karrito_app/data/services/ai_classifier_service.dart';
 import 'package:karrito_app/data/services/auth_service.dart';
+import 'package:karrito_app/data/services/media_capture_service.dart';
+import 'package:karrito_app/data/services/push_notification_service.dart';
 import 'package:karrito_app/data/services/sound_service.dart';
+import 'package:karrito_app/data/services/subscription_service.dart';
 import 'package:karrito_app/data/services/sync_service.dart';
 import 'package:karrito_app/data/services/wakelock_service.dart';
 import 'package:karrito_app/main.dart';
 import 'package:karrito_app/providers/core_providers.dart';
+import 'package:karrito_app/ui/screens/plans_screen.dart';
 import 'package:karrito_app/ui/widgets/aisle_reorder_sheet.dart';
+import 'package:karrito_app/ui/widgets/karrito_asset_icon.dart';
 import 'package:karrito_app/ui/widgets/karrito_toast.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -74,9 +81,122 @@ class _TestAuthService implements AuthService {
     _photoUrl = null;
   }
 
+  bool deleteAccountCalled = false;
+
+  @override
+  Future<void> deleteAccountPermanently() async {
+    deleteAccountCalled = true;
+    await signOutToGuest();
+  }
+
   void dispose() {
     _authController.close();
   }
+}
+
+class _TestAdsCascadeService implements AdsCascadeService {
+  _TestAdsCascadeService(this.db);
+
+  final AppDatabase db;
+  int interstitialShows = 0;
+
+  @override
+  Future<void> initializeMobileAdsSafely() async {}
+
+  @override
+  Stream<List<CachedAdEntity>> watchCachedAds() =>
+      db.select(db.localCachedAds).watch();
+
+  @override
+  Future<void> refreshLocalAds(String userCity) async {}
+
+  @override
+  Future<void> recordImpression(String adId) async {}
+
+  @override
+  Future<void> recordClick(String adId) async {}
+
+  @override
+  Future<void> preloadAdMobInterstitial() async {}
+
+  @override
+  Future<bool> showAdMobInterstitialIfReady() async {
+    interstitialShows++;
+    return true;
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+class _TestSubscriptionService implements SubscriptionService {
+  @override
+  bool get isConfigured => false;
+
+  @override
+  Future<void> configure({String? appUserId}) async {}
+
+  @override
+  Future<void> identifyUser(String? appUserId) async {}
+
+  @override
+  Future<String?> fetchActivePlanTier() async => null;
+
+  @override
+  Future<List<SubscriptionPlanOffer>> fetchMonthlyOffers() async =>
+      RevenueCatSubscriptionService.defaultFallbackOffers();
+
+  @override
+  Future<SubscriptionActionOutcome> purchaseMonthlyPlan(
+    String targetTier,
+  ) async {
+    return SubscriptionActionOutcome(
+      planTier: targetTier,
+      succeeded: true,
+      message: 'Plan actualizado.',
+    );
+  }
+
+  @override
+  Future<SubscriptionActionOutcome> restorePurchases() async {
+    return const SubscriptionActionOutcome(
+      planTier: KarritoPlanTier.free,
+      succeeded: false,
+      message: 'Sin compras previas.',
+    );
+  }
+}
+
+class _TestMediaCaptureService implements MediaCaptureService {
+  @override
+  Future<bool> startVoiceRecording() async => true;
+
+  @override
+  Future<EncodedVoicePayload?> stopVoiceRecording({
+    required int durationSeconds,
+  }) async => null;
+
+  @override
+  Future<void> cancelVoiceRecording() async {}
+
+  @override
+  Future<EncodedImagePayload?> pickAndCompressImage(ImageSource source) async =>
+      null;
+
+  @override
+  Future<void> dispose() async {}
+}
+
+class _TestPushNotificationService implements PushNotificationService {
+  @override
+  Future<void> initializeSafely() async {}
+
+  @override
+  Future<String?> requestPermissionAndRegisterToken(String? userId) async =>
+      null;
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _TestWakelockService implements WakelockService {
@@ -110,6 +230,9 @@ class _TestSyncService implements SyncService {
   Future<void> syncAll() async {
     syncCalls++;
   }
+
+  @override
+  Future<void> refreshAccountPlanAndConfig() async {}
 
   @override
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list) async {
@@ -180,6 +303,18 @@ class _TestAiClassifier implements AiClassifierService {
       ],
     );
   }
+
+  @override
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) async => classifyText('audio');
+
+  @override
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) async => classifyText('image');
 }
 
 void main() {
@@ -191,6 +326,7 @@ void main() {
       final ai = _TestAiClassifier();
       final sync = _TestSyncService(db);
       final sound = _TestSoundFeedbackService();
+      final ads = _TestAdsCascadeService(db);
       var dbClosed = false;
 
       addTearDown(() async {
@@ -211,6 +347,16 @@ void main() {
             soundFeedbackServiceProvider.overrideWithValue(sound),
             aiClassifierServiceProvider.overrideWithValue(ai),
             syncServiceProvider.overrideWithValue(sync),
+            adsCascadeServiceProvider.overrideWithValue(ads),
+            subscriptionServiceProvider.overrideWithValue(
+              _TestSubscriptionService(),
+            ),
+            mediaCaptureServiceProvider.overrideWithValue(
+              _TestMediaCaptureService(),
+            ),
+            pushNotificationServiceProvider.overrideWithValue(
+              _TestPushNotificationService(),
+            ),
             isOnlineProvider.overrideWithValue(true),
           ],
           child: const KarritoApp(),
@@ -245,8 +391,8 @@ void main() {
       await tester.tap(find.text(AppStrings.startShoppingButton));
       await tester.pumpAndSettle();
 
-      // Top-left shows Karrito brand logo fallback, top-right has circular avatar instead of gear.
-      expect(find.text('Karrito'), findsOneWidget);
+      // Top-left shows Karrito brand logo (custom PNG or fallback), top-right has circular avatar.
+      expect(find.byType(KarritoBrandLogo), findsOneWidget);
       expect(find.byTooltip(AppStrings.profileMenuTooltip), findsOneWidget);
       expect(find.byTooltip(AppStrings.settingsTooltip), findsNothing);
 
@@ -357,10 +503,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Asado compartido'), findsOneWidget);
 
-      // Open ProfileMenuSheet -> select avatar_3, verify persistence, open Guide+FAQ, then Preferencias.
+      // Free user tapping voice mic opens monthly-only PlansScreen (NO annual toggle).
+      await tester.tap(find.byTooltip(AppStrings.voiceInputTooltip));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlansScreen), findsOneWidget);
+      expect(find.text(AppStrings.planProName), findsOneWidget);
+      expect(find.text('Anual'), findsNothing);
+      await tester.scrollUntilVisible(find.text(AppStrings.planBasicName), 200);
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.planBasicName), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      // Open ProfileMenuSheet -> select avatar_3, verify all 12 avatars + Plans option, open Guide+FAQ, then Preferencias.
       await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.guestAccountTitle), findsOneWidget);
+      expect(find.text(AppStrings.profilePlansOption), findsOneWidget);
       expect(find.text(AppStrings.profilePreferencesOption), findsOneWidget);
       expect(find.text(AppStrings.profileGuideFaqOption), findsOneWidget);
       expect(find.text(AppStrings.profileSignInGoogleOption), findsOneWidget);
@@ -403,6 +562,19 @@ void main() {
         find.text(AppStrings.settingsVibrationOnCheckTitle),
         findsOneWidget,
       );
+
+      // Scroll down to mandatory "Cuenta y privacidad" section with delete button.
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.deleteAccountButton),
+        250,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.deleteAccountButton), findsOneWidget);
+      await tester.tap(find.text(AppStrings.deleteAccountButton));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.deleteAccountDialogTitle), findsOneWidget);
+      await tester.tap(find.text(AppStrings.cancelButton));
+      await tester.pumpAndSettle();
 
       // Go back to main screen, open Profile Menu and tap Cerrar sesión -> guest mode keeping local lists!
       await tester.tap(find.byType(BackButton));

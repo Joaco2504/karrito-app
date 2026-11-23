@@ -4,9 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/local/app_database.dart';
 import '../data/repositories/shopping_repository.dart';
+import '../data/services/ads_cascade_service.dart';
 import '../data/services/ai_classifier_service.dart';
 import '../data/services/auth_service.dart';
+import '../data/services/media_capture_service.dart';
+import '../data/services/push_notification_service.dart';
 import '../data/services/sound_service.dart';
+import '../data/services/subscription_service.dart';
 import '../data/services/sync_service.dart';
 import '../data/services/wakelock_service.dart';
 
@@ -37,9 +41,36 @@ final wakelockServiceProvider = Provider<WakelockService>((ref) {
 
 final soundFeedbackServiceProvider = Provider<SoundFeedbackService>((ref) {
   final service = AudioplayersSoundService();
-  ref.onDispose(() {
-    service.dispose();
-  });
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final adsCascadeServiceProvider = Provider<AdsCascadeService>((ref) {
+  final service = SupabaseAdsCascadeService(
+    db: ref.watch(appDatabaseProvider),
+    client: ref.watch(supabaseClientProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final subscriptionServiceProvider = Provider<SubscriptionService>((ref) {
+  return RevenueCatSubscriptionService();
+});
+
+final mediaCaptureServiceProvider = Provider<MediaCaptureService>((ref) {
+  final service = KarritoMediaCaptureService();
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final pushNotificationServiceProvider = Provider<PushNotificationService>((
+  ref,
+) {
+  final service = FirebasePushNotificationService(
+    ref.watch(supabaseClientProvider),
+  );
+  ref.onDispose(service.dispose);
   return service;
 });
 

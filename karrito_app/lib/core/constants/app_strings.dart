@@ -51,6 +51,8 @@ class AppStrings {
   static const String deleteListButton = 'Borrar lista';
   static const String maxListsReached =
       'Ya tenés 3 listas propias activas. Borrá una para crear otra nueva.';
+  static String maxListsReachedForLimit(int limit) =>
+      'Ya llegaste al tope de $limit listas propias de tu plan. Borrá una o pasate a un plan superior para sumar más.';
   static const String cannotDeleteLastList =
       'Necesitás al menos una lista activa. Creá otra antes de borrar esta.';
   static String deleteListConfirmBody(String title) =>
@@ -350,7 +352,104 @@ class AppStrings {
     (
       question: '¿Puedo unirme gratis a una lista compartida en vivo?',
       answer:
-          'Sí. Si otra persona con plan Pro comparte un código de 6 caracteres, podés tocar "Unirme con código" desde el selector de listas y tachar productos en vivo con cuenta gratuita o en modo invitado.',
+          'Sí. Si otra persona con plan Pro comparte un código de 6 caracteres, podés tocar "Unirme a una lista" desde Compartir o el selector de listas y tachar productos en vivo con cuenta gratuita o en modo invitado.',
     ),
   ];
+
+  // Phase 5: Local ads cascade & interstitial
+  static const String sponsoredLocalBadge = 'Comercio local auspiciado';
+  static const String regionalOfferBadge = 'Oferta regional';
+  static String adSkipIn(int seconds) => 'Saltar en ${seconds}s';
+  static const String adCloseButton = 'Cerrar';
+  static const String adOpenOfferCta = 'Ver oferta del comercio';
+  static const String adWhatsAppCta = 'Pedir por WhatsApp al comercio';
+  static const String adMapsCta = 'Cómo llegar con Google Maps';
+  static const String adUpsellTitle = '¿Querés comprar sin anuncios?';
+  static const String adUpsellSubtitle =
+      'Pasate a Karrito Básico o Pro desde \$ 2 USD/mes.';
+  static const String adViewPlansButton = 'Ver planes';
+
+  // Phase 5: Subscriptions & PlansScreen (monthly only, no annual option)
+  static const String plansTitle = 'Planes y suscripciones';
+  static const String plansSubtitle =
+      'Elegí el plan mensual que mejor se adapte a tus compras.';
+  static const String profilePlansOption = 'Planes y suscripciones';
+  static const String profilePlansSubtitle =
+      'Quitá anuncios y desbloqueá voz, fotos, recetas y calculadora.';
+  static const String planFreeName = 'Plan Gratis';
+  static const String planBasicName = 'Plan Básico';
+  static const String planProName = 'Plan Pro';
+  static const String planMostChosenBadge = 'Más elegido';
+  static const String planCurrentBadge = 'Tu plan actual';
+  static const String planActiveOnDevice = 'Activo en este dispositivo';
+  static const String chooseBasicButton = 'Elegir Plan Básico';
+  static const String chooseProButton = 'Elegir Plan Pro';
+  static const String restorePurchasesButton = 'Restaurar compras';
+  static const String plansUpgradeButton = 'Subir de plan';
+  static const String plansTrustNote =
+      'Cobro mensual administrado desde Google Play Store. Sin plan anual ni cargos ocultos; podés cancelar cuando quieras.';
+
+  // Phase 5: Pro features (Voice, Photo/Screenshot, Recipes/Projects, Cart Calculator)
+  static const String voiceInputTooltip = 'Dictar lista por voz';
+  static const String voiceRecordingTitle = 'Escuchando tu dictado...';
+  static const String voiceStopAndSendButton = 'Enviar dictado';
+  static const String voiceLimitHint = 'Máximo 60 segundos · audio M4A liviano';
+  static const String scanPhotoTooltip = 'Escanear foto o captura';
+  static const String scanSourceTitle = 'Escanear lista con foto';
+  static const String scanCameraOption = 'Sacar foto a lista en papel';
+  static const String scanCameraSubtitle =
+      'Ideal para notas escritas a mano o listas en la heladera.';
+  static const String scanGalleryOption =
+      'Elegir captura de WhatsApp o galería';
+  static const String scanGallerySubtitle =
+      'Seleccioná una captura de pantalla o foto guardada.';
+  static const String proMediaOfflineError =
+      'Necesitás conexión a internet para procesar audios, fotos o recetas con IA. Probá de nuevo cuando vuelva la señal.';
+  static const String importRecipeButton = 'Receta';
+  static const String importRecipeTitle = 'Importar receta o proyecto';
+  static const String importRecipeSubtitle =
+      'Pegá los ingredientes de una comida o los materiales de un arreglo y Karrito los agrupa por comercio.';
+  static const String importRecipeLabel = 'Receta o lista de materiales';
+  static const String importRecipeHint =
+      'Ej: Para empanadas catamarqueñas: 1 kg carne picada, 1 kg cebolla, comino, pimentón, 2 docenas tapas...';
+  static const String importRecipeSubmitButton = 'Importar a la lista';
+  static const String recipeEmptyError =
+      'Pegá el texto de una receta o proyecto para poder extraer los productos.';
+
+  // Phase 5: Cart price calculator & monthly expenses
+  static const String cartPriceLabel = 'Precio en ARS (opcional)';
+  static const String cartPriceHint = 'Ej: 3.800';
+  static const String cartPutPriceButton = 'Precio';
+  static const String cartPriceDialogTitle = 'Anotar precio';
+  static const String cartTotalModeLabel = 'Precio total del ítem';
+  static const String cartUnitModeLabel = 'Por unidad (multiplica cantidad)';
+  static const String cartClearPriceButton = 'Quitar precio';
+  static const String cartStoreSubtotalLabel = 'Comercio actual';
+  static const String cartTotalLabel = 'Total carrito';
+  static const String cartCloseAndSaveButton = 'Cerrar compra y guardar gasto';
+  static const String cartMonthlyHistoryButton = 'Gastos del mes';
+  static const String cartMonthlyHistoryTitle = 'Gastos del mes';
+  static const String cartMonthlyBudgetLabel = 'Presupuesto mensual (ARS)';
+  static const String cartAdjustBudgetButton = 'Ajustar tope';
+  static const String cartNoPricesToSaveError =
+      'Anotá el precio en al menos un producto para guardar el gasto de esta compra.';
+  static String cartExpenseSavedNotice(String totalLabel) =>
+      'Compra cerrada. Guardamos $totalLabel en tus gastos del mes.';
+  static const String cartHistoryEmptyTitle =
+      'Todavía no guardaste compras este mes';
+  static const String cartHistoryEmptyBody =
+      'Anotá los precios mientras comprás y tocá "Cerrar compra y guardar gasto" para llevar el control mensual.';
+
+  // Phase 5: Account & privacy deletion (Google Play requirement)
+  static const String accountPrivacySection = 'Cuenta y privacidad';
+  static const String deleteAccountButton = 'Eliminar mi cuenta y mis datos';
+  static const String deleteAccountSubtitle =
+      'Borra permanentemente tu perfil en la nube, tus listas, pasillos, frecuentes e historial en este teléfono.';
+  static const String deleteAccountDialogTitle = 'Eliminar cuenta y datos';
+  static const String deleteAccountDialogBody =
+      'Se van a borrar de forma permanente tu cuenta, tus listas, tus pasillos personalizados, tus productos frecuentes y tu historial de gastos, tanto en la nube como en este teléfono. Esta acción no se puede deshacer.';
+  static const String deleteAccountConfirmButton = 'Sí, eliminar todo';
+  static const String deletingAccountLabel = 'Eliminando cuenta...';
+  static const String accountDeletedNotice =
+      'Eliminamos tu cuenta y tus datos. Seguís en modo invitado con una lista nueva.';
 }

@@ -205,13 +205,20 @@ class KarritoBrandLogo extends StatelessWidget {
         if (!KarritoAssetRegistry.hasAsset(assetPath)) {
           return buildFallback();
         }
-        return Image.asset(
-          assetPath,
-          height: height,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.medium,
-          semanticLabel: 'Karrito',
-          errorBuilder: (_, _, _) => buildFallback(),
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: height,
+            maxWidth: height * 4.2,
+          ),
+          child: Image.asset(
+            assetPath,
+            height: height,
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
+            filterQuality: FilterQuality.medium,
+            semanticLabel: 'Karrito',
+            errorBuilder: (_, _, _) => buildFallback(),
+          ),
         );
       },
     );

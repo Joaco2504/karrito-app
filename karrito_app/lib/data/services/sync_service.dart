@@ -34,6 +34,7 @@ class JoinedListResult {
 
 abstract interface class SyncService {
   Future<void> syncAll();
+  Future<void> refreshAccountPlanAndConfig();
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list);
   Future<JoinedListResult> joinSharedListByCode(String rawCode);
   RealtimeChannel? subscribeToSharedList(String listId);
@@ -371,6 +372,7 @@ class SupabaseSyncService implements SyncService {
         _syncListsAndItems(uid, updatedSince: lastSyncedAt),
         _syncAislePreferences(uid, updatedSince: lastSyncedAt),
         _syncLearnedItems(uid, updatedSince: lastSyncedAt),
+        _pullPlanAndAppConfig(uid),
       ]);
 
       await _saveLastSyncedAt(syncStartedAt);
@@ -395,6 +397,84 @@ class SupabaseSyncService implements SyncService {
   Future<void> _syncListsAndItems(String uid, {DateTime? updatedSince}) async {
     await _syncLists(uid, updatedSince: updatedSince);
     await _syncItems(updatedSince: updatedSince);
+  }
+
+  @override
+  Future<void> refreshAccountPlanAndConfig() async {
+    final signedIn = await _authService.ensureSignedInSilently();
+    final uid = _authService.currentUserId;
+    if (!signedIn || uid == null) return;
+    await _pullPlanAndAppConfig(uid);
+  }
+
+  Future<void> _pullPlanAndAppConfig(String uid) async {
+    final client = _client;
+    if (client == null) return;
+
+    try {
+      final results = await Future.wait<dynamic>(<Future<dynamic>>[
+        client
+            .from('users_profile')
+            .select('plan_tier')
+            .eq('id', uid)
+            .maybeSingle(),
+        client.from('app_config').select('key, value').inFilter(
+          'key',
+          const <String>['free_max_lists', 'basic_max_lists', 'pro_max_lists'],
+        ),
+      ]);
+
+      final profileRow = results[0] as Map<String, dynamic>?;
+      final configRows = List<Map<String, dynamic>>.from(
+        results[1] as List<dynamic>? ?? const <dynamic>[],
+      );
+
+      final rawPlan = profileRow?['plan_tier']?.toString().trim();
+      final validPlan =
+          (rawPlan == 'free' ||
+              rawPlan == 'basic_2usd' ||
+              rawPlan == 'pro_3usd')
+          ? rawPlan
+          : null;
+
+      int? parsePositive(String key) {
+        for (final row in configRows) {
+          if (row['key']?.toString() == key) {
+            final parsed = int.tryParse(row['value']?.toString().trim() ?? '');
+            if (parsed != null && parsed > 0) return parsed;
+          }
+        }
+        return null;
+      }
+
+      final freeMax = parsePositive('free_max_lists');
+      final basicMax = parsePositive('basic_max_lists');
+      final proMax = parsePositive('pro_max_lists');
+
+      if (validPlan != null ||
+          freeMax != null ||
+          basicMax != null ||
+          proMax != null) {
+        await (_db.update(
+          _db.localPreferences,
+        )..where((t) => t.id.equals(1))).write(
+          LocalPreferencesCompanion(
+            planTier: validPlan != null
+                ? Value(validPlan)
+                : const Value.absent(),
+            freeMaxLists: freeMax != null
+                ? Value(freeMax)
+                : const Value.absent(),
+            basicMaxLists: basicMax != null
+                ? Value(basicMax)
+                : const Value.absent(),
+            proMaxLists: proMax != null ? Value(proMax) : const Value.absent(),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Karrito _pullPlanAndAppConfig skipped: $e');
+    }
   }
 
   Future<void> _saveLastSyncedAt(DateTime timestampUtc) async {

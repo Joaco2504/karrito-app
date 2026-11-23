@@ -64,8 +64,20 @@ class ShoppingRepository {
             soundEnabled: true,
             vibrationEnabled: true,
             avatarChoice: 'avatar_1',
+            planTier: 'free',
+            freeMaxLists: 3,
+            basicMaxLists: 10,
+            proMaxLists: 999,
           ),
     );
+  }
+
+  Stream<List<ExpenseHistoryEntity>> watchExpenseHistory() {
+    final query = _db.select(_db.localExpenseHistory)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
   }
 
   Stream<List<ShoppingListEntity>> watchLists() {
@@ -124,7 +136,11 @@ class ShoppingRepository {
   // Lists CRUD (Max 3 owned lists in free mode)
   // ---------------------------------------------------------------------------
 
-  Future<String> createList(String rawTitle, {String? ownerId}) async {
+  Future<String> createList(
+    String rawTitle, {
+    String? ownerId,
+    int? maxActiveLists,
+  }) async {
     final title = ItemTextParser.toSentenceCase(rawTitle);
     if (title.isEmpty) {
       throw const ShoppingActionException(AppStrings.invalidListNameError);
@@ -132,8 +148,12 @@ class ShoppingRepository {
 
     final existing = await _db.select(_db.localLists).get();
     final ownedCount = existing.where((l) => !l.isJoinedRemote).length;
-    if (ownedCount >= StoreHierarchy.maxActiveListsPhase2) {
-      throw const ShoppingActionException(AppStrings.maxListsReached);
+    final effectiveLimit =
+        maxActiveLists ?? StoreHierarchy.maxActiveListsPhase2;
+    if (ownedCount >= effectiveLimit) {
+      throw ShoppingActionException(
+        AppStrings.maxListsReachedForLimit(effectiveLimit),
+      );
     }
 
     final id = _uuid.v4();
@@ -448,6 +468,87 @@ class ShoppingRepository {
     }
   }
 
+  /// Processes a Pro voice recording (M4A/AAC 48 kbps base64) via `procesar-lista`
+  /// and inserts + learns all returned items in Drift.
+  Future<AddItemsOutcome> addItemsFromAudio({
+    required String listId,
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) async {
+    final response = await _aiClassifier.classifyAudio(
+      audioBase64: audioBase64,
+      mimeType: mimeType,
+    );
+    final aiAdded = await _insertAiItemsAndLearn(
+      listId: listId,
+      rawText: 'Dictado por voz',
+      items: response.items,
+    );
+    return AddItemsOutcome(
+      addedCount: aiAdded,
+      fromLocalCount: 0,
+      fromAiCount: aiAdded,
+      savedOfflineCount: 0,
+      quotaInfo: response.quota,
+    );
+  }
+
+  /// Processes a Pro photo or WhatsApp screenshot (JPEG <= 1024 px, 75% quality)
+  /// via `procesar-lista` and inserts + learns all returned items in Drift.
+  Future<AddItemsOutcome> addItemsFromImage({
+    required String listId,
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) async {
+    final response = await _aiClassifier.classifyImage(
+      imageBase64: imageBase64,
+      mimeType: mimeType,
+    );
+    final aiAdded = await _insertAiItemsAndLearn(
+      listId: listId,
+      rawText: 'Lista escaneada por foto',
+      items: response.items,
+    );
+    return AddItemsOutcome(
+      addedCount: aiAdded,
+      fromLocalCount: 0,
+      fromAiCount: aiAdded,
+      savedOfflineCount: 0,
+      quotaInfo: response.quota,
+    );
+  }
+
+  /// Imports a recipe or hardware/DIY project text block (Pro feature).
+  /// Still consults `local_learned_items` first when the pasted lines are simple,
+  /// otherwise sends to `procesar-lista` to extract ingredients/materials.
+  Future<AddItemsOutcome> importRecipeOrProject({
+    required String listId,
+    required String rawText,
+    required bool isOnline,
+  }) async {
+    final trimmed = rawText.trim();
+    if (trimmed.isEmpty) {
+      throw const ShoppingActionException(AppStrings.recipeEmptyError);
+    }
+    if (!isOnline) {
+      throw const ShoppingActionException(AppStrings.proMediaOfflineError);
+    }
+
+    final response = await _aiClassifier.classifyText(trimmed);
+    final aiAdded = await _insertAiItemsAndLearn(
+      listId: listId,
+      rawText: trimmed,
+      items: response.items,
+    );
+    return AddItemsOutcome(
+      addedCount: aiAdded,
+      fromLocalCount: 0,
+      fromAiCount: aiAdded,
+      savedOfflineCount: 0,
+      quotaInfo: response.quota,
+    );
+  }
+
   /// Automatically reprocesses any items stored with `syncStatus == 'pending_ai'`
   /// when connectivity returns. Returns the number of resolved offline items.
   Future<int> reprocessPendingAiItems() async {
@@ -529,6 +630,8 @@ class ShoppingRepository {
     required String unit,
     required String storeCategory,
     required String aisleName,
+    double? price,
+    bool updatePrice = false,
   }) async {
     final trimmedName = ItemTextParser.toSentenceCase(cleanName);
     if (trimmedName.isEmpty) {
@@ -556,6 +659,7 @@ class ShoppingRepository {
           unit: Value(safeUnit),
           storeCategory: Value(normalizedStore),
           aisleName: Value(normalizedAisle),
+          price: updatePrice ? Value<double?>(price) : const Value.absent(),
           updatedAt: Value(now),
           // Clear 'pending_ai' if the user already organized it manually.
           syncStatus: const Value('pending'),
@@ -706,6 +810,146 @@ class ShoppingRepository {
     return remappedListIds;
   }
 
+  Future<void> updateItemPrice({
+    required ShoppingItemEntity item,
+    required double? price,
+  }) async {
+    final now = DateTime.now();
+    await (_db.update(
+      _db.localItems,
+    )..where((t) => t.id.equals(item.id))).write(
+      LocalItemsCompanion(
+        price: Value<double?>(price != null && price > 0 ? price : null),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
+  /// Records totals per store from priced items into `local_expense_history`.
+  /// Returns `(storesRecorded, totalRecorded)`.
+  Future<({int storesRecorded, double totalRecorded})> recordShoppingExpenses({
+    required ShoppingListEntity list,
+    required List<ShoppingItemEntity> items,
+  }) async {
+    final totalsByStore = <String, double>{};
+    final countsByStore = <String, int>{};
+
+    for (final item in items) {
+      final p = item.price;
+      if (p == null || p <= 0) continue;
+      totalsByStore[item.storeCategory] =
+          (totalsByStore[item.storeCategory] ?? 0.0) + p;
+      countsByStore[item.storeCategory] =
+          (countsByStore[item.storeCategory] ?? 0) + 1;
+    }
+
+    if (totalsByStore.isEmpty) {
+      throw const ShoppingActionException(AppStrings.cartNoPricesToSaveError);
+    }
+
+    final now = DateTime.now();
+    var grandTotal = 0.0;
+    final companions = <LocalExpenseHistoryCompanion>[];
+    for (final entry in totalsByStore.entries) {
+      final rounded = double.parse(entry.value.toStringAsFixed(2));
+      grandTotal += rounded;
+      companions.add(
+        LocalExpenseHistoryCompanion.insert(
+          id: _uuid.v4(),
+          listId: Value(list.id),
+          listTitle: list.title,
+          storeCategory: entry.key,
+          totalAmount: rounded,
+          itemCount: Value(countsByStore[entry.key] ?? 0),
+          recordedAt: now,
+        ),
+      );
+    }
+
+    await _db.batch((b) => b.insertAll(_db.localExpenseHistory, companions));
+    return (
+      storesRecorded: companions.length,
+      totalRecorded: double.parse(grandTotal.toStringAsFixed(2)),
+    );
+  }
+
+  Future<void> deleteExpenseRecord(String id) async {
+    await (_db.delete(
+      _db.localExpenseHistory,
+    )..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Completely wipes all user lists, items, learned products, custom aisles,
+  /// expense history, and cloud sync metadata after `delete_my_account()`,
+  /// then re-seeds a clean guest workspace (`Compra semanal` + default aisles).
+  Future<String> wipeAllLocalDataForAccountDeletion() async {
+    final freshListId = _uuid.v4();
+    final now = DateTime.now();
+
+    await _db.transaction(() async {
+      await _db.delete(_db.localItems).go();
+      await _db.delete(_db.localLists).go();
+      await _db.delete(_db.localLearnedItems).go();
+      await _db.delete(_db.localAisleOrder).go();
+      await _db.delete(_db.localPendingDeletions).go();
+      await _db.delete(_db.localExpenseHistory).go();
+
+      final aisleEntries = StoreHierarchy.seedAisleOrder()
+          .map(
+            (entry) => LocalAisleOrderCompanion.insert(
+              storeCategory: entry.store,
+              aisleName: entry.aisle,
+              sortOrder: entry.sortOrder,
+              syncStatus: const Value('seeded'),
+            ),
+          )
+          .toList();
+      await _db.batch(
+        (b) => b.insertAll(
+          _db.localAisleOrder,
+          aisleEntries,
+          mode: InsertMode.insertOrIgnore,
+        ),
+      );
+
+      await _db
+          .into(_db.localLists)
+          .insert(
+            LocalListsCompanion.insert(
+              id: freshListId,
+              title: StoreHierarchy.defaultListName,
+              createdAt: now,
+              updatedAt: now,
+              syncStatus: const Value('pending'),
+            ),
+          );
+
+      await _db
+          .into(_db.localPreferences)
+          .insertOnConflictUpdate(
+            const LocalPreferencesCompanion(
+              id: Value(1),
+              city: Value(StoreHierarchy.defaultCity),
+              themeMode: Value('system'),
+              onboardingCompleted: Value(true),
+              keepScreenOn: Value(true),
+              soundEnabled: Value(true),
+              vibrationEnabled: Value(true),
+              avatarChoice: Value('avatar_1'),
+              googlePhotoUrl: Value<String?>(null),
+              planTier: Value('free'),
+              freeMaxLists: Value(3),
+              basicMaxLists: Value(10),
+              proMaxLists: Value(999),
+              monthlyBudgetArs: Value<double?>(null),
+              lastSyncedAt: Value<DateTime?>(null),
+            ),
+          );
+    });
+
+    return freshListId;
+  }
+
   Future<void> updatePreferences({
     String? city,
     String? themeMode,
@@ -716,6 +960,12 @@ class ShoppingRepository {
     String? avatarChoice,
     String? googlePhotoUrl,
     bool clearGooglePhotoUrl = false,
+    String? planTier,
+    int? freeMaxLists,
+    int? basicMaxLists,
+    int? proMaxLists,
+    double? monthlyBudgetArs,
+    bool clearMonthlyBudget = false,
   }) async {
     await _db
         .into(_db.localPreferences)
@@ -745,6 +995,21 @@ class ShoppingRepository {
                 ? const Value<String?>(null)
                 : (googlePhotoUrl != null
                       ? Value<String?>(googlePhotoUrl)
+                      : const Value.absent()),
+            planTier: planTier != null ? Value(planTier) : const Value.absent(),
+            freeMaxLists: freeMaxLists != null
+                ? Value(freeMaxLists)
+                : const Value.absent(),
+            basicMaxLists: basicMaxLists != null
+                ? Value(basicMaxLists)
+                : const Value.absent(),
+            proMaxLists: proMaxLists != null
+                ? Value(proMaxLists)
+                : const Value.absent(),
+            monthlyBudgetArs: clearMonthlyBudget
+                ? const Value<double?>(null)
+                : (monthlyBudgetArs != null
+                      ? Value<double?>(monthlyBudgetArs)
                       : const Value.absent()),
           ),
         );

@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/services/subscription_service.dart';
 import '../../providers/shopping_providers.dart';
 import '../screens/guide_faq_screen.dart';
+import '../screens/monthly_expenses_screen.dart';
+import '../screens/plans_screen.dart';
 import '../screens/settings_screen.dart';
 import 'google_mark_icon.dart';
 import 'karrito_bounce_button.dart';
@@ -29,6 +32,8 @@ class ProfileMenuSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(accountStatusProvider);
     final prefs = ref.watch(preferencesProvider).value;
+    final planTier = ref.watch(effectivePlanTierProvider);
+    final isPro = KarritoPlanTier.isPro(planTier);
     final uiState = ref.watch(shoppingControllerProvider);
     final controller = ref.read(shoppingControllerProvider.notifier);
 
@@ -181,6 +186,38 @@ class ProfileMenuSheet extends ConsumerWidget {
           const SizedBox(height: 18),
 
           // Menu options
+          _ProfileActionTile(
+            icon: Icons.workspace_premium_rounded,
+            title: AppStrings.profilePlansOption,
+            subtitle:
+                'Tu plan actual: ${KarritoPlanTier.displayName(planTier)}. ${AppStrings.profilePlansSubtitle}',
+            onTap: () {
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              navigator.push(
+                MaterialPageRoute<void>(builder: (_) => const PlansScreen()),
+              );
+            },
+          ),
+          if (isPro) ...[
+            const SizedBox(height: 10),
+            _ProfileActionTile(
+              icon: Icons.calculate_outlined,
+              title: AppStrings.cartMonthlyHistoryButton,
+              subtitle:
+                  'Revisá tu consumo mensual por comercio y ajustá tu tope.',
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MonthlyExpensesScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+          const SizedBox(height: 10),
           _ProfileActionTile(
             icon: Icons.tune_rounded,
             title: AppStrings.profilePreferencesOption,

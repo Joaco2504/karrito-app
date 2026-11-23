@@ -9,6 +9,7 @@ import 'core/config/supabase_config.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_database.dart';
+import 'data/services/subscription_service.dart';
 import 'data/services/sync_service.dart';
 import 'providers/core_providers.dart';
 import 'providers/shopping_providers.dart';
@@ -53,6 +54,10 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _syncService = ref.read(syncServiceProvider);
+      unawaited(ref.read(pushNotificationServiceProvider).initializeSafely());
+      unawaited(
+        ref.read(adsCascadeServiceProvider).initializeMobileAdsSafely(),
+      );
       _handleOnlineState(ref.read(isOnlineProvider));
       _updateRealtimeSubscription(
         isOnline: ref.read(isOnlineProvider),
@@ -113,6 +118,10 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
       );
     }
     await ref
+        .read(subscriptionServiceProvider)
+        .configure(appUserId: auth.currentUserId);
+    if (!mounted) return;
+    await ref
         .read(shoppingControllerProvider.notifier)
         .reprocessPendingAi(userTriggered: false);
     if (!mounted) return;
@@ -120,6 +129,11 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
         .read(shoppingControllerProvider.notifier)
         .syncNow(userTriggered: false);
     if (!mounted) return;
+    await ref.read(shoppingControllerProvider.notifier).refreshPlanAndAds();
+    if (!mounted) return;
+    if (ref.read(effectivePlanTierProvider) == KarritoPlanTier.free) {
+      unawaited(ref.read(adsCascadeServiceProvider).preloadAdMobInterstitial());
+    }
     _updateRealtimeSubscription(
       isOnline: ref.read(isOnlineProvider),
       activeList: ref.read(activeListProvider),
@@ -170,7 +184,8 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
         msg == AppStrings.wakelockEnabledNotice ||
         msg == AppStrings.wakelockDisabledNotice ||
         msg == AppStrings.googleLinkedSyncPendingNotice ||
-        msg == AppStrings.signedOutNotice) {
+        msg == AppStrings.signedOutNotice ||
+        msg == AppStrings.accountDeletedNotice) {
       return KarritoToastType.info;
     }
     return KarritoToastType.success;

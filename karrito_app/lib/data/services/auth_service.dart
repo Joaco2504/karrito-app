@@ -278,4 +278,34 @@ class AuthService {
 
     await ensureSignedInSilently();
   }
+
+  /// Calls the `karrito.delete_my_account()` SECURITY DEFINER RPC to delete all
+  /// cloud records and the `auth.users` account, then signs out cleanly into a
+  /// fresh anonymous guest session.
+  Future<void> deleteAccountPermanently() async {
+    final hasSession = await ensureSignedInSilently();
+    if (!hasSession || _client.auth.currentUser == null) {
+      throw const AuthActionException(
+        'No pudimos validar tu sesión para eliminar la cuenta. Revisá tu conexión e intentá de nuevo.',
+      );
+    }
+
+    try {
+      await _client.rpc('delete_my_account');
+    } on PostgrestException catch (e) {
+      debugPrint(
+        'Karrito delete_my_account RPC error: code=${e.code} message=${e.message}',
+      );
+      throw const AuthActionException(
+        'No pudimos eliminar tu cuenta en el servidor ahora. Revisá tu conexión e intentá de nuevo.',
+      );
+    } catch (e) {
+      debugPrint('Karrito delete_my_account unexpected error: $e');
+      throw const AuthActionException(
+        'No pudimos eliminar tu cuenta en este momento. Probá de nuevo cuando mejore la señal.',
+      );
+    }
+
+    await signOutToGuest();
+  }
 }

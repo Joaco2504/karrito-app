@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
+import '../../domain/services/currency_formatter.dart';
 import 'karrito_asset_icon.dart';
 import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
@@ -17,6 +18,8 @@ class EditItemResult {
     required this.unit,
     required this.storeCategory,
     required this.aisleName,
+    this.price,
+    this.updatePrice = false,
   }) : isDelete = false;
 
   const EditItemResult.delete()
@@ -25,6 +28,8 @@ class EditItemResult {
       unit = '',
       storeCategory = '',
       aisleName = '',
+      price = null,
+      updatePrice = false,
       isDelete = true;
 
   final bool isDelete;
@@ -33,23 +38,32 @@ class EditItemResult {
   final String unit;
   final String storeCategory;
   final String aisleName;
+  final double? price;
+  final bool updatePrice;
 }
 
 class EditItemBottomSheet extends StatefulWidget {
-  const EditItemBottomSheet({required this.item, super.key});
+  const EditItemBottomSheet({
+    required this.item,
+    this.showPriceField = false,
+    super.key,
+  });
 
   final ShoppingItemEntity item;
+  final bool showPriceField;
 
   static Future<EditItemResult?> show(
     BuildContext context,
-    ShoppingItemEntity item,
-  ) {
+    ShoppingItemEntity item, {
+    bool showPriceField = false,
+  }) {
     return showModalBottomSheet<EditItemResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => EditItemBottomSheet(item: item),
+      builder: (_) =>
+          EditItemBottomSheet(item: item, showPriceField: showPriceField),
     );
   }
 
@@ -68,6 +82,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _qtyController;
+  late final TextEditingController _priceController;
   late String _selectedUnit;
   late String _selectedStore;
   late String _selectedAisle;
@@ -80,6 +95,14 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
     _qtyController = TextEditingController(
       text: ShareService.formatQuantity(widget.item.quantity),
     );
+    _priceController = TextEditingController(
+      text: widget.item.price != null
+          ? CurrencyFormatter.formatArs(
+              widget.item.price!,
+              includeSymbol: false,
+            )
+          : '',
+    );
     _selectedUnit = widget.item.unit;
     _selectedStore = StoreHierarchy.normalizeStore(widget.item.storeCategory);
     _selectedAisle = widget.item.aisleName;
@@ -89,6 +112,7 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
   void dispose() {
     _nameController.dispose();
     _qtyController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -127,6 +151,9 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
     final parsedQty =
         double.tryParse(_qtyController.text.trim().replaceAll(',', '.')) ?? 1.0;
     final safeQty = parsedQty > 0 ? parsedQty : 1.0;
+    final parsedPrice = widget.showPriceField
+        ? CurrencyFormatter.parseArs(_priceController.text)
+        : null;
 
     Navigator.of(context).pop(
       EditItemResult.save(
@@ -135,6 +162,8 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
         unit: _selectedUnit,
         storeCategory: _selectedStore,
         aisleName: _selectedAisle,
+        price: parsedPrice,
+        updatePrice: widget.showPriceField,
       ),
     );
   }
@@ -511,6 +540,42 @@ class _EditItemBottomSheetState extends State<EditItemBottomSheet> {
                         setState(() => _selectedAisle = value);
                       },
                     ),
+                    if (widget.showPriceField) ...[
+                      const SizedBox(height: 12),
+                      const KarritoFieldLabel(AppStrings.cartPriceLabel),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _priceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          prefixText: '\$ ',
+                          hintText: AppStrings.cartPriceHint,
+                          suffixIcon: _priceController.text.isNotEmpty
+                              ? IconButton(
+                                  tooltip: AppStrings.cartClearPriceButton,
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                    color: karritoColors.textSecondary,
+                                  ),
+                                  onPressed: () {
+                                    _priceController.clear();
+                                    setState(() {});
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(

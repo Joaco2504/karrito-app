@@ -39,6 +39,9 @@ class _FakeAuthService implements AuthService {
   @override
   Future<void> signOutToGuest() async {}
 
+  @override
+  Future<void> deleteAccountPermanently() async {}
+
   void dispose() => _controller.close();
 }
 

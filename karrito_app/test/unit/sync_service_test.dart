@@ -17,6 +17,22 @@ class _NoopAi implements AiClassifierService {
   Future<ProcesarListaResponse> classifyText(String text) async {
     return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
   }
+
+  @override
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) async {
+    return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
+  }
+
+  @override
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) async {
+    return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
+  }
 }
 
 class _FakeAuthService implements AuthService {
@@ -55,6 +71,9 @@ class _FakeAuthService implements AuthService {
 
   @override
   Future<void> signOutToGuest() async {}
+
+  @override
+  Future<void> deleteAccountPermanently() async {}
 
   void dispose() => _controller.close();
 }

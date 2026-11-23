@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/services/share_code_helper.dart';
+import '../screens/plans_screen.dart';
 import '../screens/qr_scanner_screen.dart';
 import 'karrito_bounce_button.dart';
 import 'karrito_selector_field.dart';
@@ -304,10 +305,24 @@ class ProLiveRequiredSheet {
               ),
               const SizedBox(height: 18),
               KarritoBounceButton(
-                child: FilledButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: const Text(AppStrings.proLiveUnderstandButton),
+                child: FilledButton.icon(
+                  onPressed: () {
+                    final navigator = Navigator.of(context);
+                    Navigator.of(sheetContext).pop();
+                    navigator.push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PlansScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.workspace_premium_rounded, size: 19),
+                  label: const Text(AppStrings.adViewPlansButton),
                 ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                child: const Text(AppStrings.proLiveUnderstandButton),
               ),
             ],
           ),

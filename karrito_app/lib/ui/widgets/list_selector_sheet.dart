@@ -15,6 +15,8 @@ class ListSelectorSheet extends StatelessWidget {
     required this.onDelete,
     required this.onShareLive,
     required this.onJoinWithCode,
+    this.maxActiveLists = StoreHierarchy.maxActiveListsPhase2,
+    this.onUpgradePlan,
     super.key,
   });
 
@@ -26,6 +28,8 @@ class ListSelectorSheet extends StatelessWidget {
   final Future<bool> Function(String listId) onDelete;
   final VoidCallback onShareLive;
   final VoidCallback onJoinWithCode;
+  final int maxActiveLists;
+  final VoidCallback? onUpgradePlan;
 
   static Future<void> show({
     required BuildContext context,
@@ -37,6 +41,8 @@ class ListSelectorSheet extends StatelessWidget {
     required Future<bool> Function(String listId) onDelete,
     required VoidCallback onShareLive,
     required VoidCallback onJoinWithCode,
+    int maxActiveLists = StoreHierarchy.maxActiveListsPhase2,
+    VoidCallback? onUpgradePlan,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -52,6 +58,8 @@ class ListSelectorSheet extends StatelessWidget {
         onDelete: onDelete,
         onShareLive: onShareLive,
         onJoinWithCode: onJoinWithCode,
+        maxActiveLists: maxActiveLists,
+        onUpgradePlan: onUpgradePlan,
       ),
     );
   }
@@ -175,7 +183,8 @@ class ListSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ownedCount = lists.where((l) => !l.isJoinedRemote).length;
-    final canCreate = ownedCount < StoreHierarchy.maxActiveListsPhase2;
+    final isUnlimited = maxActiveLists >= 999;
+    final canCreate = isUnlimited || ownedCount < maxActiveLists;
     final canDelete = lists.length > 1;
     final colorScheme = Theme.of(context).colorScheme;
     final karritoColors = Theme.of(context).extension<KarritoColors>()!;
@@ -197,7 +206,9 @@ class ListSelectorSheet extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Tus listas ($ownedCount/${StoreHierarchy.maxActiveListsPhase2})',
+                        isUnlimited
+                            ? 'Tus listas ($ownedCount)'
+                            : 'Tus listas ($ownedCount/$maxActiveLists)',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -319,11 +330,22 @@ class ListSelectorSheet extends StatelessWidget {
               if (!canCreate) ...[
                 const SizedBox(height: 2),
                 Text(
-                  AppStrings.maxListsReached,
+                  AppStrings.maxListsReachedForLimit(maxActiveLists),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (onUpgradePlan != null) ...[
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onUpgradePlan!();
+                    },
+                    icon: const Icon(Icons.workspace_premium_rounded, size: 19),
+                    label: const Text(AppStrings.plansUpgradeButton),
+                  ),
+                ],
               ],
               const SizedBox(height: 10),
               OutlinedButton.icon(

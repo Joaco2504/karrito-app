@@ -21,6 +21,22 @@ class _FakeAiClassifier implements AiClassifierService {
     }
     return handler(text);
   }
+
+  @override
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) async {
+    return handler('audio');
+  }
+
+  @override
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) async {
+    return handler('image');
+  }
 }
 
 void main() {

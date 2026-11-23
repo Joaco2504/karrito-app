@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/services/subscription_service.dart';
 import '../../providers/shopping_providers.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
 import '../widgets/profile_avatar_widget.dart';
+import 'monthly_expenses_screen.dart';
 import 'onboarding_screen.dart';
+import 'plans_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -20,10 +23,48 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int? _openFaqIndex;
 
+  Future<void> _confirmAndDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final karritoColors = theme.extension<KarritoColors>()!;
+        return AlertDialog(
+          title: const Text(AppStrings.deleteAccountDialogTitle),
+          content: const Text(AppStrings.deleteAccountDialogBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(AppStrings.cancelButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: karritoColors.softDestructive,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(AppStrings.deleteAccountConfirmButton),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    final deleted = await ref
+        .read(shoppingControllerProvider.notifier)
+        .deleteAccountAndWipeData();
+    if (deleted && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final prefsAsync = ref.watch(preferencesProvider);
     final prefs = prefsAsync.value;
+    final planTier = ref.watch(effectivePlanTierProvider);
+    final isPro = KarritoPlanTier.isPro(planTier);
     final uiState = ref.watch(shoppingControllerProvider);
     final account = ref.watch(accountStatusProvider);
     final controller = ref.read(shoppingControllerProvider.notifier);
@@ -334,6 +375,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 14),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: karritoColors.accentContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.workspace_premium_rounded,
+                                size: 21,
+                                color: karritoColors.accentSoft,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppStrings.plansTitle,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Tu plan actual: ${KarritoPlanTier.displayName(planTier)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: karritoColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            KarritoBounceButton(
+                              child: FilledButton(
+                                onPressed: () => PlansScreen.open(context),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 40),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
+                                ),
+                                child: const Text(AppStrings.adViewPlansButton),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isPro) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(height: 1),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                MonthlyExpensesScreen.open(context),
+                            icon: const Icon(
+                              Icons.calculate_outlined,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              AppStrings.cartMonthlyHistoryButton,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 22),
 
                 // SECTION 1: Apariencia y pantalla
@@ -589,6 +708,69 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                 ],
+                const SizedBox(height: 22),
+
+                // SECTION 5: Cuenta y privacidad (requisito obligatorio Google Play)
+                const _SectionHeading(
+                  icon: Icons.privacy_tip_outlined,
+                  title: AppStrings.accountPrivacySection,
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          AppStrings.deleteAccountSubtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: karritoColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        KarritoBounceButton(
+                          enabled: !uiState.isDeletingAccount,
+                          child: OutlinedButton.icon(
+                            onPressed: uiState.isDeletingAccount
+                                ? null
+                                : _confirmAndDeleteAccount,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              backgroundColor: colorScheme.errorContainer
+                                  .withValues(alpha: isDark ? 0.55 : 0.45),
+                              foregroundColor: karritoColors.softDestructive,
+                              side: BorderSide(
+                                color: karritoColors.softDestructive.withValues(
+                                  alpha: 0.45,
+                                ),
+                              ),
+                            ),
+                            icon: uiState.isDeletingAccount
+                                ? SizedBox(
+                                    width: 17,
+                                    height: 17,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: karritoColors.softDestructive,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.delete_forever_outlined,
+                                    size: 19,
+                                  ),
+                            label: Text(
+                              uiState.isDeletingAccount
+                                  ? AppStrings.deletingAccountLabel
+                                  : AppStrings.deleteAccountButton,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Text(
                   AppStrings.settingsFooterNote,

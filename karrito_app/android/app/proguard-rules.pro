@@ -9,7 +9,13 @@
 -keep class androidx.credentials.** { *; }
 -keep class com.google.android.libraries.identity.googleid.** { *; }
 
+# Keep RevenueCat, Google Mobile Ads, and Firebase Messaging reflection classes.
+-keep class com.revenuecat.** { *; }
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.firebase.** { *; }
+
 # Suppress optional compile-only annotation warnings during R8 shrinking.
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn javax.annotation.**
 -dontwarn org.slf4j.**
+-dontwarn com.revenuecat.**

@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/store_visuals.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/share_service.dart';
+import '../../domain/services/currency_formatter.dart';
 import 'karrito_asset_icon.dart';
 
 class AisleSectionCard extends StatelessWidget {
@@ -17,6 +18,8 @@ class AisleSectionCard extends StatelessWidget {
     required this.onToggleExpand,
     required this.onToggleItem,
     required this.onEditItem,
+    this.showPriceChips = false,
+    this.onEditPrice,
     super.key,
   });
 
@@ -26,6 +29,8 @@ class AisleSectionCard extends StatelessWidget {
   final VoidCallback onToggleExpand;
   final ValueChanged<ShoppingItemEntity> onToggleItem;
   final ValueChanged<ShoppingItemEntity> onEditItem;
+  final bool showPriceChips;
+  final ValueChanged<ShoppingItemEntity>? onEditPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +108,7 @@ class AisleSectionCard extends StatelessWidget {
                               )
                             : KarritoAssetIcon.aisle(
                                 aisleName,
-                                size: 17,
+                                size: 20,
                                 color: visual.color,
                               ),
                       ),
@@ -176,8 +181,12 @@ class AisleSectionCard extends StatelessWidget {
                     _ShoppingItemTile(
                       key: ValueKey<String>(sortedItems[i].id),
                       item: sortedItems[i],
+                      showPriceChip: showPriceChips,
                       onTap: () => onToggleItem(sortedItems[i]),
                       onEdit: () => onEditItem(sortedItems[i]),
+                      onEditPrice: onEditPrice != null
+                          ? () => onEditPrice!(sortedItems[i])
+                          : null,
                     ),
                   ],
                 ],
@@ -202,12 +211,16 @@ class _ShoppingItemTile extends StatefulWidget {
     required this.item,
     required this.onTap,
     required this.onEdit,
+    this.showPriceChip = false,
+    this.onEditPrice,
     super.key,
   });
 
   final ShoppingItemEntity item;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+  final bool showPriceChip;
+  final VoidCallback? onEditPrice;
 
   @override
   State<_ShoppingItemTile> createState() => _ShoppingItemTileState();
@@ -447,6 +460,44 @@ class _ShoppingItemTileState extends State<_ShoppingItemTile>
                     ],
                   ),
                 ),
+                if (widget.showPriceChip && widget.onEditPrice != null) ...[
+                  const SizedBox(width: 6),
+                  Material(
+                    color: widget.item.price != null
+                        ? karritoColors.accentContainer
+                        : karritoColors.fieldSurface,
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: widget.item.price != null
+                            ? karritoColors.accentSoft.withValues(alpha: 0.45)
+                            : karritoColors.border,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: widget.onEditPrice,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        child: Text(
+                          widget.item.price != null
+                              ? CurrencyFormatter.formatArs(widget.item.price!)
+                              : '+ ${AppStrings.cartPutPriceButton}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                            color: widget.item.price != null
+                                ? karritoColors.onAccentContainer
+                                : karritoColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 IconButton(
                   icon: Icon(
                     Icons.edit_outlined,

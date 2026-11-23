@@ -19,11 +19,30 @@ class _NoopAiClassifier implements AiClassifierService {
   Future<ProcesarListaResponse> classifyText(String text) async {
     return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
   }
+
+  @override
+  Future<ProcesarListaResponse> classifyAudio({
+    required String audioBase64,
+    String mimeType = 'audio/m4a',
+  }) async {
+    return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
+  }
+
+  @override
+  Future<ProcesarListaResponse> classifyImage({
+    required String imageBase64,
+    String mimeType = 'image/jpeg',
+  }) async {
+    return const ProcesarListaResponse(items: <ProcessedAiItem>[]);
+  }
 }
 
 class _NoopSyncService implements SyncService {
   @override
   Future<void> syncAll() async {}
+
+  @override
+  Future<void> refreshAccountPlanAndConfig() async {}
 
   @override
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list) async {
@@ -60,12 +79,12 @@ class _RecordingSoundService implements SoundFeedbackService {
 
 void main() {
   test(
-    'Drift schemaVersion 5 defaults sound, vibration, and avatarChoice and persists updates',
+    'Drift schemaVersion 6 defaults sound, vibration, plan, and avatarChoice and persists updates',
     () async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
 
-      expect(db.schemaVersion, 5);
+      expect(db.schemaVersion, 6);
 
       final repo = ShoppingRepository(
         db: db,

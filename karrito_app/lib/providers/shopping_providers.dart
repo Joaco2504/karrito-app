@@ -4,12 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/app_strings.dart';
+import '../core/constants/store_hierarchy.dart';
 import '../data/local/app_database.dart';
 import '../data/repositories/shopping_repository.dart';
+import '../data/services/ads_cascade_service.dart';
 import '../data/services/ai_classifier_service.dart';
 import '../data/services/auth_service.dart';
+import '../data/services/media_capture_service.dart';
 import '../data/services/share_service.dart';
+import '../data/services/subscription_service.dart';
 import '../data/services/sync_service.dart';
+import '../domain/services/currency_formatter.dart';
 import 'core_providers.dart';
 
 class AccountStatus {
@@ -127,45 +132,106 @@ final activeListPendingAiCountProvider = StreamProvider<int>((ref) {
       .watchPendingAiCount(activeList.id);
 });
 
+final cachedAdsProvider = StreamProvider<List<CachedAdEntity>>((ref) {
+  return ref.watch(adsCascadeServiceProvider).watchCachedAds();
+});
+
+final expenseHistoryProvider = StreamProvider<List<ExpenseHistoryEntity>>((
+  ref,
+) {
+  return ref.watch(shoppingRepositoryProvider).watchExpenseHistory();
+});
+
+final effectivePlanTierProvider = Provider<String>((ref) {
+  return ref.watch(preferencesProvider).value?.planTier ?? KarritoPlanTier.free;
+});
+
+final maxActiveListsForPlanProvider = Provider<int>((ref) {
+  final prefs = ref.watch(preferencesProvider).value;
+  final tier = prefs?.planTier ?? KarritoPlanTier.free;
+  switch (tier) {
+    case KarritoPlanTier.pro:
+      return prefs?.proMaxLists ?? 999;
+    case KarritoPlanTier.basic:
+      return prefs?.basicMaxLists ?? 10;
+    default:
+      return prefs?.freeMaxLists ?? StoreHierarchy.maxActiveListsPhase2;
+  }
+});
+
+final activeBannerDecisionProvider = Provider<AdCascadeDecision>((ref) {
+  final prefs = ref.watch(preferencesProvider).value;
+  final ads = ref.watch(cachedAdsProvider).value ?? const <CachedAdEntity>[];
+  return AdsCascadeSelector.resolveBanner(
+    cachedAds: ads,
+    userCity: prefs?.city ?? StoreHierarchy.defaultCity,
+    planTier: prefs?.planTier ?? KarritoPlanTier.free,
+  );
+});
+
+final activeInterstitialDecisionProvider = Provider<AdCascadeDecision>((ref) {
+  final prefs = ref.watch(preferencesProvider).value;
+  final ads = ref.watch(cachedAdsProvider).value ?? const <CachedAdEntity>[];
+  return AdsCascadeSelector.resolveInterstitial(
+    cachedAds: ads,
+    userCity: prefs?.city ?? StoreHierarchy.defaultCity,
+    planTier: prefs?.planTier ?? KarritoPlanTier.free,
+  );
+});
+
 class ShoppingUiState {
   const ShoppingUiState({
     this.isSubmitting = false,
     this.isReprocessing = false,
     this.isSyncing = false,
     this.isLinkingGoogle = false,
+    this.isProcessingSubscription = false,
+    this.isDeletingAccount = false,
     this.feedbackMessage,
     this.isError = false,
     this.messageVersion = 0,
+    this.interstitialTriggerVersion = 0,
   });
 
   final bool isSubmitting;
   final bool isReprocessing;
   final bool isSyncing;
   final bool isLinkingGoogle;
+  final bool isProcessingSubscription;
+  final bool isDeletingAccount;
   final String? feedbackMessage;
   final bool isError;
   final int messageVersion;
+  final int interstitialTriggerVersion;
 
   ShoppingUiState copyWith({
     bool? isSubmitting,
     bool? isReprocessing,
     bool? isSyncing,
     bool? isLinkingGoogle,
+    bool? isProcessingSubscription,
+    bool? isDeletingAccount,
     String? feedbackMessage,
     bool clearMessage = false,
     bool? isError,
     int? messageVersion,
+    int? interstitialTriggerVersion,
   }) {
     return ShoppingUiState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isReprocessing: isReprocessing ?? this.isReprocessing,
       isSyncing: isSyncing ?? this.isSyncing,
       isLinkingGoogle: isLinkingGoogle ?? this.isLinkingGoogle,
+      isProcessingSubscription:
+          isProcessingSubscription ?? this.isProcessingSubscription,
+      isDeletingAccount: isDeletingAccount ?? this.isDeletingAccount,
       feedbackMessage: clearMessage
           ? null
           : (feedbackMessage ?? this.feedbackMessage),
       isError: isError ?? this.isError,
       messageVersion: messageVersion ?? this.messageVersion,
+      interstitialTriggerVersion:
+          interstitialTriggerVersion ?? this.interstitialTriggerVersion,
     );
   }
 }
@@ -222,6 +288,12 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         );
       } else if (outcome.addedCount > 0) {
         _emitFeedback(AppStrings.addedItemsNotice(outcome.addedCount));
+      }
+
+      if (outcome.fromAiCount > 0) {
+        state = state.copyWith(
+          interstitialTriggerVersion: state.interstitialTriggerVersion + 1,
+        );
       }
 
       _triggerBackgroundSync();
@@ -449,7 +521,17 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     }
 
     try {
-      return await _sync.enableLiveShare(activeList);
+      final outcome = await _sync.enableLiveShare(activeList);
+      if (!outcome.requiresPro) {
+        unawaited(
+          ref
+              .read(pushNotificationServiceProvider)
+              .requestPermissionAndRegisterToken(
+                ref.read(authServiceProvider).currentUserId,
+              ),
+        );
+      }
+      return outcome;
     } on ShoppingActionException catch (e) {
       _emitFeedback(e.message, isError: true);
       return null;
@@ -467,6 +549,13 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     try {
       final result = await _sync.joinSharedListByCode(code);
       ref.read(activeListIdProvider.notifier).select(result.listId);
+      unawaited(
+        ref
+            .read(pushNotificationServiceProvider)
+            .requestPermissionAndRegisterToken(
+              ref.read(authServiceProvider).currentUserId,
+            ),
+      );
       _emitFeedback(AppStrings.liveJoinedNotice(result.title));
       return null;
     } on ShoppingActionException catch (e) {
@@ -504,6 +593,8 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     required String unit,
     required String storeCategory,
     required String aisleName,
+    double? price,
+    bool updatePrice = false,
   }) async {
     try {
       await _repo.updateItemAndLearn(
@@ -513,6 +604,8 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         unit: unit,
         storeCategory: storeCategory,
         aisleName: aisleName,
+        price: price,
+        updatePrice: updatePrice,
       );
       _triggerBackgroundSync();
       return true;
@@ -522,6 +615,239 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     }
   }
 
+  Future<void> updateItemPrice(ShoppingItemEntity item, double? price) async {
+    await _repo.updateItemPrice(item: item, price: price);
+  }
+
+  Future<bool> saveShoppingExpensesForActiveList() async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null) return false;
+    final items = ref.read(activeListItemsProvider).value ?? const [];
+
+    try {
+      final result = await _repo.recordShoppingExpenses(
+        list: activeList,
+        items: items,
+      );
+      _emitFeedback(
+        AppStrings.cartExpenseSavedNotice(
+          CurrencyFormatter.formatArs(result.totalRecorded),
+        ),
+      );
+      return true;
+    } on ShoppingActionException catch (e) {
+      _emitFeedback(e.message, isError: true);
+      return false;
+    }
+  }
+
+  Future<void> deleteExpenseRecord(String id) async {
+    await _repo.deleteExpenseRecord(id);
+  }
+
+  Future<void> setMonthlyBudget(double? budgetArs) async {
+    if (budgetArs == null || budgetArs <= 0) {
+      await _repo.updatePreferences(clearMonthlyBudget: true);
+    } else {
+      await _repo.updatePreferences(monthlyBudgetArs: budgetArs);
+    }
+  }
+
+  Future<bool> addItemsFromVoicePayload(EncodedVoicePayload payload) async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null || state.isSubmitting) return false;
+    if (!ref.read(isOnlineProvider)) {
+      _emitFeedback(AppStrings.proMediaOfflineError, isError: true);
+      return false;
+    }
+
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+    try {
+      final outcome = await _repo.addItemsFromAudio(
+        listId: activeList.id,
+        audioBase64: payload.base64Data,
+        mimeType: payload.mimeType,
+      );
+      if (outcome.addedCount > 0) {
+        _emitFeedback(AppStrings.addedItemsNotice(outcome.addedCount));
+      } else {
+        _emitFeedback(
+          'No detectamos productos claros en ese audio. Probá dictar más pausado.',
+          isError: true,
+        );
+      }
+      _triggerBackgroundSync();
+      return outcome.addedCount > 0;
+    } on AiClassifierException catch (e) {
+      _emitFeedback(e.userMessage, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(AppStrings.genericProcessingError, isError: true);
+      return false;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
+  Future<bool> addItemsFromImagePayload(EncodedImagePayload payload) async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null || state.isSubmitting) return false;
+    if (!ref.read(isOnlineProvider)) {
+      _emitFeedback(AppStrings.proMediaOfflineError, isError: true);
+      return false;
+    }
+
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+    try {
+      final outcome = await _repo.addItemsFromImage(
+        listId: activeList.id,
+        imageBase64: payload.base64Data,
+        mimeType: payload.mimeType,
+      );
+      if (outcome.addedCount > 0) {
+        _emitFeedback(AppStrings.addedItemsNotice(outcome.addedCount));
+      } else {
+        _emitFeedback(
+          'No pudimos leer productos en esa foto. Probá con mejor luz o acercando la cámara.',
+          isError: true,
+        );
+      }
+      _triggerBackgroundSync();
+      return outcome.addedCount > 0;
+    } on AiClassifierException catch (e) {
+      _emitFeedback(e.userMessage, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(AppStrings.genericProcessingError, isError: true);
+      return false;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
+  Future<bool> importRecipeOrProjectText(String rawText) async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null || state.isSubmitting) return false;
+
+    state = state.copyWith(isSubmitting: true, clearMessage: true);
+    try {
+      final outcome = await _repo.importRecipeOrProject(
+        listId: activeList.id,
+        rawText: rawText,
+        isOnline: ref.read(isOnlineProvider),
+      );
+      if (outcome.addedCount > 0) {
+        _emitFeedback(AppStrings.addedItemsNotice(outcome.addedCount));
+      }
+      _triggerBackgroundSync();
+      return outcome.addedCount > 0;
+    } on ShoppingActionException catch (e) {
+      _emitFeedback(e.message, isError: true);
+      return false;
+    } on AiClassifierException catch (e) {
+      _emitFeedback(e.userMessage, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(AppStrings.genericProcessingError, isError: true);
+      return false;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
+  Future<bool> purchaseMonthlyPlan(String targetTier) async {
+    if (state.isProcessingSubscription) return false;
+    state = state.copyWith(isProcessingSubscription: true);
+    try {
+      final outcome = await ref
+          .read(subscriptionServiceProvider)
+          .purchaseMonthlyPlan(targetTier);
+      if (outcome.succeeded) {
+        await _repo.updatePreferences(planTier: outcome.planTier);
+        unawaited(_sync.refreshAccountPlanAndConfig());
+      }
+      if (!outcome.cancelled && outcome.message != null) {
+        _emitFeedback(outcome.message!, isError: !outcome.succeeded);
+      }
+      return outcome.succeeded;
+    } finally {
+      state = state.copyWith(isProcessingSubscription: false);
+    }
+  }
+
+  Future<void> restorePurchases() async {
+    if (state.isProcessingSubscription) return;
+    state = state.copyWith(isProcessingSubscription: true);
+    try {
+      final outcome = await ref
+          .read(subscriptionServiceProvider)
+          .restorePurchases();
+      if (outcome.succeeded) {
+        await _repo.updatePreferences(planTier: outcome.planTier);
+        unawaited(_sync.refreshAccountPlanAndConfig());
+      }
+      if (outcome.message != null) {
+        _emitFeedback(outcome.message!, isError: !outcome.succeeded);
+      }
+    } finally {
+      state = state.copyWith(isProcessingSubscription: false);
+    }
+  }
+
+  Future<void> refreshPlanAndAds() async {
+    if (!ref.read(isOnlineProvider)) return;
+    final city =
+        ref.read(preferencesProvider).value?.city ?? StoreHierarchy.defaultCity;
+    final subService = ref.read(subscriptionServiceProvider);
+    final auth = ref.read(authServiceProvider);
+
+    await subService.identifyUser(auth.currentUserId);
+    final rcTier = await subService.fetchActivePlanTier();
+    if (rcTier != null) {
+      await _repo.updatePreferences(planTier: rcTier);
+    }
+    await _sync.refreshAccountPlanAndConfig();
+    await ref.read(adsCascadeServiceProvider).refreshLocalAds(city);
+  }
+
+  Future<bool> deleteAccountAndWipeData() async {
+    if (state.isDeletingAccount) return false;
+    if (!ref.read(isOnlineProvider)) {
+      _emitFeedback(
+        'Necesitás conexión a internet para borrar tu cuenta en la nube. Probá cuando vuelva la señal.',
+        isError: true,
+      );
+      return false;
+    }
+
+    state = state.copyWith(isDeletingAccount: true);
+    try {
+      await ref.read(authServiceProvider).deleteAccountPermanently();
+      final freshListId = await _repo.wipeAllLocalDataForAccountDeletion();
+      ref.read(activeListIdProvider.notifier).select(freshListId);
+      ref.read(accountStatusProvider.notifier).refresh();
+      _emitFeedback(AppStrings.accountDeletedNotice);
+      return true;
+    } on AuthActionException catch (e) {
+      _emitFeedback(e.message, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(
+        'No pudimos eliminar tu cuenta ahora. Probá de nuevo en unos segundos.',
+        isError: true,
+      );
+      return false;
+    } finally {
+      state = state.copyWith(isDeletingAccount: false);
+    }
+  }
+
+  void triggerInterstitialForListCompletion() {
+    state = state.copyWith(
+      interstitialTriggerVersion: state.interstitialTriggerVersion + 1,
+    );
+  }
+
   Future<void> deleteItem(ShoppingItemEntity item) async {
     await _repo.deleteItem(item);
     _triggerBackgroundSync();
@@ -529,9 +855,11 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
   Future<bool> createList(String title) async {
     try {
+      final limit = ref.read(maxActiveListsForPlanProvider);
       final newId = await _repo.createList(
         title,
         ownerId: ref.read(authServiceProvider).currentUserId,
+        maxActiveLists: limit,
       );
       ref.read(activeListIdProvider.notifier).select(newId);
       _triggerBackgroundSync();
@@ -567,6 +895,9 @@ class ShoppingController extends Notifier<ShoppingUiState> {
   Future<void> setCity(String city) async {
     await _repo.updatePreferences(city: city);
     _triggerBackgroundSync();
+    if (ref.read(isOnlineProvider)) {
+      unawaited(ref.read(adsCascadeServiceProvider).refreshLocalAds(city));
+    }
   }
 
   Future<void> setThemeMode(String themeMode) async {

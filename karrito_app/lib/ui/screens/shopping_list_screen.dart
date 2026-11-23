@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,18 +7,28 @@ import '../../core/constants/app_strings.dart';
 import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
+import '../../data/services/ads_cascade_service.dart';
+import '../../data/services/media_capture_service.dart';
+import '../../data/services/subscription_service.dart';
+import '../../domain/services/currency_formatter.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/shopping_providers.dart';
+import '../widgets/ads_banner_bar.dart';
 import '../widgets/aisle_reorder_sheet.dart';
 import '../widgets/aisle_section_card.dart';
 import '../widgets/edit_item_sheet.dart';
 import '../widgets/frequent_items_sheet.dart';
 import '../widgets/karrito_asset_icon.dart';
 import '../widgets/karrito_bounce_button.dart';
+import '../widgets/karrito_toast.dart';
 import '../widgets/list_selector_sheet.dart';
 import '../widgets/live_share_sheets.dart';
+import '../widgets/local_interstitial_dialog.dart';
+import '../widgets/pro_features_sheets.dart';
 import '../widgets/profile_avatar_widget.dart';
 import '../widgets/profile_menu_sheet.dart';
+import 'monthly_expenses_screen.dart';
+import 'plans_screen.dart';
 import 'settings_screen.dart';
 
 class ShoppingListScreen extends ConsumerStatefulWidget {
@@ -31,6 +43,101 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   final FocusNode _inputFocusNode = FocusNode();
   final Set<String> _collapsedAisleKeys = <String>{};
   String? _selectedStore;
+  bool _showingInterstitial = false;
+
+  bool get _isPro => KarritoPlanTier.isPro(ref.read(effectivePlanTierProvider));
+
+  Future<void> _maybeShowInterstitial() async {
+    if (_showingInterstitial || !mounted) return;
+    final decision = ref.read(activeInterstitialDecisionProvider);
+    if (decision.source == AdSlotSource.none) return;
+
+    _showingInterstitial = true;
+    try {
+      if (decision.source == AdSlotSource.localAd && decision.localAd != null) {
+        final ad = decision.localAd!;
+        final adsService = ref.read(adsCascadeServiceProvider);
+        await LocalInterstitialDialog.show(
+          context: context,
+          ad: ad,
+          onImpression: () => unawaited(adsService.recordImpression(ad.id)),
+          onClick: () => unawaited(adsService.recordClick(ad.id)),
+          onViewPlans: () {
+            if (mounted) {
+              unawaited(PlansScreen.open(context));
+            }
+          },
+        );
+      } else if (decision.source == AdSlotSource.admob) {
+        await ref
+            .read(adsCascadeServiceProvider)
+            .showAdMobInterstitialIfReady();
+      }
+    } finally {
+      _showingInterstitial = false;
+    }
+  }
+
+  Future<void> _handleVoiceDictation() async {
+    if (!_isPro) {
+      await PlansScreen.open(context);
+      return;
+    }
+    final payload = await VoiceDictationSheet.show(
+      context: context,
+      mediaService: ref.read(mediaCaptureServiceProvider),
+    );
+    if (payload == null || !mounted) return;
+    await ref
+        .read(shoppingControllerProvider.notifier)
+        .addItemsFromVoicePayload(payload);
+  }
+
+  Future<void> _handlePhotoScan() async {
+    if (!_isPro) {
+      await PlansScreen.open(context);
+      return;
+    }
+    final source = await ScanPhotoSourceSheet.show(context);
+    if (source == null || !mounted) return;
+    try {
+      final payload = await ref
+          .read(mediaCaptureServiceProvider)
+          .pickAndCompressImage(source);
+      if (payload == null || !mounted) return;
+      await ref
+          .read(shoppingControllerProvider.notifier)
+          .addItemsFromImagePayload(payload);
+    } on MediaGuardException catch (e) {
+      if (mounted) {
+        KarritoToast.show(
+          context,
+          message: e.userMessage,
+          type: KarritoToastType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleImportRecipe() async {
+    if (!_isPro) {
+      await PlansScreen.open(context);
+      return;
+    }
+    final text = await ImportRecipeSheet.show(context);
+    if (text == null || !mounted) return;
+    await ref
+        .read(shoppingControllerProvider.notifier)
+        .importRecipeOrProjectText(text);
+  }
+
+  Future<void> _handleEditPrice(ShoppingItemEntity item) async {
+    final result = await ItemPriceInputSheet.show(context, item);
+    if (result == null || !mounted) return;
+    await ref
+        .read(shoppingControllerProvider.notifier)
+        .updateItemPrice(item, result.clear ? null : result.price);
+  }
 
   @override
   void dispose() {
@@ -51,7 +158,11 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
   }
 
   Future<void> _openEditSheet(ShoppingItemEntity item) async {
-    final result = await EditItemBottomSheet.show(context, item);
+    final result = await EditItemBottomSheet.show(
+      context,
+      item,
+      showPriceField: _isPro,
+    );
     if (result == null || !mounted) return;
 
     final controller = ref.read(shoppingControllerProvider.notifier);
@@ -67,6 +178,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
       unit: result.unit,
       storeCategory: result.storeCategory,
       aisleName: result.aisleName,
+      price: result.price,
+      updatePrice: result.updatePrice,
     );
   }
 
@@ -165,10 +278,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     ShoppingListEntity activeList,
   ) {
     final controller = ref.read(shoppingControllerProvider.notifier);
+    final maxActiveLists = ref.read(maxActiveListsForPlanProvider);
     ListSelectorSheet.show(
       context: context,
       lists: lists,
       activeListId: activeList.id,
+      maxActiveLists: maxActiveLists,
+      onUpgradePlan: () => PlansScreen.open(context),
       onSelect: (id) {
         ref.read(activeListIdProvider.notifier).select(id);
         setState(() {
@@ -185,6 +301,15 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(
+      shoppingControllerProvider.select((s) => s.interstitialTriggerVersion),
+      (previous, next) {
+        if (previous != null && next != previous && mounted) {
+          unawaited(_maybeShowInterstitial());
+        }
+      },
+    );
+
     final uiState = ref.watch(shoppingControllerProvider);
     final listsAsync = ref.watch(shoppingListsProvider);
     final activeList = ref.watch(activeListProvider);
@@ -193,6 +318,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
         ref.watch(aisleOrderMapProvider).value ??
         const <(String, String), int>{};
     final prefs = ref.watch(preferencesProvider).value;
+    final planTier = ref.watch(effectivePlanTierProvider);
+    final isPro = KarritoPlanTier.isPro(planTier);
     final account = ref.watch(accountStatusProvider);
     final isOnline = ref.watch(isOnlineProvider);
     final pendingAiCount =
@@ -616,58 +743,145 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                               ),
                             ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: TextField(
-                            controller: _inputController,
-                            focusNode: _inputFocusNode,
-                            enabled: !uiState.isSubmitting,
-                            minLines: 1,
-                            maxLines: 4,
-                            keyboardType: TextInputType.multiline,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: const InputDecoration(
-                              hintText: AppStrings.inputHint,
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 10,
+                          padding: const EdgeInsets.fromLTRB(10, 0, 4, 0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _inputController,
+                                  focusNode: _inputFocusNode,
+                                  enabled: !uiState.isSubmitting,
+                                  minLines: 1,
+                                  maxLines: 4,
+                                  keyboardType: TextInputType.multiline,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  decoration: const InputDecoration(
+                                    hintText: AppStrings.inputHint,
+                                    filled: false,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: AppStrings.voiceInputTooltip,
+                                onPressed: uiState.isSubmitting
+                                    ? null
+                                    : _handleVoiceDictation,
+                                icon: Icon(
+                                  Icons.mic_none_rounded,
+                                  size: 21,
+                                  color: isPro
+                                      ? karritoColors.accentSoft
+                                      : karritoColors.textSecondary,
+                                ),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: AppStrings.scanPhotoTooltip,
+                                onPressed: uiState.isSubmitting
+                                    ? null
+                                    : _handlePhotoScan,
+                                icon: Icon(
+                                  Icons.photo_camera_outlined,
+                                  size: 20,
+                                  color: isPro
+                                      ? karritoColors.accentSoft
+                                      : karritoColors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            KarritoBounceButton(
-                              child: TextButton.icon(
-                                onPressed: _openFrequentItems,
-                                style: TextButton.styleFrom(
-                                  backgroundColor: karritoColors.ctaContainer,
-                                  foregroundColor: karritoColors.onCtaContainer,
-                                  minimumSize: const Size(0, 42),
-                                  shape: const StadiumBorder(),
-                                  side: BorderSide(
-                                    color: karritoColors.cta.withValues(
-                                      alpha: isDark ? 0.35 : 0.25,
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    KarritoBounceButton(
+                                      child: TextButton.icon(
+                                        onPressed: _openFrequentItems,
+                                        style: TextButton.styleFrom(
+                                          backgroundColor:
+                                              karritoColors.ctaContainer,
+                                          foregroundColor:
+                                              karritoColors.onCtaContainer,
+                                          minimumSize: const Size(0, 42),
+                                          shape: const StadiumBorder(),
+                                          side: BorderSide(
+                                            color: karritoColors.cta.withValues(
+                                              alpha: isDark ? 0.35 : 0.25,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                        ),
+                                        icon: Icon(
+                                          Icons.star_outline_rounded,
+                                          size: 17,
+                                          color: karritoColors.cta,
+                                        ),
+                                        label: const Text(
+                                          AppStrings.frequentButton,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
+                                    const SizedBox(width: 6),
+                                    KarritoBounceButton(
+                                      child: TextButton.icon(
+                                        onPressed: uiState.isSubmitting
+                                            ? null
+                                            : _handleImportRecipe,
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: isPro
+                                              ? karritoColors.accentContainer
+                                              : karritoColors.fieldSurface,
+                                          foregroundColor: isPro
+                                              ? karritoColors.onAccentContainer
+                                              : karritoColors.textSecondary,
+                                          minimumSize: const Size(0, 42),
+                                          shape: const StadiumBorder(),
+                                          side: BorderSide(
+                                            color: isPro
+                                                ? karritoColors.accent
+                                                      .withValues(alpha: 0.35)
+                                                : karritoColors.border,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                        ),
+                                        icon: Icon(
+                                          Icons.receipt_long_outlined,
+                                          size: 17,
+                                          color: isPro
+                                              ? karritoColors.accentSoft
+                                              : karritoColors.textSecondary,
+                                        ),
+                                        label: const Text(
+                                          AppStrings.importRecipeButton,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                icon: Icon(
-                                  Icons.star_outline_rounded,
-                                  size: 18,
-                                  color: karritoColors.cta,
-                                ),
-                                label: const Text(AppStrings.frequentButton),
                               ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             KarritoBounceButton(
                               enabled: !uiState.isSubmitting,
                               child: Container(
@@ -690,7 +904,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                   style: FilledButton.styleFrom(
                                     minimumSize: const Size(0, 42),
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
+                                      horizontal: 18,
                                       vertical: 8,
                                     ),
                                   ),
@@ -747,7 +961,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                             ),
                             avatar: KarritoAssetIcon.store(
                               store,
-                              size: 16,
+                              size: 18,
                               color: isSelected
                                   ? karritoColors.onAccent
                                   : karritoColors.textSecondary,
@@ -883,6 +1097,24 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                             ),
                                           ),
                                         ),
+                                        if (totalPendingCount == 0 && !isPro)
+                                          TextButton(
+                                            onPressed: () {
+                                              ref
+                                                  .read(
+                                                    shoppingControllerProvider
+                                                        .notifier,
+                                                  )
+                                                  .triggerInterstitialForListCompletion();
+                                            },
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: karritoColors
+                                                  .onCompletedContainer,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                            ),
+                                            child: const Text('Cerrar lista'),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -894,6 +1126,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                   ),
                                   aisleName: aisle,
                                   items: itemsByAisle[aisle]!,
+                                  showPriceChips: isPro,
                                   isExpanded: !_collapsedAisleKeys.contains(
                                     '$effectiveStore::$aisle',
                                   ),
@@ -915,15 +1148,150 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                         .toggleItemChecked(item);
                                   },
                                   onEditItem: _openEditSheet,
+                                  onEditPrice: isPro ? _handleEditPrice : null,
                                 ),
                             ],
                           ),
                         ),
                 ),
+                if (isPro && items.isNotEmpty)
+                  _ProCartSummaryBar(
+                    summary: CartPriceCalculator.summarize(
+                      items: items,
+                      activeStore: effectiveStore,
+                    ),
+                    onOpenHistory: () => MonthlyExpensesScreen.open(context),
+                    onSaveTrip: () {
+                      ref
+                          .read(shoppingControllerProvider.notifier)
+                          .saveShoppingExpensesForActiveList();
+                    },
+                  ),
               ],
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: const KarritoAdsBannerBar(),
+    );
+  }
+}
+
+class _ProCartSummaryBar extends StatelessWidget {
+  const _ProCartSummaryBar({
+    required this.summary,
+    required this.onOpenHistory,
+    required this.onSaveTrip,
+  });
+
+  final CartPriceSummary summary;
+  final VoidCallback onOpenHistory;
+  final VoidCallback onSaveTrip;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? karritoColors.aisleCardSurface
+            : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: karritoColors.accent.withValues(alpha: 0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: karritoColors.shadowTint,
+            blurRadius: 16,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.cartStoreSubtotalLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: karritoColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.formatArs(summary.storeAmount),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 28, color: karritoColors.border),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.cartTotalLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: karritoColors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      CurrencyFormatter.formatArs(summary.totalAmount),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: karritoColors.accentSoft,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: AppStrings.cartMonthlyHistoryButton,
+                onPressed: onOpenHistory,
+                style: IconButton.styleFrom(
+                  backgroundColor: karritoColors.accentContainer,
+                  foregroundColor: karritoColors.accentSoft,
+                ),
+                icon: const Icon(Icons.bar_chart_rounded, size: 20),
+              ),
+            ],
+          ),
+          if (summary.hasAnyPrice) ...[
+            const SizedBox(height: 8),
+            KarritoBounceButton(
+              child: FilledButton.icon(
+                onPressed: onSaveTrip,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(42),
+                  backgroundColor: karritoColors.cta,
+                  foregroundColor: karritoColors.onCta,
+                ),
+                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                label: const Text(AppStrings.cartCloseAndSaveButton),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -42,6 +42,7 @@ class LocalItems extends Table {
   TextColumn get storeCategory => text()();
   TextColumn get aisleName => text()();
   BoolColumn get isChecked => boolean().withDefault(const Constant(false))();
+  RealColumn get price => real().nullable()();
   IntColumn get position => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get syncStatus => text().withDefault(const Constant('pending'))();
@@ -100,7 +101,49 @@ class LocalPreferences extends Table {
   TextColumn get avatarChoice =>
       text().withDefault(const Constant('avatar_1'))();
   TextColumn get googlePhotoUrl => text().nullable()();
+  TextColumn get planTier => text().withDefault(const Constant('free'))();
+  IntColumn get freeMaxLists => integer().withDefault(const Constant(3))();
+  IntColumn get basicMaxLists => integer().withDefault(const Constant(10))();
+  IntColumn get proMaxLists => integer().withDefault(const Constant(999))();
+  RealColumn get monthlyBudgetArs => real().nullable()();
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('CachedAdEntity')
+class LocalCachedAds extends Table {
+  @override
+  String get tableName => 'local_cached_ads';
+
+  TextColumn get id => text()();
+  TextColumn get businessName => text()();
+  TextColumn get city => text()();
+  TextColumn get tier => text()();
+  TextColumn get bannerUrl => text().nullable()();
+  TextColumn get interstitialUrl => text().nullable()();
+  TextColumn get actionUrl => text()();
+  DateTimeColumn get expiresAt => dateTime()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('ExpenseHistoryEntity')
+class LocalExpenseHistory extends Table {
+  @override
+  String get tableName => 'local_expense_history';
+
+  TextColumn get id => text()();
+  TextColumn get listId => text().nullable()();
+  TextColumn get listTitle => text()();
+  TextColumn get storeCategory => text()();
+  RealColumn get totalAmount => real()();
+  IntColumn get itemCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get recordedAt => dateTime()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -129,13 +172,15 @@ class LocalPendingDeletions extends Table {
     LocalLearnedItems,
     LocalPreferences,
     LocalPendingDeletions,
+    LocalCachedAds,
+    LocalExpenseHistory,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -143,6 +188,7 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await _createPerformanceIndexes();
+        await _createPhase5Indexes();
         await _seedInitialData();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -173,6 +219,20 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(localPreferences, localPreferences.googlePhotoUrl);
           await _seedAisleOrderOnly();
         }
+        if (from < 6) {
+          await m.addColumn(localItems, localItems.price);
+          await m.addColumn(localPreferences, localPreferences.planTier);
+          await m.addColumn(localPreferences, localPreferences.freeMaxLists);
+          await m.addColumn(localPreferences, localPreferences.basicMaxLists);
+          await m.addColumn(localPreferences, localPreferences.proMaxLists);
+          await m.addColumn(
+            localPreferences,
+            localPreferences.monthlyBudgetArs,
+          );
+          await m.createTable(localCachedAds);
+          await m.createTable(localExpenseHistory);
+          await _createPhase5Indexes();
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
@@ -196,6 +256,17 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_local_aisle_order_lookup '
       'ON local_aisle_order (store_category, sort_order)',
+    );
+  }
+
+  Future<void> _createPhase5Indexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_cached_ads_city_tier '
+      'ON local_cached_ads (city, tier, is_active, expires_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_expense_history_recorded '
+      'ON local_expense_history (recorded_at DESC)',
     );
   }
 
