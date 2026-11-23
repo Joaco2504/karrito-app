@@ -1,29 +1,19 @@
 /// Configuración centralizada de monetización (Google AdMob + RevenueCat) y
 /// límites de compresión multimedia para Karrito Android.
-///
-/// IMPORTANTE ANTES DE PUBLICAR EN GOOGLE PLAY:
-/// 1. Reemplazá [admobAppIdAndroid] acá y en
-///    `android/app/src/main/AndroidManifest.xml` por el App ID real de AdMob
-///    de tu app `Karrito Android`.
-/// 2. Reemplazá [admobBannerUnitIdAndroid] (`karrito_banner_lista`) y
-///    [admobInterstitialUnitIdAndroid] (`karrito_intersticial_lista`) por tus
-///    Ad Unit IDs reales de producción en AdMob.
-/// 3. Reemplazá [revenueCatGoogleApiKey] por la clave pública SDK de Google Play
-///    (`goog_...`) obtenida en el proyecto `Karrito` de RevenueCat.
 abstract final class MonetizationConfig {
   // ---------------------------------------------------------------------------
-  // Google AdMob (IDs oficiales de prueba de Google mientras se desarrolla)
+  // Google AdMob (IDs de producción de Karrito Android)
   // ---------------------------------------------------------------------------
 
-  /// App ID oficial de prueba de Google AdMob (también configurado en AndroidManifest.xml).
+  /// App ID de Google AdMob (sincronizado con AndroidManifest.xml).
   static const String admobAppIdAndroid =
       'ca-app-pub-3394998686748411~2905797025';
 
-  /// Bloque `karrito_banner_lista` (ID oficial de prueba de banner adaptativo).
+  /// Bloque `karrito_banner_lista` (banner adaptativo inferior).
   static const String admobBannerUnitIdAndroid =
       'ca-app-pub-3394998686748411/2518784212';
 
-  /// Bloque `karrito_intersticial_lista` (ID oficial de prueba de intersticial).
+  /// Bloque `karrito_intersticial_lista` (intersticial de respaldo).
   static const String admobInterstitialUnitIdAndroid =
       'ca-app-pub-3394998686748411/3511255506';
 
@@ -31,8 +21,7 @@ abstract final class MonetizationConfig {
   // RevenueCat (proyecto Karrito · solo planes mensuales, sin plan anual)
   // ---------------------------------------------------------------------------
 
-  /// Placeholder seguro para desarrollo. Reemplazar por la API Key pública de
-  /// Google Play (`goog_...`) desde RevenueCat -> Project Settings -> API Keys.
+  /// Clave pública SDK de Google Play (`goog_...`) del proyecto `Karrito` en RevenueCat.
   static const String revenueCatGoogleApiKey =
       'goog_tRuWXSFayIybVuZOScsjAbrtZXH';
 

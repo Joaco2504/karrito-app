@@ -36,10 +36,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google AdMob App ID (ID oficial de prueba; reemplazar antes de publicar en Google Play) -->
+        <!-- Google AdMob App ID de producción para Karrito Android -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-3394998686748411~2905797025" />
     </application>
     <queries>
         <intent>
