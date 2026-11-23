@@ -156,17 +156,31 @@ class _FakeSyncRemote implements KarritoSyncRemote {
     upsertedLists.add(row);
   }
 
+  final List<({String listId, Map<String, dynamic> values})> updatedLists =
+      <({String listId, Map<String, dynamic> values})>[];
+  final List<({String listId, String ownerUid})> deletedGuestMemberCalls =
+      <({String listId, String ownerUid})>[];
+
   @override
   Future<void> updateShoppingList(
     String listId,
     Map<String, dynamic> values,
-  ) async {}
+  ) async {
+    callOrder.add('shopping_lists_update');
+    updatedLists.add((listId: listId, values: values));
+  }
 
   @override
   Future<void> deleteShoppingList(String listId) async {}
 
   @override
   Future<void> deleteListMembership(String listId, String uid) async {}
+
+  @override
+  Future<void> deleteGuestListMembers(String listId, String ownerUid) async {
+    callOrder.add('delete_guest_members');
+    deletedGuestMemberCalls.add((listId: listId, ownerUid: ownerUid));
+  }
 
   @override
   Future<List<Map<String, dynamic>>> fetchListItems({
@@ -590,4 +604,53 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'stopLiveShare disables remote sharing, removes guest members, and clears local shareCode',
+    () async {
+      final now = DateTime.utc(2026, 11, 23, 12, 0);
+      final list = (await db.select(db.localLists).get()).first;
+      await (db.update(
+        db.localLists,
+      )..where((t) => t.id.equals(list.id))).write(
+        const LocalListsCompanion(
+          isShared: Value(true),
+          shareCode: Value('K7M4P9'),
+          syncStatus: Value('synced'),
+        ),
+      );
+      final sharedList = await (db.select(
+        db.localLists,
+      )..where((t) => t.id.equals(list.id))).getSingle();
+
+      final service = SupabaseSyncService(
+        db: db,
+        client: null,
+        authService: auth,
+        remote: remote,
+        clock: () => now,
+      );
+
+      await service.stopLiveShare(sharedList);
+
+      expect(remote.updatedLists, hasLength(1));
+      expect(remote.updatedLists.single.listId, list.id);
+      expect(remote.updatedLists.single.values['is_shared'], isFalse);
+      expect(remote.updatedLists.single.values['share_code'], isNull);
+
+      expect(remote.deletedGuestMemberCalls, hasLength(1));
+      expect(remote.deletedGuestMemberCalls.single.listId, list.id);
+      expect(
+        remote.deletedGuestMemberCalls.single.ownerUid,
+        auth.currentUserId,
+      );
+
+      final updatedLocal = await (db.select(
+        db.localLists,
+      )..where((t) => t.id.equals(list.id))).getSingle();
+      expect(updatedLocal.isShared, isFalse);
+      expect(updatedLocal.shareCode, isNull);
+      expect(updatedLocal.syncStatus, 'synced');
+    },
+  );
 }

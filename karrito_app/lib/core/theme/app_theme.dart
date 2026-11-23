@@ -368,6 +368,8 @@ class AppTheme {
     );
   }
 
+  static const String fontFamily = 'Plus Jakarta Sans';
+
   static ThemeData _buildTheme({
     required ColorScheme colorScheme,
     required Color scaffoldBackground,
@@ -384,33 +386,119 @@ class AppTheme {
   }) {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: scaffoldBackground,
       extensions: <ThemeExtension<dynamic>>[karritoColors],
     );
 
+    final textTheme = base.textTheme
+        .copyWith(
+          displayLarge: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 40,
+            fontWeight: FontWeight.w800,
+            height: 48 / 40,
+            letterSpacing: -1.0,
+            color: textPrimary,
+          ),
+          headlineLarge: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            height: 34 / 26,
+            letterSpacing: -0.39,
+            color: textPrimary,
+          ),
+          headlineMedium: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 30 / 22,
+            letterSpacing: -0.22,
+            color: textPrimary,
+          ),
+          headlineSmall: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            height: 24 / 18,
+            letterSpacing: 0,
+            color: textPrimary,
+          ),
+          titleLarge: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 26 / 20,
+            letterSpacing: -0.2,
+            color: textPrimary,
+          ),
+          titleMedium: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            height: 22 / 16,
+            letterSpacing: 0,
+            color: textPrimary,
+          ),
+          titleSmall: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w700,
+            height: 20 / 14.5,
+            color: textPrimary,
+          ),
+          bodyLarge: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 17,
+            fontWeight: FontWeight.w400,
+            height: 26 / 17,
+            color: textPrimary,
+          ),
+          bodyMedium: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            height: 23 / 15,
+            color: textPrimary,
+          ),
+          bodySmall: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            height: 20 / 13,
+            color: textSecondary,
+          ),
+          labelLarge: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            height: 18 / 14,
+            letterSpacing: 0.14,
+            color: textPrimary,
+          ),
+          labelMedium: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            height: 16 / 12,
+            letterSpacing: 0.24,
+            color: textPrimary,
+          ),
+          labelSmall: TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            height: 14 / 11,
+            letterSpacing: 0.33,
+            color: textSecondary,
+          ),
+        )
+        .apply(fontFamily: fontFamily);
+
     return base.copyWith(
-      textTheme: base.textTheme.copyWith(
-        headlineSmall: base.textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.45,
-          color: textPrimary,
-        ),
-        titleLarge: base.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.3,
-          color: textPrimary,
-        ),
-        titleMedium: base.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.15,
-          color: textPrimary,
-        ),
-        titleSmall: base.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: textPrimary,
-        ),
-      ),
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: scaffoldBackground,
         foregroundColor: textPrimary,
@@ -418,6 +506,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
           color: textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w800,
@@ -502,7 +591,11 @@ class AppTheme {
             return textPrimary;
           }),
           textStyle: const WidgetStatePropertyAll<TextStyle>(
-            TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+            TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -510,8 +603,8 @@ class AppTheme {
         filled: true,
         fillColor: karritoColors.fieldSurface,
         floatingLabelBehavior: FloatingLabelBehavior.never,
-        hintStyle: TextStyle(color: textSecondary),
-        labelStyle: TextStyle(color: textSecondary),
+        hintStyle: TextStyle(fontFamily: fontFamily, color: textSecondary),
+        labelStyle: TextStyle(fontFamily: fontFamily, color: textSecondary),
         constraints: const BoxConstraints(minHeight: 48),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -546,9 +639,10 @@ class AppTheme {
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.1,
+            letterSpacing: 0.14,
           ),
         ),
       ),
@@ -560,6 +654,7 @@ class AppTheme {
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 14.5,
             fontWeight: FontWeight.w700,
           ),
@@ -569,7 +664,11 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: karritoColors.accentSoft,
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(

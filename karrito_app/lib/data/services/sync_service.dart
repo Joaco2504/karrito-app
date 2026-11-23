@@ -36,6 +36,7 @@ abstract interface class SyncService {
   Future<void> syncAll();
   Future<void> refreshAccountPlanAndConfig();
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list);
+  Future<void> stopLiveShare(ShoppingListEntity list);
   Future<JoinedListResult> joinSharedListByCode(String rawCode);
   RealtimeChannel? subscribeToSharedList(String listId);
   Future<void> unsubscribeChannel(RealtimeChannel? channel);
@@ -55,6 +56,7 @@ abstract interface class KarritoSyncRemote {
   Future<void> updateShoppingList(String listId, Map<String, dynamic> values);
   Future<void> deleteShoppingList(String listId);
   Future<void> deleteListMembership(String listId, String uid);
+  Future<void> deleteGuestListMembers(String listId, String ownerUid);
   Future<List<Map<String, dynamic>>> fetchListItems({
     DateTime? updatedSince,
     Iterable<String>? listIds,
@@ -159,6 +161,15 @@ class _SupabaseSyncRemote implements KarritoSyncRemote {
         .delete()
         .eq('list_id', listId)
         .eq('user_id', uid);
+  }
+
+  @override
+  Future<void> deleteGuestListMembers(String listId, String ownerUid) async {
+    await _client
+        .from('list_members')
+        .delete()
+        .eq('list_id', listId)
+        .neq('user_id', ownerUid);
   }
 
   @override
@@ -280,6 +291,8 @@ class SupabaseSyncService implements SyncService {
   final Uuid _uuid;
 
   bool _isSyncing = false;
+  final Map<String, RealtimeChannel> _activeListChannels =
+      <String, RealtimeChannel>{};
 
   /// Extracts a concise diagnostic reference code from Supabase / network
   /// exceptions so user-facing error toasts can show `(Ref: 42501)` without
@@ -585,6 +598,63 @@ class SupabaseSyncService implements SyncService {
   }
 
   @override
+  Future<void> stopLiveShare(ShoppingListEntity list) async {
+    final signedIn = await _authService.ensureSignedInSilently();
+    final uid = _authService.currentUserId;
+    if (!signedIn || uid == null) {
+      throw const ShoppingActionException(AppStrings.liveOfflineError);
+    }
+
+    final now = _clock();
+    try {
+      await _remote.updateShoppingList(list.id, <String, dynamic>{
+        'is_shared': false,
+        'share_code': null,
+        'updated_at': now.toUtc().toIso8601String(),
+      });
+      await _remote.deleteGuestListMembers(list.id, uid);
+
+      final trackedChannel = _activeListChannels.remove(list.id);
+      if (trackedChannel != null) {
+        await unsubscribeChannel(trackedChannel);
+      }
+
+      await (_db.update(
+        _db.localLists,
+      )..where((t) => t.id.equals(list.id))).write(
+        LocalListsCompanion(
+          isShared: const Value(false),
+          shareCode: const Value(null),
+          updatedAt: Value(now),
+          syncStatus: const Value('synced'),
+        ),
+      );
+    } on ShoppingActionException {
+      rethrow;
+    } on SocketException {
+      throw const ShoppingActionException(AppStrings.liveOfflineError);
+    } on PostgrestException catch (e) {
+      _logPostgrestError('stopLiveShare', e);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
+    } on AuthException catch (e) {
+      _logAuthError('stopLiveShare', e);
+      throw ShoppingActionException(
+        AppStrings.syncFailedWithRef(extractDiagnosticCode(e)),
+      );
+    } catch (e) {
+      final lower = e.toString().toLowerCase();
+      if (lower.contains('socket') ||
+          lower.contains('host') ||
+          lower.contains('network')) {
+        throw const ShoppingActionException(AppStrings.liveOfflineError);
+      }
+      throw const ShoppingActionException(AppStrings.syncFailedError);
+    }
+  }
+
+  @override
   Future<JoinedListResult> joinSharedListByCode(String rawCode) async {
     final client = _client;
     if (client == null) {
@@ -731,6 +801,7 @@ class SupabaseSyncService implements SyncService {
             },
           )
           .subscribe();
+      _activeListChannels[listId] = channel;
       return channel;
     } catch (e) {
       debugPrint('Karrito Realtime subscribe failed: $e');
@@ -742,6 +813,7 @@ class SupabaseSyncService implements SyncService {
   Future<void> unsubscribeChannel(RealtimeChannel? channel) async {
     final client = _client;
     if (channel == null || client == null) return;
+    _activeListChannels.removeWhere((_, value) => identical(value, channel));
     try {
       await client.removeChannel(channel);
     } catch (e) {

@@ -6,6 +6,7 @@ import '../../core/constants/store_hierarchy.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/shopping_providers.dart';
 import '../widgets/google_mark_icon.dart';
+import '../widgets/karrito_asset_icon.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
 
@@ -509,7 +510,11 @@ class _OnboardingStepSlide extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                illustration,
+                _OnboardingVisualFrame(
+                  stepNumber: stepNumber,
+                  semanticLabel: title,
+                  fallbackIllustration: illustration,
+                ),
               ],
             ),
           ),
@@ -534,6 +539,69 @@ class _OnboardingStepSlide extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OnboardingVisualFrame extends StatelessWidget {
+  const _OnboardingVisualFrame({
+    required this.stepNumber,
+    required this.semanticLabel,
+    required this.fallbackIllustration,
+  });
+
+  final int stepNumber;
+  final String semanticLabel;
+  final Widget fallbackIllustration;
+
+  static String assetPathForStep(int stepNumber) =>
+      'assets/onboarding/step_$stepNumber.png';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final karritoColors = theme.extension<KarritoColors>()!;
+    final isDark = theme.brightness == Brightness.dark;
+    final assetPath = assetPathForStep(stepNumber);
+
+    return ValueListenableBuilder<int>(
+      valueListenable: KarritoAssetRegistry.revision,
+      builder: (context, _, _) {
+        if (!KarritoAssetRegistry.hasAsset(assetPath)) {
+          return fallbackIllustration;
+        }
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: karritoColors.border.withValues(alpha: isDark ? 0.8 : 0.7),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: karritoColors.shadowTint.withValues(
+                  alpha: isDark ? 0.45 : 0.2,
+                ),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: AspectRatio(
+              aspectRatio: 800 / 460,
+              child: Image.asset(
+                assetPath,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                semanticLabel: semanticLabel,
+                errorBuilder: (_, _, _) => fallbackIllustration,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

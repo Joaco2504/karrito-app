@@ -50,6 +50,9 @@ class _NoopSyncService implements SyncService {
   }
 
   @override
+  Future<void> stopLiveShare(ShoppingListEntity list) async {}
+
+  @override
   Future<JoinedListResult> joinSharedListByCode(String rawCode) {
     throw UnimplementedError();
   }
@@ -79,12 +82,12 @@ class _RecordingSoundService implements SoundFeedbackService {
 
 void main() {
   test(
-    'Drift schemaVersion 6 defaults sound, vibration, plan, and avatarChoice and persists updates',
+    'Drift schemaVersion 7 defaults sound, vibration, reminders, plan, and avatarChoice and persists updates',
     () async {
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
 
-      expect(db.schemaVersion, 6);
+      expect(db.schemaVersion, 7);
 
       final repo = ShoppingRepository(
         db: db,
@@ -94,30 +97,35 @@ void main() {
       final initial = await repo.watchPreferences().first;
       expect(initial.soundEnabled, isTrue);
       expect(initial.vibrationEnabled, isTrue);
+      expect(initial.remindersEnabled, isFalse);
       expect(initial.avatarChoice, 'avatar_1');
       expect(initial.googlePhotoUrl, isNull);
 
       await repo.updatePreferences(
         soundEnabled: false,
         vibrationEnabled: false,
+        remindersEnabled: true,
         avatarChoice: 'avatar_4',
         googlePhotoUrl: 'https://example.com/photo.jpg',
       );
       final updated = await repo.watchPreferences().first;
       expect(updated.soundEnabled, isFalse);
       expect(updated.vibrationEnabled, isFalse);
+      expect(updated.remindersEnabled, isTrue);
       expect(updated.avatarChoice, 'avatar_4');
       expect(updated.googlePhotoUrl, 'https://example.com/photo.jpg');
 
       await repo.updatePreferences(
         soundEnabled: true,
         vibrationEnabled: true,
+        remindersEnabled: false,
         clearGooglePhotoUrl: true,
         avatarChoice: 'avatar_1',
       );
       final restored = await repo.watchPreferences().first;
       expect(restored.soundEnabled, isTrue);
       expect(restored.vibrationEnabled, isTrue);
+      expect(restored.remindersEnabled, isFalse);
       expect(restored.googlePhotoUrl, isNull);
       expect(restored.avatarChoice, 'avatar_1');
     },

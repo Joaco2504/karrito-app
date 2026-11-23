@@ -2283,6 +2283,21 @@ class $LocalPreferencesTable extends LocalPreferences
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _remindersEnabledMeta = const VerificationMeta(
+    'remindersEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> remindersEnabled = GeneratedColumn<bool>(
+    'reminders_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("reminders_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _avatarChoiceMeta = const VerificationMeta(
     'avatarChoice',
   );
@@ -2385,6 +2400,7 @@ class $LocalPreferencesTable extends LocalPreferences
     keepScreenOn,
     soundEnabled,
     vibrationEnabled,
+    remindersEnabled,
     avatarChoice,
     googlePhotoUrl,
     planTier,
@@ -2454,6 +2470,15 @@ class $LocalPreferencesTable extends LocalPreferences
         vibrationEnabled.isAcceptableOrUnknown(
           data['vibration_enabled']!,
           _vibrationEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminders_enabled')) {
+      context.handle(
+        _remindersEnabledMeta,
+        remindersEnabled.isAcceptableOrUnknown(
+          data['reminders_enabled']!,
+          _remindersEnabledMeta,
         ),
       );
     }
@@ -2563,6 +2588,10 @@ class $LocalPreferencesTable extends LocalPreferences
         DriftSqlType.bool,
         data['${effectivePrefix}vibration_enabled'],
       )!,
+      remindersEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}reminders_enabled'],
+      )!,
       avatarChoice: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}avatar_choice'],
@@ -2613,6 +2642,7 @@ class UserPreferencesEntity extends DataClass
   final bool keepScreenOn;
   final bool soundEnabled;
   final bool vibrationEnabled;
+  final bool remindersEnabled;
   final String avatarChoice;
   final String? googlePhotoUrl;
   final String planTier;
@@ -2629,6 +2659,7 @@ class UserPreferencesEntity extends DataClass
     required this.keepScreenOn,
     required this.soundEnabled,
     required this.vibrationEnabled,
+    required this.remindersEnabled,
     required this.avatarChoice,
     this.googlePhotoUrl,
     required this.planTier,
@@ -2648,6 +2679,7 @@ class UserPreferencesEntity extends DataClass
     map['keep_screen_on'] = Variable<bool>(keepScreenOn);
     map['sound_enabled'] = Variable<bool>(soundEnabled);
     map['vibration_enabled'] = Variable<bool>(vibrationEnabled);
+    map['reminders_enabled'] = Variable<bool>(remindersEnabled);
     map['avatar_choice'] = Variable<String>(avatarChoice);
     if (!nullToAbsent || googlePhotoUrl != null) {
       map['google_photo_url'] = Variable<String>(googlePhotoUrl);
@@ -2674,6 +2706,7 @@ class UserPreferencesEntity extends DataClass
       keepScreenOn: Value(keepScreenOn),
       soundEnabled: Value(soundEnabled),
       vibrationEnabled: Value(vibrationEnabled),
+      remindersEnabled: Value(remindersEnabled),
       avatarChoice: Value(avatarChoice),
       googlePhotoUrl: googlePhotoUrl == null && nullToAbsent
           ? const Value.absent()
@@ -2706,6 +2739,7 @@ class UserPreferencesEntity extends DataClass
       keepScreenOn: serializer.fromJson<bool>(json['keepScreenOn']),
       soundEnabled: serializer.fromJson<bool>(json['soundEnabled']),
       vibrationEnabled: serializer.fromJson<bool>(json['vibrationEnabled']),
+      remindersEnabled: serializer.fromJson<bool>(json['remindersEnabled']),
       avatarChoice: serializer.fromJson<String>(json['avatarChoice']),
       googlePhotoUrl: serializer.fromJson<String?>(json['googlePhotoUrl']),
       planTier: serializer.fromJson<String>(json['planTier']),
@@ -2727,6 +2761,7 @@ class UserPreferencesEntity extends DataClass
       'keepScreenOn': serializer.toJson<bool>(keepScreenOn),
       'soundEnabled': serializer.toJson<bool>(soundEnabled),
       'vibrationEnabled': serializer.toJson<bool>(vibrationEnabled),
+      'remindersEnabled': serializer.toJson<bool>(remindersEnabled),
       'avatarChoice': serializer.toJson<String>(avatarChoice),
       'googlePhotoUrl': serializer.toJson<String?>(googlePhotoUrl),
       'planTier': serializer.toJson<String>(planTier),
@@ -2746,6 +2781,7 @@ class UserPreferencesEntity extends DataClass
     bool? keepScreenOn,
     bool? soundEnabled,
     bool? vibrationEnabled,
+    bool? remindersEnabled,
     String? avatarChoice,
     Value<String?> googlePhotoUrl = const Value.absent(),
     String? planTier,
@@ -2762,6 +2798,7 @@ class UserPreferencesEntity extends DataClass
     keepScreenOn: keepScreenOn ?? this.keepScreenOn,
     soundEnabled: soundEnabled ?? this.soundEnabled,
     vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
+    remindersEnabled: remindersEnabled ?? this.remindersEnabled,
     avatarChoice: avatarChoice ?? this.avatarChoice,
     googlePhotoUrl: googlePhotoUrl.present
         ? googlePhotoUrl.value
@@ -2792,6 +2829,9 @@ class UserPreferencesEntity extends DataClass
       vibrationEnabled: data.vibrationEnabled.present
           ? data.vibrationEnabled.value
           : this.vibrationEnabled,
+      remindersEnabled: data.remindersEnabled.present
+          ? data.remindersEnabled.value
+          : this.remindersEnabled,
       avatarChoice: data.avatarChoice.present
           ? data.avatarChoice.value
           : this.avatarChoice,
@@ -2827,6 +2867,7 @@ class UserPreferencesEntity extends DataClass
           ..write('keepScreenOn: $keepScreenOn, ')
           ..write('soundEnabled: $soundEnabled, ')
           ..write('vibrationEnabled: $vibrationEnabled, ')
+          ..write('remindersEnabled: $remindersEnabled, ')
           ..write('avatarChoice: $avatarChoice, ')
           ..write('googlePhotoUrl: $googlePhotoUrl, ')
           ..write('planTier: $planTier, ')
@@ -2848,6 +2889,7 @@ class UserPreferencesEntity extends DataClass
     keepScreenOn,
     soundEnabled,
     vibrationEnabled,
+    remindersEnabled,
     avatarChoice,
     googlePhotoUrl,
     planTier,
@@ -2868,6 +2910,7 @@ class UserPreferencesEntity extends DataClass
           other.keepScreenOn == this.keepScreenOn &&
           other.soundEnabled == this.soundEnabled &&
           other.vibrationEnabled == this.vibrationEnabled &&
+          other.remindersEnabled == this.remindersEnabled &&
           other.avatarChoice == this.avatarChoice &&
           other.googlePhotoUrl == this.googlePhotoUrl &&
           other.planTier == this.planTier &&
@@ -2886,6 +2929,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
   final Value<bool> keepScreenOn;
   final Value<bool> soundEnabled;
   final Value<bool> vibrationEnabled;
+  final Value<bool> remindersEnabled;
   final Value<String> avatarChoice;
   final Value<String?> googlePhotoUrl;
   final Value<String> planTier;
@@ -2902,6 +2946,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.keepScreenOn = const Value.absent(),
     this.soundEnabled = const Value.absent(),
     this.vibrationEnabled = const Value.absent(),
+    this.remindersEnabled = const Value.absent(),
     this.avatarChoice = const Value.absent(),
     this.googlePhotoUrl = const Value.absent(),
     this.planTier = const Value.absent(),
@@ -2919,6 +2964,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     this.keepScreenOn = const Value.absent(),
     this.soundEnabled = const Value.absent(),
     this.vibrationEnabled = const Value.absent(),
+    this.remindersEnabled = const Value.absent(),
     this.avatarChoice = const Value.absent(),
     this.googlePhotoUrl = const Value.absent(),
     this.planTier = const Value.absent(),
@@ -2936,6 +2982,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Expression<bool>? keepScreenOn,
     Expression<bool>? soundEnabled,
     Expression<bool>? vibrationEnabled,
+    Expression<bool>? remindersEnabled,
     Expression<String>? avatarChoice,
     Expression<String>? googlePhotoUrl,
     Expression<String>? planTier,
@@ -2954,6 +3001,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       if (keepScreenOn != null) 'keep_screen_on': keepScreenOn,
       if (soundEnabled != null) 'sound_enabled': soundEnabled,
       if (vibrationEnabled != null) 'vibration_enabled': vibrationEnabled,
+      if (remindersEnabled != null) 'reminders_enabled': remindersEnabled,
       if (avatarChoice != null) 'avatar_choice': avatarChoice,
       if (googlePhotoUrl != null) 'google_photo_url': googlePhotoUrl,
       if (planTier != null) 'plan_tier': planTier,
@@ -2973,6 +3021,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     Value<bool>? keepScreenOn,
     Value<bool>? soundEnabled,
     Value<bool>? vibrationEnabled,
+    Value<bool>? remindersEnabled,
     Value<String>? avatarChoice,
     Value<String?>? googlePhotoUrl,
     Value<String>? planTier,
@@ -2990,6 +3039,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
+      remindersEnabled: remindersEnabled ?? this.remindersEnabled,
       avatarChoice: avatarChoice ?? this.avatarChoice,
       googlePhotoUrl: googlePhotoUrl ?? this.googlePhotoUrl,
       planTier: planTier ?? this.planTier,
@@ -3024,6 +3074,9 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
     }
     if (vibrationEnabled.present) {
       map['vibration_enabled'] = Variable<bool>(vibrationEnabled.value);
+    }
+    if (remindersEnabled.present) {
+      map['reminders_enabled'] = Variable<bool>(remindersEnabled.value);
     }
     if (avatarChoice.present) {
       map['avatar_choice'] = Variable<String>(avatarChoice.value);
@@ -3062,6 +3115,7 @@ class LocalPreferencesCompanion extends UpdateCompanion<UserPreferencesEntity> {
           ..write('keepScreenOn: $keepScreenOn, ')
           ..write('soundEnabled: $soundEnabled, ')
           ..write('vibrationEnabled: $vibrationEnabled, ')
+          ..write('remindersEnabled: $remindersEnabled, ')
           ..write('avatarChoice: $avatarChoice, ')
           ..write('googlePhotoUrl: $googlePhotoUrl, ')
           ..write('planTier: $planTier, ')
@@ -5943,6 +5997,7 @@ typedef $$LocalPreferencesTableCreateCompanionBuilder =
       Value<bool> keepScreenOn,
       Value<bool> soundEnabled,
       Value<bool> vibrationEnabled,
+      Value<bool> remindersEnabled,
       Value<String> avatarChoice,
       Value<String?> googlePhotoUrl,
       Value<String> planTier,
@@ -5961,6 +6016,7 @@ typedef $$LocalPreferencesTableUpdateCompanionBuilder =
       Value<bool> keepScreenOn,
       Value<bool> soundEnabled,
       Value<bool> vibrationEnabled,
+      Value<bool> remindersEnabled,
       Value<String> avatarChoice,
       Value<String?> googlePhotoUrl,
       Value<String> planTier,
@@ -6012,6 +6068,11 @@ class $$LocalPreferencesTableFilterComposer
 
   ColumnFilters<bool> get vibrationEnabled => $composableBuilder(
     column: $table.vibrationEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get remindersEnabled => $composableBuilder(
+    column: $table.remindersEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6100,6 +6161,11 @@ class $$LocalPreferencesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get remindersEnabled => $composableBuilder(
+    column: $table.remindersEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get avatarChoice => $composableBuilder(
     column: $table.avatarChoice,
     builder: (column) => ColumnOrderings(column),
@@ -6176,6 +6242,11 @@ class $$LocalPreferencesTableAnnotationComposer
 
   GeneratedColumn<bool> get vibrationEnabled => $composableBuilder(
     column: $table.vibrationEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get remindersEnabled => $composableBuilder(
+    column: $table.remindersEnabled,
     builder: (column) => column,
   );
 
@@ -6262,6 +6333,7 @@ class $$LocalPreferencesTableTableManager
                 Value<bool> keepScreenOn = const Value.absent(),
                 Value<bool> soundEnabled = const Value.absent(),
                 Value<bool> vibrationEnabled = const Value.absent(),
+                Value<bool> remindersEnabled = const Value.absent(),
                 Value<String> avatarChoice = const Value.absent(),
                 Value<String?> googlePhotoUrl = const Value.absent(),
                 Value<String> planTier = const Value.absent(),
@@ -6278,6 +6350,7 @@ class $$LocalPreferencesTableTableManager
                 keepScreenOn: keepScreenOn,
                 soundEnabled: soundEnabled,
                 vibrationEnabled: vibrationEnabled,
+                remindersEnabled: remindersEnabled,
                 avatarChoice: avatarChoice,
                 googlePhotoUrl: googlePhotoUrl,
                 planTier: planTier,
@@ -6296,6 +6369,7 @@ class $$LocalPreferencesTableTableManager
                 Value<bool> keepScreenOn = const Value.absent(),
                 Value<bool> soundEnabled = const Value.absent(),
                 Value<bool> vibrationEnabled = const Value.absent(),
+                Value<bool> remindersEnabled = const Value.absent(),
                 Value<String> avatarChoice = const Value.absent(),
                 Value<String?> googlePhotoUrl = const Value.absent(),
                 Value<String> planTier = const Value.absent(),
@@ -6312,6 +6386,7 @@ class $$LocalPreferencesTableTableManager
                 keepScreenOn: keepScreenOn,
                 soundEnabled: soundEnabled,
                 vibrationEnabled: vibrationEnabled,
+                remindersEnabled: remindersEnabled,
                 avatarChoice: avatarChoice,
                 googlePhotoUrl: googlePhotoUrl,
                 planTier: planTier,

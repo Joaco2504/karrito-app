@@ -11,6 +11,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -53,6 +54,7 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Force modern WorkManager/Room over play-services-ads' transitive work-runtime 2.7.0
     // for R8 full mode and Android 14-16 / MIUI stability.
     implementation("androidx.work:work-runtime:2.9.1")

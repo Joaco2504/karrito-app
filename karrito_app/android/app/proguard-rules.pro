@@ -30,6 +30,7 @@
 -keep class com.llfbandit.record.** { *; }
 -keep class dev.steenbakker.mobile_scanner.** { *; }
 -keep class com.fluttercandies.flutter_image_compress.** { *; }
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
 
 # Suppress optional compile-only annotation warnings during R8 shrinking.
 -dontwarn com.google.errorprone.annotations.**

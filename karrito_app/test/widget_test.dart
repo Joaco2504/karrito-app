@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
@@ -188,12 +190,34 @@ class _TestMediaCaptureService implements MediaCaptureService {
 }
 
 class _TestPushNotificationService implements PushNotificationService {
+  bool grantLocalPermission = true;
+  int scheduledCount = 0;
+  int cancelledCount = 0;
+
   @override
   Future<void> initializeSafely() async {}
 
   @override
   Future<String?> requestPermissionAndRegisterToken(String? userId) async =>
       null;
+
+  @override
+  Future<bool> requestLocalNotificationPermission() async =>
+      grantLocalPermission;
+
+  @override
+  Future<void> schedulePendingItemsReminder({
+    required int pendingCount,
+    required String listTitle,
+    Duration delay = const Duration(hours: 24),
+  }) async {
+    scheduledCount++;
+  }
+
+  @override
+  Future<void> cancelPendingItemsReminder() async {
+    cancelledCount++;
+  }
 
   @override
   Future<void> dispose() async {}
@@ -234,12 +258,28 @@ class _TestSyncService implements SyncService {
   @override
   Future<void> refreshAccountPlanAndConfig() async {}
 
+  int stopLiveShareCalls = 0;
+
   @override
   Future<LiveShareOutcome> enableLiveShare(ShoppingListEntity list) async {
     if (!simulatePro) {
       return const LiveShareOutcome.requiresPro();
     }
+    await (db.update(db.localLists)..where((t) => t.id.equals(list.id))).write(
+      const LocalListsCompanion(
+        isShared: Value(true),
+        shareCode: Value('K7M4P9'),
+      ),
+    );
     return const LiveShareOutcome.ready('K7M4P9');
+  }
+
+  @override
+  Future<void> stopLiveShare(ShoppingListEntity list) async {
+    stopLiveShareCalls++;
+    await (db.update(db.localLists)..where((t) => t.id.equals(list.id))).write(
+      const LocalListsCompanion(isShared: Value(false), shareCode: Value(null)),
+    );
   }
 
   @override
@@ -554,7 +594,7 @@ void main() {
       expect(find.text('vecino@catamarca.test'), findsOneWidget);
 
       await tester.scrollUntilVisible(
-        find.text(AppStrings.settingsVibrationOnCheckTitle),
+        find.text(AppStrings.settingsGuideTitle),
         200,
       );
       await tester.pumpAndSettle();
@@ -563,6 +603,10 @@ void main() {
         find.text(AppStrings.settingsVibrationOnCheckTitle),
         findsOneWidget,
       );
+      expect(find.text(AppStrings.settingsRemindersTitle), findsOneWidget);
+      expect(find.text(AppStrings.settingsGuideTitle), findsOneWidget);
+      // FAQ accordion is no longer duplicated inside SettingsScreen.
+      expect(find.text(AppStrings.faqEntries.first.question), findsNothing);
 
       // Scroll down to mandatory "Cuenta y privacidad" section with delete button.
       await tester.scrollUntilVisible(
@@ -620,6 +664,256 @@ void main() {
       );
 
       // Flush pending toast auto-dismiss timer and unmount cleanly.
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      dbClosed = true;
+      await db.close();
+    },
+  );
+
+  testWidgets(
+    'Phase 5.3: Plus Jakarta Sans typography, onboarding assets, clipboard Pegar, Limpiar tachados, stop/leave live share, and 24h reminders',
+    (WidgetTester tester) async {
+      // Narrow phone viewport (360x800) to guarantee zero horizontal overflow on input chips.
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      // 1. Verify offline Plus Jakarta Sans TTF weights & onboarding demo assets exist.
+      for (final weight in const <String>[
+        'Regular',
+        'Medium',
+        'SemiBold',
+        'Bold',
+        'ExtraBold',
+      ]) {
+        expect(
+          File('assets/fonts/PlusJakartaSans-$weight.ttf').existsSync(),
+          isTrue,
+        );
+      }
+      for (var step = 1; step <= 3; step++) {
+        expect(File('assets/onboarding/step_$step.png').existsSync(), isTrue);
+      }
+      expect(File('assets/onboarding/README.txt').existsSync(), isTrue);
+
+      final lightTheme = AppTheme.light();
+      expect(
+        lightTheme.textTheme.displayLarge?.fontFamily,
+        AppTheme.fontFamily,
+      );
+      expect(lightTheme.textTheme.headlineMedium?.fontSize, 22);
+      expect(lightTheme.textTheme.labelSmall?.letterSpacing, 0.33);
+
+      // Mock platform Clipboard for empty & populated cases.
+      String? clipboardText;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'Clipboard.getData') {
+            return clipboardText == null
+                ? null
+                : <String, dynamic>{'text': clipboardText};
+          }
+          if (methodCall.method == 'Clipboard.setData') {
+            final args = methodCall.arguments as Map<dynamic, dynamic>?;
+            clipboardText = args?['text']?.toString();
+            return null;
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      final db = AppDatabase(NativeDatabase.memory());
+      final auth = _TestAuthService();
+      final ai = _TestAiClassifier();
+      final sync = _TestSyncService(db)..simulatePro = true;
+      final sound = _TestSoundFeedbackService();
+      final ads = _TestAdsCascadeService(db);
+      final push = _TestPushNotificationService();
+      var dbClosed = false;
+
+      // Mark onboarding completed so we start directly on ShoppingListScreen.
+      await (db.update(
+        db.localPreferences,
+      )..where((t) => t.id.equals(1))).write(
+        const LocalPreferencesCompanion(onboardingCompleted: Value(true)),
+      );
+
+      addTearDown(() async {
+        KarritoToast.dismissCurrent();
+        auth.dispose();
+        if (!dbClosed) {
+          dbClosed = true;
+          await db.close();
+        }
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supabaseInitializerProvider.overrideWithValue(() async => true),
+            appDatabaseProvider.overrideWithValue(db),
+            authServiceProvider.overrideWithValue(auth),
+            wakelockServiceProvider.overrideWithValue(_TestWakelockService()),
+            soundFeedbackServiceProvider.overrideWithValue(sound),
+            aiClassifierServiceProvider.overrideWithValue(ai),
+            syncServiceProvider.overrideWithValue(sync),
+            adsCascadeServiceProvider.overrideWithValue(ads),
+            subscriptionServiceProvider.overrideWithValue(
+              _TestSubscriptionService(),
+            ),
+            mediaCaptureServiceProvider.overrideWithValue(
+              _TestMediaCaptureService(),
+            ),
+            pushNotificationServiceProvider.overrideWithValue(push),
+            isOnlineProvider.overrideWithValue(true),
+          ],
+          child: const KarritoApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 2. Empty clipboard shows info toast; populated clipboard pastes into TextField.
+      expect(find.text(AppStrings.pasteClipboardButton), findsOneWidget);
+      expect(find.text(AppStrings.frequentButton), findsOneWidget);
+      expect(find.text(AppStrings.importRecipeButton), findsOneWidget);
+      expect(find.text(AppStrings.addItemsButton), findsOneWidget);
+
+      await tester.tap(find.text(AppStrings.pasteClipboardButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text(AppStrings.clipboardEmptyNotice), findsOneWidget);
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+
+      clipboardText = '2 kg de papa, 1 l leche, 1 caja ibuprofeno';
+      await tester.tap(find.text(AppStrings.pasteClipboardButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text(AppStrings.clipboardPastedNotice), findsOneWidget);
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.controller?.text, clipboardText);
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+
+      // Submit pasted items.
+      await tester.tap(find.text(AppStrings.addItemsButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Supermercado (2/2)'), findsOneWidget);
+
+      // 3. Check both Supermercado items -> Limpiar tachados (2) appears & clears with tombstones.
+      await tester.tap(find.text('Papa').first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Leche').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Leche').first);
+      await tester.pumpAndSettle();
+
+      final clearBtn = find.text(AppStrings.clearCheckedButton(2));
+      await tester.ensureVisible(clearBtn);
+      await tester.pumpAndSettle();
+      expect(clearBtn, findsOneWidget);
+      await tester.tap(clearBtn);
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.clearCheckedConfirmTitle), findsOneWidget);
+      await tester.tap(find.text(AppStrings.clearCheckedConfirmButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(
+        find.text(AppStrings.clearCheckedSuccessNotice(2)),
+        findsOneWidget,
+      );
+
+      final tombstones = await db.select(db.localPendingDeletions).get();
+      expect(tombstones.where((t) => t.entityType == 'item').length, 2);
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+
+      // 4. Enable live share on owned list, then tap "Dejar de compartir en vivo".
+      await tester.tap(find.byTooltip(AppStrings.shareListTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.shareLiveOption));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.stopLiveShareButton), findsOneWidget);
+
+      await tester.ensureVisible(find.text(AppStrings.stopLiveShareButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.stopLiveShareButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text(AppStrings.stopLiveShareConfirmButton), findsOneWidget);
+      await tester.tap(find.text(AppStrings.stopLiveShareConfirmButton));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(sync.stopLiveShareCalls, 1);
+      expect(find.text(AppStrings.stopLiveShareSuccessNotice), findsOneWidget);
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+
+      // 5. Join another user's shared list -> LiveShareCodeSheet shows "Salir de esta lista".
+      await tester.tap(find.byTooltip(AppStrings.shareListTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.shareJoinOption));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'K7M4P9');
+      await tester.tap(find.text(AppStrings.joinSubmitButton));
+      await tester.pumpAndSettle();
+      expect(find.text('Asado compartido'), findsOneWidget);
+
+      await tester.tap(find.text('Código K7M4P9'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text(AppStrings.leaveSharedListButton));
+      await tester.pumpAndSettle();
+      expect(find.text(AppStrings.leaveSharedListButton), findsOneWidget);
+      await tester.tap(find.text(AppStrings.leaveSharedListButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.leaveSharedListButton).last);
+      await tester.pumpAndSettle();
+      expect(find.text('Asado compartido'), findsNothing);
+
+      // 6. Enable reminders toggle in SettingsScreen -> pausing app schedules 24h reminder.
+      await tester.tap(find.byTooltip(AppStrings.profileMenuTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(AppStrings.profilePreferencesOption));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text(AppStrings.settingsRemindersTitle),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      final switches = find.byType(Switch);
+      await tester.tap(switches.last);
+      await tester.pumpAndSettle();
+
+      final updatedPrefs = await (db.select(
+        db.localPreferences,
+      )..where((t) => t.id.equals(1))).getSingle();
+      expect(updatedPrefs.remindersEnabled, isTrue);
+
+      // Trigger realistic OS background transition -> schedules 24h reminder for pending "Ibuprofeno".
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      expect(push.scheduledCount, 1);
+
+      final cancelledBefore = push.cancelledCount;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(push.cancelledCount, greaterThan(cancelledBefore));
+
       KarritoToast.dismissCurrent();
       await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox.shrink());

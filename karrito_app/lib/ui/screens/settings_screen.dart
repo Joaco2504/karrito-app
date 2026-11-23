@@ -9,8 +9,8 @@ import '../../providers/shopping_providers.dart';
 import '../widgets/karrito_bounce_button.dart';
 import '../widgets/karrito_selector_field.dart';
 import '../widgets/profile_avatar_widget.dart';
+import 'guide_faq_screen.dart';
 import 'monthly_expenses_screen.dart';
-import 'onboarding_screen.dart';
 import 'plans_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -21,8 +21,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  int? _openFaqIndex;
-
   Future<void> _confirmAndDeleteAccount() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -81,6 +79,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final keepScreenOn = prefs?.keepScreenOn ?? true;
     final soundEnabled = prefs?.soundEnabled ?? true;
     final vibrationEnabled = prefs?.vibrationEnabled ?? true;
+    final remindersEnabled = prefs?.remindersEnabled ?? false;
     final avatarChoice = prefs?.avatarChoice ?? KarritoAvatars.defaultChoice;
     final googlePhotoUrl = prefs?.googlePhotoUrl ?? account.photoUrl;
 
@@ -622,6 +621,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           padding: EdgeInsets.symmetric(vertical: 14),
                           child: Divider(height: 1),
                         ),
+                        _PreferenceToggleRow(
+                          icon: remindersEnabled
+                              ? Icons.notifications_active_outlined
+                              : Icons.notifications_off_outlined,
+                          iconBg: remindersEnabled
+                              ? karritoColors.accentContainer
+                              : karritoColors.fieldSurface,
+                          iconColor: remindersEnabled
+                              ? karritoColors.accentSoft
+                              : karritoColors.textSecondary,
+                          title: AppStrings.settingsRemindersTitle,
+                          subtitle: AppStrings.settingsRemindersSubtitle,
+                          value: remindersEnabled,
+                          showActiveBadge: true,
+                          onChanged: controller.setRemindersEnabled,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Divider(height: 1),
+                        ),
                         Row(
                           children: [
                             Container(
@@ -664,9 +683,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 onPressed: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute<void>(
-                                      builder: (_) => const OnboardingScreen(
-                                        isReviewMode: true,
-                                      ),
+                                      builder: (_) => const GuideFaqScreen(),
                                     ),
                                   );
                                 },
@@ -689,28 +706,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 22),
 
-                // SECTION 4: Preguntas frecuentes
-                const _SectionHeading(
-                  icon: Icons.quiz_outlined,
-                  title: AppStrings.faqSectionTitle,
-                ),
-                const SizedBox(height: 10),
-                for (var i = 0; i < AppStrings.faqEntries.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 10),
-                  _FaqAccordionCard(
-                    question: AppStrings.faqEntries[i].question,
-                    answer: AppStrings.faqEntries[i].answer,
-                    isOpen: _openFaqIndex == i,
-                    onTap: () {
-                      setState(() {
-                        _openFaqIndex = _openFaqIndex == i ? null : i;
-                      });
-                    },
-                  ),
-                ],
-                const SizedBox(height: 22),
-
-                // SECTION 5: Cuenta y privacidad (requisito obligatorio Google Play)
+                // SECTION 4: Cuenta y privacidad (requisito obligatorio Google Play)
                 const _SectionHeading(
                   icon: Icons.privacy_tip_outlined,
                   title: AppStrings.accountPrivacySection,
@@ -905,123 +901,6 @@ class _PreferenceToggleRow extends StatelessWidget {
         const SizedBox(width: 8),
         Switch(value: value, onChanged: onChanged),
       ],
-    );
-  }
-}
-
-class _FaqAccordionCard extends StatelessWidget {
-  const _FaqAccordionCard({
-    required this.question,
-    required this.answer,
-    required this.isOpen,
-    required this.onTap,
-  });
-
-  final String question;
-  final String answer;
-  final bool isOpen;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final karritoColors = theme.extension<KarritoColors>()!;
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
-    final duration = disableAnimations
-        ? Duration.zero
-        : const Duration(milliseconds: 220);
-
-    return AnimatedContainer(
-      duration: duration,
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isOpen ? karritoColors.accentSoft : karritoColors.border,
-          width: isOpen ? 1.5 : 1.0,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: duration,
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isOpen
-                            ? karritoColors.lime
-                            : karritoColors.border,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        question,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    AnimatedRotation(
-                      turns: isOpen ? 0.5 : 0.0,
-                      duration: duration,
-                      curve: Curves.easeOutCubic,
-                      child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 22,
-                        color: isOpen
-                            ? karritoColors.accentSoft
-                            : karritoColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                AnimatedCrossFade(
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: Padding(
-                    padding: const EdgeInsets.only(top: 12, left: 21, right: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Divider(height: 1),
-                        const SizedBox(height: 10),
-                        Text(
-                          answer,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: karritoColors.textSecondary,
-                            height: 1.48,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  crossFadeState: isOpen
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  duration: duration,
-                  sizeCurve: Curves.easeInOutCubic,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

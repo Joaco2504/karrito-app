@@ -63,8 +63,30 @@ class AppStrings {
   static const String inputHint =
       'Escribí o pegá lo que te falta (ej: 2 kg de papa, leche, 10 tornillos)';
   static const String addItemsButton = 'Agregar';
+  static const String pasteClipboardButton = 'Pegar';
+  static const String clipboardEmptyNotice =
+      'No hay texto copiado en el portapapeles.';
+  static const String clipboardPastedNotice =
+      'Pegamos tu texto desde el portapapeles.';
   static const String frequentButton = 'Frecuentes';
   static const String reorderAislesButton = 'Ordenar pasillos';
+  static String clearCheckedButton(int count) => 'Limpiar tachados ($count)';
+  static const String clearCheckedConfirmTitle = 'Limpiar productos tachados';
+  static String clearCheckedConfirmBody(int count, String? storeName) {
+    final target = storeName == null
+        ? 'esta lista'
+        : '"$storeName" en esta lista';
+    return count == 1
+        ? 'Se va a eliminar 1 producto tachado de $target.'
+        : 'Se van a eliminar $count productos tachados de $target.';
+  }
+
+  static const String clearCheckedConfirmButton = 'Limpiar';
+  static String clearCheckedSuccessNotice(int count) => count == 1
+      ? 'Eliminamos 1 producto tachado.'
+      : 'Eliminamos $count productos tachados.';
+  static const String pullToRefreshCompletedNotice =
+      'Lista y ofertas locales actualizadas.';
   static const String processingItemsLabel = 'Ordenando tu lista...';
 
   static const String wakelockOnTooltip = 'Pantalla encendida activada';
@@ -216,6 +238,17 @@ class AppStrings {
   static const String copyCodeButton = 'Copiar código';
   static const String codeCopiedNotice = 'Código copiado para compartir.';
   static const String sendInviteButton = 'Enviar por WhatsApp';
+  static const String stopLiveShareButton = 'Dejar de compartir en vivo';
+  static const String stopLiveShareConfirmTitle = 'Dejar de compartir en vivo';
+  static String stopLiveShareConfirmBody(String title) =>
+      'Se va a cerrar el acceso compartido de "$title" y los invitados dejarán de recibir cambios en vivo. Tus productos siguen guardados.';
+  static const String stopLiveShareConfirmButton = 'Dejar de compartir';
+  static const String stopLiveShareSuccessNotice =
+      'Cerraste el modo en vivo. La lista volvió a ser solo tuya.';
+  static const String leaveSharedListButton = 'Salir de esta lista';
+  static const String leaveSharedListConfirmTitle = 'Salir de la lista';
+  static String leaveSharedListSuccessNotice(String title) =>
+      'Saliste de la lista compartida "$title".';
   static const String proLiveSheetTitle = 'Listas en vivo en el plan Pro';
   static const String proLiveSheetBody =
       'Crear listas colaborativas en vivo con código compartido forma parte del plan Pro (\$ 3 USD por mes). Igual podés unirte gratis a la lista de otra persona si te pasan un código.';
@@ -314,16 +347,32 @@ class AppStrings {
   static const String settingsVibrationOnCheckTitle = 'Vibración al tachar';
   static const String settingsVibrationOnCheckSubtitle =
       'Acompaña cada producto tachado con una vibración breve.';
+  static const String settingsRemindersTitle =
+      'Recordatorios de compras pendientes';
+  static const String settingsRemindersSubtitle =
+      'Te avisa a las 24 h si te quedaron productos sin tachar en la lista.';
+  static const String remindersEnabledNotice =
+      'Recordatorios de compras pendientes activados.';
+  static const String remindersDisabledNotice =
+      'Recordatorios de compras pendientes desactivados.';
+  static const String remindersPermissionDeniedError =
+      'No pudimos activar los recordatorios porque las notificaciones están desactivadas. Habilitalas desde los ajustes del teléfono.';
+  static const String reminderNotificationTitle =
+      'Te quedaron productos pendientes';
+  static String reminderNotificationBody(int pendingCount, String listTitle) =>
+      pendingCount == 1
+      ? 'Tenés 1 producto sin tachar en "$listTitle".'
+      : 'Tenés $pendingCount productos sin tachar en "$listTitle".';
   static const String settingsActiveBadge = 'Activo';
   static const String settingsLocalBadge = 'Local';
   static const String settingsNoBackupBadge = 'Sin respaldo';
   static const String settingsBackedUpBadge = 'Respaldada';
   static const String settingsCityHelper =
       'Usamos tu localidad para adaptar la experiencia a los comercios de tu zona.';
-  static const String settingsGuideTitle = 'Guía inicial';
+  static const String settingsGuideTitle = 'Guía básica y preguntas frecuentes';
   static const String settingsGuideSubtitle =
-      'Volvé a ver cómo cargar y ordenar productos.';
-  static const String settingsViewGuideButton = 'Ver guía';
+      'Tutorial paso a paso y respuestas rápidas sobre Karrito.';
+  static const String settingsViewGuideButton = 'Abrir guía';
   static const String settingsFooterNote =
       'Karrito · Pensado para hacer las compras sin vueltas.';
   static const String editItemSubtitle = 'Corregí cantidad, comercio o pasillo';
@@ -405,7 +454,7 @@ class AppStrings {
       'Seleccioná una captura de pantalla o foto guardada.';
   static const String proMediaOfflineError =
       'Necesitás conexión a internet para procesar audios, fotos o recetas con IA. Probá de nuevo cuando vuelva la señal.';
-  static const String importRecipeButton = 'Receta';
+  static const String importRecipeButton = 'Recetas';
   static const String importRecipeTitle = 'Importar receta o proyecto';
   static const String importRecipeSubtitle =
       'Pegá los ingredientes de una comida o los materiales de un arreglo y Karrito los agrupa por comercio.';

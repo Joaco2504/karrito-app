@@ -98,6 +98,8 @@ class LocalPreferences extends Table {
   BoolColumn get soundEnabled => boolean().withDefault(const Constant(true))();
   BoolColumn get vibrationEnabled =>
       boolean().withDefault(const Constant(true))();
+  BoolColumn get remindersEnabled =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get avatarChoice =>
       text().withDefault(const Constant('avatar_1'))();
   TextColumn get googlePhotoUrl => text().nullable()();
@@ -180,7 +182,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -282,6 +284,13 @@ class AppDatabase extends _$AppDatabase {
           await _createTableIfMissing(m, localCachedAds);
           await _createTableIfMissing(m, localExpenseHistory);
           await _createPhase5Indexes();
+        }
+        if (from < 7) {
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.remindersEnabled,
+          );
         }
       },
       beforeOpen: (details) async {

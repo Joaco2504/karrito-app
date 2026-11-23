@@ -337,6 +337,9 @@ class LiveShareCodeSheet {
     required BuildContext context,
     required String listTitle,
     required String shareCode,
+    bool isJoinedRemote = false,
+    Future<bool> Function()? onStopLiveShare,
+    Future<bool> Function()? onLeaveSharedList,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -352,306 +355,499 @@ class LiveShareCodeSheet {
           listTitle,
           shareCode,
         );
+        var isSubmittingAction = false;
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: SingleChildScrollView(
-            child: Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? const [Color(0xFF2D1B54), Color(0xFF1E1338)]
-                      : const [Color(0xFF531CB3), Color(0xFF3A008C)],
-                ),
-                borderRadius: BorderRadius.circular(28),
-                border: isDark
-                    ? Border.all(color: const Color(0xFF432D73))
-                    : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: karritoColors.accent.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -28,
-                    bottom: -28,
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFA078FF).withValues(alpha: 0.22),
-                      ),
+        return StatefulBuilder(
+          builder: (stateContext, setSheetState) {
+            Future<void> handleStopLive() async {
+              if (onStopLiveShare == null || isSubmittingAction) return;
+              final confirmed = await showDialog<bool>(
+                context: stateContext,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text(AppStrings.stopLiveShareConfirmTitle),
+                  content: Text(AppStrings.stopLiveShareConfirmBody(listTitle)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: const Text(AppStrings.cancelButton),
                     ),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(
+                          dialogContext,
+                        ).colorScheme.error,
+                        foregroundColor: Theme.of(
+                          dialogContext,
+                        ).colorScheme.onError,
+                      ),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      child: const Text(AppStrings.stopLiveShareConfirmButton),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true || !stateContext.mounted) return;
+              setSheetState(() => isSubmittingAction = true);
+              final ok = await onStopLiveShare();
+              if (!stateContext.mounted) return;
+              if (ok) {
+                Navigator.of(sheetContext).pop();
+              } else {
+                setSheetState(() => isSubmittingAction = false);
+              }
+            }
+
+            Future<void> handleLeaveShared() async {
+              if (onLeaveSharedList == null || isSubmittingAction) return;
+              final confirmed = await showDialog<bool>(
+                context: stateContext,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text(AppStrings.leaveSharedListConfirmTitle),
+                  content: Text(
+                    AppStrings.leaveSharedListConfirmBody(listTitle),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: karritoColors.lime,
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      AppStrings.liveListBadge.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.5,
-                                        color: karritoColors.onLime,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    AppStrings.liveShareTitle,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    AppStrings.liveShareSubtitle,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFFE9DDFF),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Container(
-                              width: 40,
-                              height: 40,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: const Text(AppStrings.cancelButton),
+                    ),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(
+                          dialogContext,
+                        ).colorScheme.error,
+                        foregroundColor: Theme.of(
+                          dialogContext,
+                        ).colorScheme.onError,
+                      ),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      child: const Text(AppStrings.leaveSharedListButton),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true || !stateContext.mounted) return;
+              setSheetState(() => isSubmittingAction = true);
+              final ok = await onLeaveSharedList();
+              if (!stateContext.mounted) return;
+              if (ok) {
+                Navigator.of(sheetContext).pop();
+              } else {
+                setSheetState(() => isSubmittingAction = false);
+              }
+            }
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? const [Color(0xFF2D1B54), Color(0xFF1E1338)]
+                              : const [Color(0xFF531CB3), Color(0xFF3A008C)],
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        border: isDark
+                            ? Border.all(color: const Color(0xFF432D73))
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: karritoColors.accent.withValues(alpha: 0.3),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: -28,
+                            bottom: -28,
+                            child: Container(
+                              width: 130,
+                              height: 130,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.14),
                                 shape: BoxShape.circle,
+                                color: const Color(
+                                  0xFFA078FF,
+                                ).withValues(alpha: 0.22),
                               ),
-                              child: const Icon(
-                                Icons.sync_alt_rounded,
-                                color: Colors.white,
-                                size: 21,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.22,
-                                      ),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: QrImageView(
-                                  data: ShareCodeHelper.buildJoinUri(shareCode),
-                                  version: QrVersions.auto,
-                                  size: 172,
-                                  gapless: true,
-                                  backgroundColor: Colors.white,
-                                  padding: const EdgeInsets.all(6),
-                                  eyeStyle: const QrEyeStyle(
-                                    eyeShape: QrEyeShape.square,
-                                    color: Color(0xFF1D1A28),
-                                  ),
-                                  dataModuleStyle: const QrDataModuleStyle(
-                                    dataModuleShape: QrDataModuleShape.square,
-                                    color: Color(0xFF1D1A28),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                AppStrings.liveQrCaption,
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: const Color(0xFFE9DDFF),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.35 : 0.18,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Text(
-                                AppStrings.shareCodeLabel,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: const Color(0xFFD0BCFF),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Semantics(
-                                label: shareCode,
-                                child: Row(
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    for (var i = 0; i < chars.length; i++) ...[
-                                      if (i > 0) const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Container(
-                                          height: 50,
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                            color: isDark
-                                                ? const Color(0xFF171026)
-                                                : Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              14,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
                                             ),
-                                            border: isDark
-                                                ? Border.all(
-                                                    color: const Color(
-                                                      0xFF4B377A,
-                                                    ),
-                                                  )
-                                                : null,
+                                            decoration: BoxDecoration(
+                                              color: karritoColors.lime,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              AppStrings.liveListBadge
+                                                  .toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                                color: karritoColors.onLime,
+                                              ),
+                                            ),
                                           ),
-                                          child: Text(
-                                            chars[i],
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            AppStrings.liveShareTitle,
                                             style: theme.textTheme.titleLarge
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.w800,
-                                                  color: isDark
-                                                      ? Colors.white
-                                                      : const Color(0xFF3A008C),
+                                                  color: Colors.white,
                                                 ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            AppStrings.liveShareSubtitle,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: const Color(
+                                                    0xFFE9DDFF,
+                                                  ),
+                                                  height: 1.4,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.sync_alt_rounded,
+                                        color: Colors.white,
+                                        size: 21,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            22,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.22,
+                                              ),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                        ),
+                                        child: QrImageView(
+                                          data: ShareCodeHelper.buildJoinUri(
+                                            shareCode,
+                                          ),
+                                          version: QrVersions.auto,
+                                          size: 172,
+                                          gapless: true,
+                                          backgroundColor: Colors.white,
+                                          padding: const EdgeInsets.all(6),
+                                          eyeStyle: const QrEyeStyle(
+                                            eyeShape: QrEyeShape.square,
+                                            color: Color(0xFF1D1A28),
+                                          ),
+                                          dataModuleStyle:
+                                              const QrDataModuleStyle(
+                                                dataModuleShape:
+                                                    QrDataModuleShape.square,
+                                                color: Color(0xFF1D1A28),
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        AppStrings.liveQrCaption,
+                                        textAlign: TextAlign.center,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: const Color(0xFFE9DDFF),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.35 : 0.18,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        AppStrings.shareCodeLabel,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: const Color(0xFFD0BCFF),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Semantics(
+                                        label: shareCode,
+                                        child: Row(
+                                          children: [
+                                            for (
+                                              var i = 0;
+                                              i < chars.length;
+                                              i++
+                                            ) ...[
+                                              if (i > 0)
+                                                const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Container(
+                                                  height: 50,
+                                                  alignment: Alignment.center,
+                                                  decoration: BoxDecoration(
+                                                    color: isDark
+                                                        ? const Color(
+                                                            0xFF171026,
+                                                          )
+                                                        : Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                    border: isDark
+                                                        ? Border.all(
+                                                            color: const Color(
+                                                              0xFF4B377A,
+                                                            ),
+                                                          )
+                                                        : null,
+                                                  ),
+                                                  child: Text(
+                                                    chars[i],
+                                                    style: theme
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color: isDark
+                                                              ? Colors.white
+                                                              : const Color(
+                                                                  0xFF3A008C,
+                                                                ),
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      KarritoBounceButton(
+                                        child: TextButton.icon(
+                                          onPressed: () async {
+                                            await Clipboard.setData(
+                                              ClipboardData(text: shareCode),
+                                            );
+                                            if (sheetContext.mounted) {
+                                              KarritoToast.show(
+                                                sheetContext,
+                                                message:
+                                                    AppStrings.codeCopiedNotice,
+                                                type: KarritoToastType.success,
+                                              );
+                                            }
+                                          },
+                                          style: TextButton.styleFrom(
+                                            backgroundColor: Colors.white
+                                                .withValues(alpha: 0.14),
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.copy_rounded,
+                                            size: 16,
+                                          ),
+                                          label: const Text(
+                                            AppStrings.copyCodeButton,
                                           ),
                                         ),
                                       ),
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              KarritoBounceButton(
-                                child: TextButton.icon(
-                                  onPressed: () async {
-                                    await Clipboard.setData(
-                                      ClipboardData(text: shareCode),
-                                    );
-                                    if (sheetContext.mounted) {
-                                      KarritoToast.show(
-                                        sheetContext,
-                                        message: AppStrings.codeCopiedNotice,
-                                        type: KarritoToastType.success,
+                                const SizedBox(height: 14),
+                                KarritoBounceButton(
+                                  child: FilledButton.icon(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: karritoColors.cta,
+                                      foregroundColor: karritoColors.onCta,
+                                      minimumSize: const Size.fromHeight(50),
+                                    ),
+                                    onPressed: () async {
+                                      await SharePlus.instance.share(
+                                        ShareParams(
+                                          text: invitePreview,
+                                          subject: '$listTitle - Karrito',
+                                        ),
                                       );
-                                    }
-                                  },
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: Colors.white.withValues(
-                                      alpha: 0.14,
+                                    },
+                                    icon: const Icon(
+                                      Icons.send_rounded,
+                                      size: 18,
                                     ),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
+                                    label: const Text(
+                                      AppStrings.sendInviteButton,
                                     ),
                                   ),
-                                  icon: const Icon(
-                                    Icons.copy_rounded,
-                                    size: 16,
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                  label: const Text(AppStrings.copyCodeButton),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.28),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text(
+                                    '"$invitePreview"',
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        KarritoBounceButton(
-                          child: FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: karritoColors.cta,
-                              foregroundColor: karritoColors.onCta,
-                              minimumSize: const Size.fromHeight(50),
-                            ),
-                            onPressed: () async {
-                              await SharePlus.instance.share(
-                                ShareParams(
-                                  text: invitePreview,
-                                  subject: '$listTitle - Karrito',
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.send_rounded, size: 18),
-                            label: const Text(AppStrings.sendInviteButton),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.28),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            '"$invitePreview"',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontStyle: FontStyle.italic,
-                              fontSize: 12,
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    if (!isJoinedRemote && onStopLiveShare != null) ...[
+                      const SizedBox(height: 14),
+                      KarritoBounceButton(
+                        enabled: !isSubmittingAction,
+                        child: OutlinedButton.icon(
+                          onPressed: isSubmittingAction ? null : handleStopLive,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: karritoColors.softDestructive,
+                            side: BorderSide(
+                              color: karritoColors.softDestructive.withValues(
+                                alpha: 0.5,
+                              ),
+                              width: 1.2,
+                            ),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          icon: isSubmittingAction
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: karritoColors.softDestructive,
+                                  ),
+                                )
+                              : const Icon(Icons.link_off_rounded, size: 19),
+                          label: const Text(AppStrings.stopLiveShareButton),
+                        ),
+                      ),
+                    ] else if (isJoinedRemote && onLeaveSharedList != null) ...[
+                      const SizedBox(height: 14),
+                      KarritoBounceButton(
+                        enabled: !isSubmittingAction,
+                        child: OutlinedButton.icon(
+                          onPressed: isSubmittingAction
+                              ? null
+                              : handleLeaveShared,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: karritoColors.softDestructive,
+                            side: BorderSide(
+                              color: karritoColors.softDestructive.withValues(
+                                alpha: 0.5,
+                              ),
+                              width: 1.2,
+                            ),
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          icon: isSubmittingAction
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: karritoColors.softDestructive,
+                                  ),
+                                )
+                              : const Icon(Icons.exit_to_app_rounded, size: 19),
+                          label: const Text(AppStrings.leaveSharedListButton),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

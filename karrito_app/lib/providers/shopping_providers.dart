@@ -541,6 +541,48 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     }
   }
 
+  Future<bool> stopLiveShareForActiveList() async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null) return false;
+    if (!ref.read(isOnlineProvider)) {
+      _emitFeedback(AppStrings.liveOfflineError, isError: true);
+      return false;
+    }
+
+    try {
+      await _sync.stopLiveShare(activeList);
+      _emitFeedback(AppStrings.stopLiveShareSuccessNotice);
+      return true;
+    } on ShoppingActionException catch (e) {
+      _emitFeedback(e.message, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(AppStrings.syncFailedError, isError: true);
+      return false;
+    }
+  }
+
+  Future<bool> leaveSharedListForActiveList() async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null) return false;
+
+    try {
+      final replacementId = await _repo.leaveSharedList(activeList.id);
+      if (replacementId != null) {
+        ref.read(activeListIdProvider.notifier).select(replacementId);
+      }
+      _triggerBackgroundSync();
+      _emitFeedback(AppStrings.leaveSharedListSuccessNotice(activeList.title));
+      return true;
+    } on ShoppingActionException catch (e) {
+      _emitFeedback(e.message, isError: true);
+      return false;
+    } catch (_) {
+      _emitFeedback(AppStrings.syncFailedError, isError: true);
+      return false;
+    }
+  }
+
   Future<String?> joinSharedListByCode(String code) async {
     if (!ref.read(isOnlineProvider)) {
       return AppStrings.liveOfflineError;
@@ -810,6 +852,24 @@ class ShoppingController extends Notifier<ShoppingUiState> {
     await ref.read(adsCascadeServiceProvider).refreshLocalAds(city);
   }
 
+  Future<void> refreshFromPull() async {
+    if (!ref.read(isOnlineProvider)) {
+      _emitFeedback(AppStrings.syncFailedError, isError: true);
+      return;
+    }
+
+    try {
+      await _sync.syncAll();
+      await refreshPlanAndAds();
+      ref.read(accountStatusProvider.notifier).refresh();
+      _emitFeedback(AppStrings.pullToRefreshCompletedNotice);
+    } catch (error) {
+      debugPrint('Karrito pull-to-refresh failed: $error');
+      final refCode = SupabaseSyncService.extractDiagnosticCode(error);
+      _emitFeedback(AppStrings.syncFailedWithRef(refCode), isError: true);
+    }
+  }
+
   Future<bool> deleteAccountAndWipeData() async {
     if (state.isDeletingAccount) return false;
     if (!ref.read(isOnlineProvider)) {
@@ -851,6 +911,20 @@ class ShoppingController extends Notifier<ShoppingUiState> {
   Future<void> deleteItem(ShoppingItemEntity item) async {
     await _repo.deleteItem(item);
     _triggerBackgroundSync();
+  }
+
+  Future<int> clearCheckedItemsForActiveList({String? storeCategory}) async {
+    final activeList = ref.read(activeListProvider);
+    if (activeList == null) return 0;
+    final removed = await _repo.clearCheckedItems(
+      listId: activeList.id,
+      storeCategory: storeCategory,
+    );
+    if (removed > 0) {
+      _emitFeedback(AppStrings.clearCheckedSuccessNotice(removed));
+      _triggerBackgroundSync();
+    }
+    return removed;
   }
 
   Future<bool> createList(String title) async {
@@ -919,6 +993,27 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
   Future<void> setVibrationEnabled(bool enabled) async {
     await _repo.updatePreferences(vibrationEnabled: enabled);
+  }
+
+  Future<bool> setRemindersEnabled(bool enabled) async {
+    final pushService = ref.read(pushNotificationServiceProvider);
+    if (!enabled) {
+      await _repo.updatePreferences(remindersEnabled: false);
+      unawaited(pushService.cancelPendingItemsReminder());
+      _emitFeedback(AppStrings.remindersDisabledNotice);
+      return true;
+    }
+
+    final granted = await pushService.requestLocalNotificationPermission();
+    if (!granted) {
+      await _repo.updatePreferences(remindersEnabled: false);
+      _emitFeedback(AppStrings.remindersPermissionDeniedError, isError: true);
+      return false;
+    }
+
+    await _repo.updatePreferences(remindersEnabled: true);
+    _emitFeedback(AppStrings.remindersEnabledNotice);
+    return true;
   }
 
   Future<void> setAvatarChoice(String avatarChoice) async {

@@ -125,4 +125,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(tapped, isTrue);
   });
+
+  testWidgets(
+    'KarritoToast animates linear countdown bar from 100% to 0% and triggers exit at 0%',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => KarritoToast.show(
+                  context,
+                  message: 'Eliminamos 2 productos tachados.',
+                  type: KarritoToastType.success,
+                  duration: const Duration(milliseconds: 1000),
+                ),
+                child: const Text('Disparar toast'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Disparar toast'));
+      await tester.pump();
+
+      final barFinder = find.byKey(KarritoToast.countdownBarKey);
+      expect(barFinder, findsOneWidget);
+      final initialValue =
+          tester.widget<LinearProgressIndicator>(barFinder).value ?? 0.0;
+      expect(initialValue, greaterThan(0.9));
+
+      // Midway through visible duration, progress shrinks smoothly towards 0.
+      await tester.pump(const Duration(milliseconds: 500));
+      final midValue =
+          tester.widget<LinearProgressIndicator>(barFinder).value ?? 1.0;
+      expect(midValue, lessThan(0.65));
+      expect(midValue, greaterThan(0.3));
+      expect(find.text('Eliminamos 2 productos tachados.'), findsOneWidget);
+
+      // Right after countdown reaches 0% + 240 ms exit animation, overlay is gone.
+      await tester.pump(const Duration(milliseconds: 550));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Eliminamos 2 productos tachados.'), findsNothing);
+    },
+  );
 }

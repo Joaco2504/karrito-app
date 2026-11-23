@@ -3,27 +3,59 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
+
+import '../../core/constants/app_strings.dart';
 
 abstract interface class PushNotificationService {
   Future<void> initializeSafely();
   Future<String?> requestPermissionAndRegisterToken(String? userId);
+  Future<bool> requestLocalNotificationPermission();
+  Future<void> schedulePendingItemsReminder({
+    required int pendingCount,
+    required String listTitle,
+    Duration delay = const Duration(hours: 24),
+  });
+  Future<void> cancelPendingItemsReminder();
   Future<void> dispose();
 }
 
-/// Manages Firebase Cloud Messaging initialization, permission prompting on
-/// live collaborative list usage, and persisting `fcm_token` into
-/// `karrito.users_profile`. Safe in headless tests or devices without GMS.
+/// Manages Firebase Cloud Messaging and local scheduled reminders for pending
+/// shopping items. Every native SDK call is isolated inside `try / catch` so
+/// neither startup nor headless tests can ever crash.
 class FirebasePushNotificationService implements PushNotificationService {
-  FirebasePushNotificationService(this._client);
+  FirebasePushNotificationService(
+    this._client, {
+    FlutterLocalNotificationsPlugin? localNotifications,
+  }) : _localNotifications =
+           localNotifications ?? FlutterLocalNotificationsPlugin();
+
+  static const int pendingReminderNotificationId = 5301;
+  static const String _reminderChannelId = 'karrito_pending_reminders';
+  static const String _reminderChannelName = 'Recordatorios de compras';
+  static const String _reminderChannelDescription =
+      'Avisos cuando te quedan productos pendientes sin tachar en tu lista.';
 
   final SupabaseClient? _client;
+  final FlutterLocalNotificationsPlugin _localNotifications;
   bool _firebaseReady = false;
+  bool _localNotificationsReady = false;
+  bool _timezonesInitialized = false;
   String? _lastRegisteredToken;
   StreamSubscription<String>? _tokenRefreshSub;
 
   @override
   Future<void> initializeSafely() async {
+    await Future.wait<void>(<Future<void>>[
+      _initializeFirebaseSafely(),
+      _initializeLocalNotificationsSafely(),
+    ]);
+  }
+
+  Future<void> _initializeFirebaseSafely() async {
     if (_firebaseReady) return;
     try {
       if (Firebase.apps.isEmpty) {
@@ -36,10 +68,108 @@ class FirebasePushNotificationService implements PushNotificationService {
     }
   }
 
+  Future<void> _initializeLocalNotificationsSafely() async {
+    if (!_timezonesInitialized) {
+      try {
+        tz_data.initializeTimeZones();
+        _timezonesInitialized = true;
+      } catch (e) {
+        debugPrint('Karrito timezone init skipped: $e');
+      }
+    }
+
+    if (_localNotificationsReady) return;
+    try {
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
+      const settings = InitializationSettings(android: androidSettings);
+      await _localNotifications.initialize(settings: settings);
+      _localNotificationsReady = true;
+    } catch (e) {
+      debugPrint('Karrito local notifications init skipped: $e');
+      _localNotificationsReady = false;
+    }
+  }
+
+  @override
+  Future<bool> requestLocalNotificationPermission() async {
+    await _initializeLocalNotificationsSafely();
+    if (!_localNotificationsReady) return false;
+
+    try {
+      final androidPlugin = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (androidPlugin != null) {
+        final granted = await androidPlugin.requestNotificationsPermission();
+        if (granted != null) return granted;
+        final enabled = await androidPlugin.areNotificationsEnabled();
+        return enabled ?? true;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Karrito local notification permission request skipped: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<void> schedulePendingItemsReminder({
+    required int pendingCount,
+    required String listTitle,
+    Duration delay = const Duration(hours: 24),
+  }) async {
+    if (pendingCount <= 0) {
+      await cancelPendingItemsReminder();
+      return;
+    }
+
+    await _initializeLocalNotificationsSafely();
+    if (!_localNotificationsReady || !_timezonesInitialized) return;
+
+    try {
+      await _localNotifications.cancel(id: pendingReminderNotificationId);
+      final scheduledAt = tz.TZDateTime.now(tz.UTC).add(delay);
+      const details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          _reminderChannelId,
+          _reminderChannelName,
+          channelDescription: _reminderChannelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+        ),
+      );
+
+      await _localNotifications.zonedSchedule(
+        id: pendingReminderNotificationId,
+        title: AppStrings.reminderNotificationTitle,
+        body: AppStrings.reminderNotificationBody(pendingCount, listTitle),
+        scheduledDate: scheduledAt,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('Karrito local reminder schedule skipped: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelPendingItemsReminder() async {
+    if (!_localNotificationsReady) return;
+    try {
+      await _localNotifications.cancel(id: pendingReminderNotificationId);
+    } catch (e) {
+      debugPrint('Karrito local reminder cancel skipped: $e');
+    }
+  }
+
   @override
   Future<String?> requestPermissionAndRegisterToken(String? userId) async {
     if (userId == null || userId.trim().isEmpty) return null;
-    await initializeSafely();
+    await _initializeFirebaseSafely();
     if (!_firebaseReady) return null;
 
     try {

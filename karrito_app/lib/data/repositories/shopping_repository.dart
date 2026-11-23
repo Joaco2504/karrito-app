@@ -63,6 +63,7 @@ class ShoppingRepository {
             keepScreenOn: true,
             soundEnabled: true,
             vibrationEnabled: true,
+            remindersEnabled: false,
             avatarChoice: 'avatar_1',
             planTier: 'free',
             freeMaxLists: 3,
@@ -220,6 +221,57 @@ class ShoppingRepository {
         _db.localLists,
       )..where((t) => t.id.equals(listId))).go();
     });
+  }
+
+  /// Unlinks the current user from a remote shared list (`isJoinedRemote`) and
+  /// removes the local copy. If it was the only local list, creates a fresh
+  /// personal list so the app always keeps an active list.
+  Future<String?> leaveSharedList(String listId) async {
+    final existing = await _db.select(_db.localLists).get();
+    ShoppingListEntity? target;
+    for (final list in existing) {
+      if (list.id == listId) {
+        target = list;
+        break;
+      }
+    }
+    if (target == null) return null;
+
+    String? replacementListId;
+    await _db.transaction(() async {
+      await _db
+          .into(_db.localPendingDeletions)
+          .insert(
+            LocalPendingDeletionsCompanion.insert(
+              id: _uuid.v4(),
+              entityType: 'list',
+              entityKey: listId,
+              isLeaveOnly: const Value(true),
+              deletedAt: DateTime.now(),
+            ),
+          );
+      await (_db.delete(
+        _db.localLists,
+      )..where((t) => t.id.equals(listId))).go();
+
+      if (existing.length <= 1) {
+        final now = DateTime.now();
+        final freshId = _uuid.v4();
+        replacementListId = freshId;
+        await _db
+            .into(_db.localLists)
+            .insert(
+              LocalListsCompanion.insert(
+                id: freshId,
+                title: 'Mi lista',
+                createdAt: now,
+                updatedAt: now,
+                syncStatus: const Value('pending'),
+              ),
+            );
+      }
+    });
+    return replacementListId;
   }
 
   // ---------------------------------------------------------------------------
@@ -712,6 +764,48 @@ class ShoppingRepository {
     });
   }
 
+  /// Removes all checked items in [listId] (optionally scoped to [storeCategory])
+  /// and writes tombstones to `local_pending_deletions` so Supabase deletes them
+  /// on the next sync. Returns the number of deleted items.
+  Future<int> clearCheckedItems({
+    required String listId,
+    String? storeCategory,
+  }) async {
+    final now = DateTime.now();
+    return _db.transaction(() async {
+      final query = _db.select(_db.localItems)
+        ..where((t) {
+          final base = t.listId.equals(listId) & t.isChecked.equals(true);
+          if (storeCategory != null) {
+            return base & t.storeCategory.equals(storeCategory);
+          }
+          return base;
+        });
+
+      final checkedRows = await query.get();
+      if (checkedRows.isEmpty) return 0;
+
+      await _db.batch((batch) {
+        batch.insertAll(
+          _db.localPendingDeletions,
+          checkedRows.map(
+            (row) => LocalPendingDeletionsCompanion.insert(
+              id: _uuid.v4(),
+              entityType: 'item',
+              entityKey: row.id,
+              deletedAt: now,
+            ),
+          ),
+        );
+      });
+
+      final ids = checkedRows.map((row) => row.id).toList();
+      await (_db.delete(_db.localItems)..where((t) => t.id.isIn(ids))).go();
+      await _touchList(listId, now);
+      return checkedRows.length;
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Account Migration Helper & Preferences
   // ---------------------------------------------------------------------------
@@ -935,6 +1029,7 @@ class ShoppingRepository {
               keepScreenOn: Value(true),
               soundEnabled: Value(true),
               vibrationEnabled: Value(true),
+              remindersEnabled: Value(false),
               avatarChoice: Value('avatar_1'),
               googlePhotoUrl: Value<String?>(null),
               planTier: Value('free'),
@@ -957,6 +1052,7 @@ class ShoppingRepository {
     bool? keepScreenOn,
     bool? soundEnabled,
     bool? vibrationEnabled,
+    bool? remindersEnabled,
     String? avatarChoice,
     String? googlePhotoUrl,
     bool clearGooglePhotoUrl = false,
@@ -987,6 +1083,9 @@ class ShoppingRepository {
                 : const Value.absent(),
             vibrationEnabled: vibrationEnabled != null
                 ? Value(vibrationEnabled)
+                : const Value.absent(),
+            remindersEnabled: remindersEnabled != null
+                ? Value(remindersEnabled)
                 : const Value.absent(),
             avatarChoice: avatarChoice != null
                 ? Value(avatarChoice)

@@ -43,7 +43,8 @@ class KarritoApp extends ConsumerStatefulWidget {
   ConsumerState<KarritoApp> createState() => _KarritoAppState();
 }
 
-class _KarritoAppState extends ConsumerState<KarritoApp> {
+class _KarritoAppState extends ConsumerState<KarritoApp>
+    with WidgetsBindingObserver {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool? _lastOnline;
   bool? _lastKeepScreenOn;
@@ -54,6 +55,7 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(KarritoAssetRegistry.warmUp());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -65,13 +67,15 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   /// renders, isolating every SDK in its own `try / catch` block so no external
   /// service can ever block or crash app startup.
   Future<void> _initializeDeferredServices() async {
-    // 1. Firebase / FCM (independent)
+    // 1. Firebase / FCM + local notifications (independent)
     unawaited(() async {
       try {
         if (!mounted) return;
-        await ref.read(pushNotificationServiceProvider).initializeSafely();
+        final pushService = ref.read(pushNotificationServiceProvider);
+        await pushService.initializeSafely();
+        await pushService.cancelPendingItemsReminder();
       } catch (e) {
-        debugPrint('Karrito deferred Firebase init skipped: $e');
+        debugPrint('Karrito deferred Firebase/notifications init skipped: $e');
       }
     }());
 
@@ -106,7 +110,43 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    final pushService = ref.read(pushNotificationServiceProvider);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(pushService.cancelPendingItemsReminder());
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      final prefs = ref.read(preferencesProvider).value;
+      if (prefs?.remindersEnabled != true) {
+        unawaited(pushService.cancelPendingItemsReminder());
+        return;
+      }
+
+      final activeList = ref.read(activeListProvider);
+      final items =
+          ref.read(activeListItemsProvider).value ??
+          const <ShoppingItemEntity>[];
+      final pendingCount = items.where((item) => !item.isChecked).length;
+      if (activeList != null && pendingCount > 0) {
+        unawaited(
+          pushService.schedulePendingItemsReminder(
+            pendingCount: pendingCount,
+            listTitle: activeList.title,
+          ),
+        );
+      } else {
+        unawaited(pushService.cancelPendingItemsReminder());
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     KarritoToast.dismissCurrent();
     final channel = _realtimeChannel;
     final sync = _syncService;
@@ -264,7 +304,8 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
         msg == AppStrings.wakelockDisabledNotice ||
         msg == AppStrings.googleLinkedSyncPendingNotice ||
         msg == AppStrings.signedOutNotice ||
-        msg == AppStrings.accountDeletedNotice) {
+        msg == AppStrings.accountDeletedNotice ||
+        msg == AppStrings.remindersDisabledNotice) {
       return KarritoToastType.info;
     }
     return KarritoToastType.success;
