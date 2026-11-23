@@ -3,10 +3,18 @@
 .env.*
 *.env.local
 supabase/.temp/
+supabase/.env
 *firebase-adminsdk*.json
 client_secret*.json
 **/client_secret*.json
 **/*firebase-adminsdk*.json
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+key.properties
+**/key.properties
 
 # OS & editors
 .DS_Store

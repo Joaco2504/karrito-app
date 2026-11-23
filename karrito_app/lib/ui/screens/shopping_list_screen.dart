@@ -477,13 +477,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
 
     final textScale = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(
       1.0,
-      1.35,
+      1.45,
     );
+    final inputBoxHeight = 86.0 * textScale;
     final slBottomHeight =
-        ((activeList != null ? 44.0 : 0.0) +
-            190.0 +
-            (sortedStores.isNotEmpty ? 50.0 : 0.0)) *
-        textScale;
+        (activeList != null ? (6.0 + 38.0 * textScale) : 0.0) +
+        (56.0 + inputBoxHeight + (86.0 * textScale)) +
+        (sortedStores.isNotEmpty ? (6.0 + 44.0 * textScale) : 0.0);
 
     Widget wrapMaxWidth(Widget child) {
       return Center(
@@ -514,7 +514,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                 slivers: [
                   SliverAppBar(
                     floating: true,
-                    snap: true,
+                    snap: false,
                     pinned: false,
                     primary: true,
                     automaticallyImplyLeading: false,
@@ -821,24 +821,27 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       Container(
-                                        height: 46 * textScale,
+                                        key: const ValueKey<String>(
+                                          'smart_input_container',
+                                        ),
+                                        constraints: BoxConstraints(
+                                          minHeight: 74 * textScale,
+                                          maxHeight: inputBoxHeight,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: isDark
                                               ? const Color(0xFF251D38)
                                               : const Color(0xFFF2EFFB),
                                           borderRadius: BorderRadius.circular(
-                                            999,
+                                            20,
                                           ),
                                           border: Border.all(
                                             color: karritoColors.border
                                                 .withValues(alpha: 0.8),
                                           ),
                                         ),
-                                        padding: const EdgeInsets.fromLTRB(
-                                          14,
-                                          0,
-                                          4,
-                                          0,
+                                        padding: const EdgeInsets.only(
+                                          right: 4,
                                         ),
                                         child: Row(
                                           crossAxisAlignment:
@@ -849,31 +852,47 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                                 controller: _inputController,
                                                 focusNode: _inputFocusNode,
                                                 enabled: !uiState.isSubmitting,
-                                                minLines: 1,
-                                                maxLines: 2,
+                                                minLines: 2,
+                                                maxLines: 3,
                                                 keyboardType:
                                                     TextInputType.multiline,
                                                 textCapitalization:
                                                     TextCapitalization
                                                         .sentences,
+                                                style: theme
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(height: 1.32),
                                                 decoration:
                                                     const InputDecoration(
                                                       hintText:
                                                           AppStrings.inputHint,
+                                                      hintMaxLines: 2,
                                                       filled: false,
-                                                      isDense: true,
                                                       border: InputBorder.none,
                                                       enabledBorder:
                                                           InputBorder.none,
                                                       focusedBorder:
                                                           InputBorder.none,
                                                       contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: 2,
-                                                            vertical: 10,
+                                                          EdgeInsets.fromLTRB(
+                                                            16,
+                                                            14,
+                                                            8,
+                                                            14,
                                                           ),
                                                     ),
                                               ),
+                                            ),
+                                            Container(
+                                              width: 1,
+                                              height: 30,
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 2,
+                                                  ),
+                                              color: karritoColors.border
+                                                  .withValues(alpha: 0.75),
                                             ),
                                             IconButton(
                                               visualDensity:
@@ -914,182 +933,230 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       SizedBox(
-                                        height: 40 * textScale,
+                                        height: 42 * textScale,
                                         child: Row(
+                                          key: const ValueKey<String>(
+                                            'input_actions_row',
+                                          ),
                                           children: [
-                                            Expanded(
-                                              child: SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                physics:
-                                                    const BouncingScrollPhysics(),
-                                                padding: const EdgeInsets.only(
-                                                  right: 4,
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    KarritoBounceButton(
-                                                      enabled:
-                                                          !uiState.isSubmitting,
-                                                      child: TextButton.icon(
-                                                        onPressed:
-                                                            uiState.isSubmitting
-                                                            ? null
-                                                            : _handlePasteClipboard,
-                                                        style: TextButton.styleFrom(
-                                                          backgroundColor:
-                                                              isDark
-                                                              ? const Color(
-                                                                  0xFF251D38,
-                                                                )
-                                                              : const Color(
-                                                                  0xFFF2EFFB,
-                                                                ),
-                                                          foregroundColor:
-                                                              karritoColors
-                                                                  .accentSoft,
-                                                          minimumSize:
-                                                              const Size(0, 38),
-                                                          shape:
-                                                              const StadiumBorder(),
-                                                          side: BorderSide(
-                                                            color: karritoColors
-                                                                .border,
-                                                          ),
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 12,
-                                                                vertical: 6,
-                                                              ),
-                                                        ),
-                                                        icon: Icon(
-                                                          Icons
-                                                              .content_paste_rounded,
-                                                          size: 16,
-                                                          color: karritoColors
-                                                              .accentSoft,
-                                                        ),
-                                                        label: const Text(
-                                                          AppStrings
-                                                              .pasteClipboardButton,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    KarritoBounceButton(
-                                                      child: TextButton.icon(
-                                                        onPressed:
-                                                            _openFrequentItems,
-                                                        style: TextButton.styleFrom(
-                                                          backgroundColor:
-                                                              karritoColors
-                                                                  .ctaContainer,
-                                                          foregroundColor:
-                                                              karritoColors
-                                                                  .onCtaContainer,
-                                                          minimumSize:
-                                                              const Size(0, 38),
-                                                          shape:
-                                                              const StadiumBorder(),
-                                                          side: BorderSide(
-                                                            color: karritoColors
-                                                                .cta
-                                                                .withValues(
-                                                                  alpha: isDark
-                                                                      ? 0.35
-                                                                      : 0.25,
-                                                                ),
-                                                          ),
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 12,
-                                                                vertical: 6,
-                                                              ),
-                                                        ),
-                                                        icon: Icon(
-                                                          Icons
-                                                              .star_outline_rounded,
-                                                          size: 16,
-                                                          color:
-                                                              karritoColors.cta,
-                                                        ),
-                                                        label: const Text(
-                                                          AppStrings
-                                                              .frequentButton,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            KarritoBounceButton(
-                                              enabled: !uiState.isSubmitting,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        999,
-                                                      ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: karritoColors.cta
-                                                          .withValues(
-                                                            alpha: isDark
-                                                                ? 0.42
-                                                                : 0.28,
-                                                          ),
-                                                      blurRadius: 12,
-                                                      offset: const Offset(
-                                                        0,
-                                                        3,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: FilledButton.icon(
+                                            Flexible(
+                                              flex: 3,
+                                              fit: FlexFit.tight,
+                                              child: KarritoBounceButton(
+                                                enabled: !uiState.isSubmitting,
+                                                child: TextButton(
                                                   onPressed:
                                                       uiState.isSubmitting
                                                       ? null
-                                                      : _submitInput,
-                                                  style: FilledButton.styleFrom(
-                                                    backgroundColor:
-                                                        karritoColors.cta,
+                                                      : _handlePasteClipboard,
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor: isDark
+                                                        ? const Color(
+                                                            0xFF251D38,
+                                                          )
+                                                        : const Color(
+                                                            0xFFF2EFFB,
+                                                          ),
                                                     foregroundColor:
-                                                        karritoColors.onCta,
-                                                    shape:
-                                                        const StadiumBorder(),
+                                                        karritoColors
+                                                            .accentSoft,
                                                     minimumSize: const Size(
                                                       0,
                                                       40,
                                                     ),
+                                                    shape:
+                                                        const StadiumBorder(),
+                                                    side: BorderSide(
+                                                      color:
+                                                          karritoColors.border,
+                                                    ),
                                                     padding:
                                                         const EdgeInsets.symmetric(
-                                                          horizontal: 16,
+                                                          horizontal: 10,
                                                           vertical: 6,
                                                         ),
                                                   ),
-                                                  icon: uiState.isSubmitting
-                                                      ? SizedBox(
-                                                          width: 16,
-                                                          height: 16,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                color:
-                                                                    karritoColors
-                                                                        .onCta,
-                                                              ),
-                                                        )
-                                                      : const Icon(
-                                                          Icons.add_rounded,
-                                                          size: 19,
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .content_paste_rounded,
+                                                        size: 16,
+                                                        color: karritoColors
+                                                            .accentSoft,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Flexible(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            AppStrings
+                                                                .pasteClipboardButton,
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                          ),
                                                         ),
-                                                  label: const Text(
-                                                    AppStrings.addItemsButton,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              flex: 4,
+                                              fit: FlexFit.tight,
+                                              child: KarritoBounceButton(
+                                                child: TextButton(
+                                                  onPressed: _openFrequentItems,
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor:
+                                                        karritoColors
+                                                            .ctaContainer,
+                                                    foregroundColor:
+                                                        karritoColors
+                                                            .onCtaContainer,
+                                                    minimumSize: const Size(
+                                                      0,
+                                                      40,
+                                                    ),
+                                                    shape:
+                                                        const StadiumBorder(),
+                                                    side: BorderSide(
+                                                      color: karritoColors.cta
+                                                          .withValues(
+                                                            alpha: isDark
+                                                                ? 0.35
+                                                                : 0.25,
+                                                          ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 6,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .star_outline_rounded,
+                                                        size: 16,
+                                                        color:
+                                                            karritoColors.cta,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Flexible(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: Text(
+                                                            AppStrings
+                                                                .frequentButton,
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              flex: 4,
+                                              fit: FlexFit.tight,
+                                              child: KarritoBounceButton(
+                                                enabled: !uiState.isSubmitting,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          999,
+                                                        ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: karritoColors.cta
+                                                            .withValues(
+                                                              alpha: isDark
+                                                                  ? 0.42
+                                                                  : 0.28,
+                                                            ),
+                                                        blurRadius: 12,
+                                                        offset: const Offset(
+                                                          0,
+                                                          3,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: FilledButton(
+                                                    onPressed:
+                                                        uiState.isSubmitting
+                                                        ? null
+                                                        : _submitInput,
+                                                    style: FilledButton.styleFrom(
+                                                      backgroundColor:
+                                                          karritoColors.cta,
+                                                      foregroundColor:
+                                                          karritoColors.onCta,
+                                                      shape:
+                                                          const StadiumBorder(),
+                                                      minimumSize: const Size(
+                                                        0,
+                                                        40,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        if (uiState
+                                                            .isSubmitting)
+                                                          SizedBox(
+                                                            width: 16,
+                                                            height: 16,
+                                                            child: CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color:
+                                                                  karritoColors
+                                                                      .onCta,
+                                                            ),
+                                                          )
+                                                        else
+                                                          const Icon(
+                                                            Icons.add_rounded,
+                                                            size: 16,
+                                                          ),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                        const Flexible(
+                                                          child: FittedBox(
+                                                            fit: BoxFit
+                                                                .scaleDown,
+                                                            child: Text(
+                                                              AppStrings
+                                                                  .addItemsButton,
+                                                              maxLines: 1,
+                                                              softWrap: false,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),

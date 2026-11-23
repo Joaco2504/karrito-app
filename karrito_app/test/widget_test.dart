@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1036,12 +1036,34 @@ void main() {
           .write(const LocalPreferencesCompanion(planTier: Value('pro_3usd')));
       await tester.pumpAndSettle();
 
-      // 3. Verify SliverAppBar(floating: true, snap: true) inside CustomScrollView.
+      // 3. Verify SliverAppBar(floating: true, snap: false) inside CustomScrollView
+      // for smooth gradual reveal, soft rounded TextField (minLines: 2, maxLines: 3),
+      // and all 3 action buttons (Pegar, Frecuentes, + Agregar) aligned on one row.
       final sliverAppBar = tester.widget<SliverAppBar>(
         find.byType(SliverAppBar),
       );
       expect(sliverAppBar.floating, isTrue);
-      expect(sliverAppBar.snap, isTrue);
+      expect(sliverAppBar.snap, isFalse);
+
+      final inputContainer = tester.widget<Container>(
+        find.byKey(const ValueKey<String>('smart_input_container')),
+      );
+      final inputDeco = inputContainer.decoration! as BoxDecoration;
+      expect(inputDeco.borderRadius, BorderRadius.circular(20));
+
+      final smartTextField = tester.widget<TextField>(find.byType(TextField));
+      expect(smartTextField.minLines, 2);
+      expect(smartTextField.maxLines, 3);
+
+      final pasteRect = tester.getRect(
+        find.text(AppStrings.pasteClipboardButton),
+      );
+      final freqRect = tester.getRect(find.text(AppStrings.frequentButton));
+      final addRect = tester.getRect(find.text(AppStrings.addItemsButton));
+      expect((pasteRect.center.dy - freqRect.center.dy).abs(), lessThan(2.0));
+      expect((freqRect.center.dy - addRect.center.dy).abs(), lessThan(2.0));
+      expect(pasteRect.right, lessThan(freqRect.left));
+      expect(freqRect.right, lessThan(addRect.left));
 
       // 4. Tap wide "Recetas" button -> preview checklist with Argentine retail packages.
       final recipesBtn = find.byKey(
@@ -1122,15 +1144,19 @@ void main() {
         );
       }
 
-      // Swipe back down -> floating/snap header snaps back into view immediately.
+      // Swipe back down gradually (snap: false reveals proportionally to drag).
       await tester.drag(
         find.byKey(const ValueKey<String>('shopping_list_scroll_view')),
-        const Offset(0, 260),
+        const Offset(0, 500),
       );
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey<String>('wide_recipes_button')),
         findsOneWidget,
+      );
+      expect(
+        tester.getRect(find.byTooltip(AppStrings.profileMenuTooltip)).top,
+        greaterThanOrEqualTo(0),
       );
 
       // 6. Open Profile Menu -> Guide & FAQ -> verify all 9 extended FAQs exist and expand.
@@ -1158,6 +1184,92 @@ void main() {
       await tester.tap(find.text(AppStrings.faqEntries.last.question));
       await tester.pumpAndSettle();
       expect(find.text(AppStrings.faqEntries.last.answer), findsOneWidget);
+
+      KarritoToast.dismissCurrent();
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      dbClosed = true;
+      await db.close();
+    },
+  );
+
+  testWidgets(
+    'Phase 5.4: 360dp narrow viewport with 1.3x text scale renders input bar and 3 action buttons on one row without overflow',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final db = AppDatabase(NativeDatabase.memory());
+      final auth = _TestAuthService();
+      final ai = _TestAiClassifier();
+      final sync = _TestSyncService(db);
+      final sound = _TestSoundFeedbackService();
+      final ads = _TestAdsCascadeService(db);
+      final push = _TestPushNotificationService();
+      var dbClosed = false;
+
+      await (db.update(
+        db.localPreferences,
+      )..where((t) => t.id.equals(1))).write(
+        const LocalPreferencesCompanion(onboardingCompleted: Value(true)),
+      );
+
+      addTearDown(() async {
+        KarritoToast.dismissCurrent();
+        auth.dispose();
+        if (!dbClosed) {
+          dbClosed = true;
+          await db.close();
+        }
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supabaseInitializerProvider.overrideWithValue(() async => true),
+            appDatabaseProvider.overrideWithValue(db),
+            authServiceProvider.overrideWithValue(auth),
+            wakelockServiceProvider.overrideWithValue(_TestWakelockService()),
+            soundFeedbackServiceProvider.overrideWithValue(sound),
+            aiClassifierServiceProvider.overrideWithValue(ai),
+            syncServiceProvider.overrideWithValue(sync),
+            adsCascadeServiceProvider.overrideWithValue(ads),
+            subscriptionServiceProvider.overrideWithValue(
+              _TestSubscriptionService(),
+            ),
+            mediaCaptureServiceProvider.overrideWithValue(
+              _TestMediaCaptureService(),
+            ),
+            pushNotificationServiceProvider.overrideWithValue(push),
+            isOnlineProvider.overrideWithValue(true),
+          ],
+          child: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(360, 780),
+              textScaler: TextScaler.linear(1.3),
+            ),
+            child: const KarritoApp(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Zero RenderFlex overflows on narrow 360dp screen at 1.3x font scale.
+      expect(tester.takeException(), isNull);
+
+      final pasteRect = tester.getRect(
+        find.text(AppStrings.pasteClipboardButton),
+      );
+      final freqRect = tester.getRect(find.text(AppStrings.frequentButton));
+      final addRect = tester.getRect(find.text(AppStrings.addItemsButton));
+      expect((pasteRect.center.dy - freqRect.center.dy).abs(), lessThan(2.5));
+      expect((freqRect.center.dy - addRect.center.dy).abs(), lessThan(2.5));
+      expect(pasteRect.right, lessThan(freqRect.left));
+      expect(freqRect.right, lessThan(addRect.left));
+      expect(addRect.right, lessThanOrEqualTo(360.0));
 
       KarritoToast.dismissCurrent();
       await tester.pumpAndSettle();

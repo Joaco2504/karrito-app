@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
+import '../../domain/services/safe_url_validator.dart';
 import 'karrito_bounce_button.dart';
 
 /// Full-screen modal interstitial for local Catamarca businesses (`featured_5usd`)
@@ -107,14 +108,16 @@ class _LocalInterstitialDialogState extends State<LocalInterstitialDialog> {
   }
 
   Future<void> _openOffer() async {
-    widget.onClick();
-    final uri = Uri.tryParse(widget.ad.actionUrl.trim());
+    final uri = SafeUrlValidator.parseSafeAdUri(widget.ad.actionUrl);
     if (uri != null) {
+      widget.onClick();
       try {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (e) {
         debugPrint('Karrito interstitial url launch skipped: $e');
       }
+    } else {
+      debugPrint('Karrito blocked unsafe interstitial action_url.');
     }
     if (mounted) {
       Navigator.of(context).pop();

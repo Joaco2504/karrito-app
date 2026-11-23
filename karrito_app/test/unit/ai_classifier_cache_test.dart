@@ -149,4 +149,67 @@ void main() {
       expect(remoteCalls, 2);
     },
   );
+
+  test(
+    'SupabaseAiClassifierService deduplicates concurrent in-flight calls and cleans up after failure',
+    () async {
+      final auth = _FakeAuthService();
+      addTearDown(auth.dispose);
+
+      var remoteCalls = 0;
+      final firstCompleter = Completer<Map<String, dynamic>>();
+      var shouldFail = false;
+
+      final service = SupabaseAiClassifierService(
+        client: null,
+        authService: auth,
+        invoker: (text) async {
+          remoteCalls++;
+          if (shouldFail) {
+            throw const FormatException('simulated error');
+          }
+          return firstCompleter.future;
+        },
+      );
+
+      // Fire two concurrent calls for the same normalized input before completion.
+      final f1 = service.classifyText('1 kg azúcar, 1 l leche');
+      final f2 = service.classifyText('  1 KG azucar,  1 L LECHE ');
+      expect(identical(f1, f2), isTrue);
+
+      firstCompleter.complete(<String, dynamic>{
+        'items': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'clean_name': 'Azúcar',
+            'quantity': 1,
+            'unit': 'kg',
+            'store_category': 'Supermercado',
+            'aisle_name': 'Almacén',
+          },
+        ],
+      });
+
+      final results = await Future.wait(<Future<ProcesarListaResponse>>[
+        f1,
+        f2,
+      ]);
+      expect(remoteCalls, 1);
+      expect(results[0].items.single.cleanName, 'Azúcar');
+      expect(results[1].items.single.cleanName, 'Azúcar');
+
+      // On error, in-flight map cleans up so a subsequent retry fires cleanly.
+      shouldFail = true;
+      await expectLater(
+        service.classifyText('yerba mate'),
+        throwsA(isA<AiProcessingException>()),
+      );
+      expect(remoteCalls, 2);
+
+      await expectLater(
+        service.classifyText('yerba mate'),
+        throwsA(isA<AiProcessingException>()),
+      );
+      expect(remoteCalls, 3);
+    },
+  );
 }

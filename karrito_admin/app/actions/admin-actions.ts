@@ -10,6 +10,7 @@ import {
   toArgentinaEndOfDayISO,
   type AppConfigKey,
 } from "@/lib/constants/karrito";
+import { isSafeHttpsUrl, isSafeStorageImageUrl } from "@/lib/security/url";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
@@ -31,15 +32,13 @@ const VALID_AD_CITIES = new Set<string>(LOCAL_AD_CITIES);
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_BUSINESS_NAME_LENGTH = 120;
+const PAGE_SIZE = 50;
 
-function isValidHttpUrl(raw: string): boolean {
-  try {
-    const parsed = new URL(raw);
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
+const USER_PROFILE_COLUMNS =
+  "id, email, plan_tier, city, daily_ai_count, last_ai_date, fcm_token, is_banned, created_at, updated_at";
+const LOCAL_ADS_COLUMNS =
+  "id, business_name, city, tier, banner_url, interstitial_url, action_url, impressions, clicks, expires_at, is_active, created_at";
 
 function extractBucketPath(publicUrl: string | null): string | null {
   if (!publicUrl) return null;
@@ -81,10 +80,10 @@ export async function saveLocalAdAction(
   }
 
   const businessName = input.business_name.trim();
-  if (businessName.length < 2) {
+  if (businessName.length < 2 || businessName.length > MAX_BUSINESS_NAME_LENGTH) {
     return {
       ok: false,
-      message: "Escribí el nombre del comercio (al menos 2 caracteres).",
+      message: `Escribí el nombre del comercio (entre 2 y ${MAX_BUSINESS_NAME_LENGTH} caracteres).`,
     };
   }
 
@@ -103,11 +102,11 @@ export async function saveLocalAdAction(
   }
 
   const bannerUrl = input.banner_url.trim();
-  if (!bannerUrl || !isValidHttpUrl(bannerUrl)) {
+  if (!bannerUrl || !isSafeStorageImageUrl(bannerUrl)) {
     return {
       ok: false,
       message:
-        "Subí la imagen del banner (320 x 50 px) antes de guardar el anuncio.",
+        "Subí la imagen del banner (320 x 50 px) desde el cargador seguro antes de guardar el anuncio.",
     };
   }
 
@@ -115,7 +114,7 @@ export async function saveLocalAdAction(
     input.tier === "featured_5usd" ? input.interstitial_url.trim() : "";
   if (
     input.tier === "featured_5usd" &&
-    (!interstitialUrl || !isValidHttpUrl(interstitialUrl))
+    (!interstitialUrl || !isSafeStorageImageUrl(interstitialUrl))
   ) {
     return {
       ok: false,
@@ -125,11 +124,11 @@ export async function saveLocalAdAction(
   }
 
   const actionUrl = input.action_url.trim();
-  if (!actionUrl || !isValidHttpUrl(actionUrl)) {
+  if (!actionUrl || !isSafeHttpsUrl(actionUrl)) {
     return {
       ok: false,
       message:
-        "Ingresá un enlace válido de WhatsApp o Google Maps que empiece con https://.",
+        "Ingresá un enlace seguro de WhatsApp, Google Maps o web pública que empiece con https://.",
     };
   }
 
@@ -464,5 +463,137 @@ export async function saveAppConfigAction(
     ok: true,
     message: "Configuración guardada. Los límites nuevos ya rigen en la app.",
     data: data as AppConfigRow[],
+  };
+}
+
+export interface PaginatedUsersResponse {
+  rows: UserProfileRow[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function fetchUsersPageAction(params: {
+  page: number;
+  search?: string;
+  plan?: string;
+  city?: string;
+}): Promise<ActionResult<PaginatedUsersResponse>> {
+  const session = await requireAdminSession();
+  if (!session.authorized) {
+    return {
+      ok: false,
+      message:
+        "Tu sesión de administración venció o no tiene permisos. Volvé a entrar con Google.",
+    };
+  }
+
+  const safePage =
+    Number.isInteger(params.page) && params.page >= 1 ? params.page : 1;
+  const from = (safePage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const adminClient = createAdminSupabaseClient();
+  let query = adminClient
+    .from("users_profile")
+    .select(USER_PROFILE_COLUMNS, { count: "exact" })
+    .order("created_at", { ascending: false });
+
+  const plan = params.plan?.trim() ?? "__all__";
+  if (plan !== "__all__" && VALID_PLAN_TIERS.has(plan as PlanTier)) {
+    query = query.eq("plan_tier", plan);
+  }
+
+  const city = params.city?.trim() ?? "__all__";
+  if (city !== "__all__" && city.length <= 80) {
+    query = query.eq("city", city);
+  }
+
+  const search = (params.search ?? "").trim().slice(0, 120);
+  if (search) {
+    if (UUID_REGEX.test(search)) {
+      query = query.eq("id", search);
+    } else {
+      // Escape PostgREST filter delimiters so user input cannot alter filter logic.
+      const escaped = search.replace(/[%_,()]/g, "");
+      if (escaped) {
+        query = query.ilike("email", `%${escaped}%`);
+      }
+    }
+  }
+
+  const { data, count, error } = await query.range(from, to);
+  if (error) {
+    return {
+      ok: false,
+      message: `No pudimos cargar esa página de usuarios: ${error.message}.`,
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Usuarios cargados.",
+    data: {
+      rows: (data ?? []) as UserProfileRow[],
+      totalCount: count ?? 0,
+      page: safePage,
+      pageSize: PAGE_SIZE,
+    },
+  };
+}
+
+export interface PaginatedLocalAdsResponse {
+  rows: LocalAdRow[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function fetchLocalAdsPageAction(params: {
+  page: number;
+  city?: string;
+}): Promise<ActionResult<PaginatedLocalAdsResponse>> {
+  const session = await requireAdminSession();
+  if (!session.authorized) {
+    return {
+      ok: false,
+      message:
+        "Tu sesión de administración venció o no tiene permisos. Volvé a entrar con Google.",
+    };
+  }
+
+  const safePage =
+    Number.isInteger(params.page) && params.page >= 1 ? params.page : 1;
+  const from = (safePage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const adminClient = createAdminSupabaseClient();
+  let query = adminClient
+    .from("local_ads")
+    .select(LOCAL_ADS_COLUMNS, { count: "exact" })
+    .order("created_at", { ascending: false });
+
+  const city = params.city?.trim() ?? "__all__";
+  if (city !== "__all__" && VALID_AD_CITIES.has(city)) {
+    query = query.eq("city", city);
+  }
+
+  const { data, count, error } = await query.range(from, to);
+  if (error) {
+    return {
+      ok: false,
+      message: `No pudimos cargar esa página de anuncios: ${error.message}.`,
+    };
+  }
+
+  return {
+    ok: true,
+    message: "Anuncios cargados.",
+    data: {
+      rows: (data ?? []) as LocalAdRow[],
+      totalCount: count ?? 0,
+      page: safePage,
+      pageSize: PAGE_SIZE,
+    },
   };
 }

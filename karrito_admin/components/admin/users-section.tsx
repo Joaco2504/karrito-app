@@ -1,9 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { CheckIcon, CopyIcon, UsersIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
+  fetchUsersPageAction,
   toggleUserBannedAction,
   updateUserPlanAction,
 } from "@/app/actions/admin-actions";
@@ -65,8 +73,11 @@ const USER_PLAN_ITEMS: Array<{ label: string; value: PlanTier }> = [
   { label: PLAN_TIERS.pro_3usd.shortLabel, value: "pro_3usd" },
 ];
 
+const PAGE_SIZE = 50;
+
 interface UsersSectionProps {
   users: UserProfileRow[];
+  totalCount: number;
   todayArgentinaISO: string;
   currentAdminUserId: string;
   onDataChanged: () => void;
@@ -74,6 +85,7 @@ interface UsersSectionProps {
 
 export function UsersSection({
   users: initialUsers,
+  totalCount: initialTotalCount,
   todayArgentinaISO,
   currentAdminUserId,
   onDataChanged,
@@ -81,15 +93,47 @@ export function UsersSection({
   const [prevInitialUsers, setPrevInitialUsers] =
     React.useState<UserProfileRow[]>(initialUsers);
   const [users, setUsers] = React.useState<UserProfileRow[]>(initialUsers);
+  const [totalCount, setTotalCount] = React.useState<number>(initialTotalCount);
+  const [page, setPage] = React.useState<number>(1);
+  const [isLoadingPage, setIsLoadingPage] = React.useState<boolean>(false);
+
   if (initialUsers !== prevInitialUsers) {
     setPrevInitialUsers(initialUsers);
     setUsers(initialUsers);
+    setTotalCount(initialTotalCount);
+    setPage(1);
   }
   const [searchQuery, setSearchQuery] = React.useState("");
   const [planFilter, setPlanFilter] = React.useState<string>("__all__");
   const [cityFilter, setCityFilter] = React.useState<string>("__all__");
   const [busyUserId, setBusyUserId] = React.useState<string | null>(null);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+
+  const loadPage = React.useCallback(
+    async (
+      targetPage: number,
+      nextSearch: string,
+      nextPlan: string,
+      nextCity: string,
+    ) => {
+      setIsLoadingPage(true);
+      const result = await fetchUsersPageAction({
+        page: targetPage,
+        search: nextSearch,
+        plan: nextPlan,
+        city: nextCity,
+      });
+      setIsLoadingPage(false);
+      if (!result.ok || !result.data) {
+        toast.error(result.message);
+        return;
+      }
+      setUsers(result.data.rows);
+      setTotalCount(result.data.totalCount);
+      setPage(result.data.page);
+    },
+    [],
+  );
 
   const cityFilterItems = React.useMemo(() => {
     const citySet = new Set<string>(USER_CITIES);
@@ -122,6 +166,8 @@ export function UsersSection({
     });
   }, [users, searchQuery, planFilter, cityFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
   const hasActiveFilters =
     searchQuery.trim() !== "" ||
     planFilter !== "__all__" ||
@@ -131,6 +177,7 @@ export function UsersSection({
     setSearchQuery("");
     setPlanFilter("__all__");
     setCityFilter("__all__");
+    void loadPage(1, "", "__all__", "__all__");
   };
 
   const handlePlanChange = async (user: UserProfileRow, nextPlan: PlanTier) => {
@@ -243,7 +290,10 @@ export function UsersSection({
                 items={PLAN_FILTER_ITEMS}
                 value={planFilter}
                 onValueChange={(nextValue) => {
-                  if (nextValue) setPlanFilter(nextValue);
+                  if (nextValue) {
+                    setPlanFilter(nextValue);
+                    void loadPage(1, searchQuery, nextValue, cityFilter);
+                  }
                 }}
               >
                 <SelectTrigger id="users-plan-filter">
@@ -267,7 +317,10 @@ export function UsersSection({
                 items={cityFilterItems}
                 value={cityFilter}
                 onValueChange={(nextValue) => {
-                  if (nextValue) setCityFilter(nextValue);
+                  if (nextValue) {
+                    setCityFilter(nextValue);
+                    void loadPage(1, searchQuery, planFilter, nextValue);
+                  }
                 }}
               >
                 <SelectTrigger id="users-city-filter">
@@ -335,8 +388,9 @@ export function UsersSection({
           ) : (
             <Table wrapperLabel="Tabla de cuentas registradas en Karrito">
               <TableCaption>
+                Página {formatNumberAR(page)} de {formatNumberAR(totalPages)} ·
                 Mostrando {formatNumberAR(filteredUsers.length)} de{" "}
-                {formatNumberAR(users.length)} cuentas en karrito.users_profile.
+                {formatNumberAR(totalCount)} cuentas en karrito.users_profile.
               </TableCaption>
               <TableHeader>
                 <TableRow>
@@ -471,6 +525,43 @@ export function UsersSection({
                 })}
               </TableBody>
             </Table>
+          )}
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+              <span className="text-muted-foreground">
+                Página {formatNumberAR(page)} de {formatNumberAR(totalPages)} (
+                {formatNumberAR(totalCount)} cuentas, {PAGE_SIZE} por página)
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoadingPage}
+                  onClick={() =>
+                    void loadPage(page - 1, searchQuery, planFilter, cityFilter)
+                  }
+                  className="rounded-full"
+                >
+                  <ChevronLeftIcon data-icon="inline-start" />
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isLoadingPage}
+                  onClick={() =>
+                    void loadPage(page + 1, searchQuery, planFilter, cityFilter)
+                  }
+                  className="rounded-full"
+                >
+                  Siguiente
+                  <ChevronRightIcon data-icon="inline-end" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

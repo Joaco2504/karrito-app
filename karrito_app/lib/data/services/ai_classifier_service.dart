@@ -132,29 +132,72 @@ class SupabaseAiClassifierService implements AiClassifierService {
   final AuthService _authService;
   final AiResponseCache _cache;
   final AiFunctionInvoker? _invoker;
+  final Map<String, Future<ProcesarListaResponse>> _inFlightTextRequests =
+      <String, Future<ProcesarListaResponse>>{};
 
   @override
   Future<ProcesarListaResponse> classifyText(
     String text, {
     bool isRecipe = false,
-  }) async {
+  }) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) {
-      throw const AiProcessingException(AppStrings.emptyInputError);
+      return Future<ProcesarListaResponse>.error(
+        const AiProcessingException(AppStrings.emptyInputError),
+      );
     }
 
     final cacheKey = isRecipe ? 'recipe::$trimmed' : trimmed;
     final cached = _cache.get(cacheKey);
     if (cached != null) {
-      return cached;
+      return Future<ProcesarListaResponse>.value(cached);
     }
 
-    // Ensure a valid anonymous JWT exists if the app first launched offline.
-    final hasSession = await _authService.ensureSignedInSilently();
-    if (!hasSession) {
-      throw const AiOfflineOrNetworkException();
+    // Deduplicate identical concurrent requests while one is already in flight.
+    final inFlightKey = AiResponseCache.normalizeKey(cacheKey);
+    final existing = _inFlightTextRequests[inFlightKey];
+    if (existing != null) {
+      return existing;
     }
 
+    final future = _executeClassifyText(
+      trimmed: trimmed,
+      cacheKey: cacheKey,
+      inFlightKey: inFlightKey,
+      isRecipe: isRecipe,
+    );
+    _inFlightTextRequests[inFlightKey] = future;
+    return future;
+  }
+
+  Future<ProcesarListaResponse> _executeClassifyText({
+    required String trimmed,
+    required String cacheKey,
+    required String inFlightKey,
+    required bool isRecipe,
+  }) async {
+    try {
+      // Ensure a valid anonymous JWT exists if the app first launched offline.
+      final hasSession = await _authService.ensureSignedInSilently();
+      if (!hasSession) {
+        throw const AiOfflineOrNetworkException();
+      }
+
+      return await _invokeClassifyTextCore(
+        trimmed: trimmed,
+        cacheKey: cacheKey,
+        isRecipe: isRecipe,
+      );
+    } finally {
+      _inFlightTextRequests.remove(inFlightKey);
+    }
+  }
+
+  Future<ProcesarListaResponse> _invokeClassifyTextCore({
+    required String trimmed,
+    required String cacheKey,
+    required bool isRecipe,
+  }) async {
     try {
       final rawData = _invoker != null
           ? await _invoker(trimmed).timeout(const Duration(seconds: 25))

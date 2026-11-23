@@ -34,7 +34,6 @@ dependencies:
   drift: ^2.35.4
   drift_flutter: ^0.3.1
   path_provider: ^2.1.6
-  path: ^1.9.1
   uuid: ^4.6.0
   supabase_flutter: ^2.18.3
   wakelock_plus: ^1.8.2

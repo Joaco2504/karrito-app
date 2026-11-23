@@ -29,21 +29,32 @@ const HANDLED_EVENTS = new Set([
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const MAX_WEBHOOK_BODY_BYTES = 65_536;
+
 function jsonResponse(
   body: Record<string, unknown>,
   status = 200,
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8" },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "no-store",
+    },
   });
 }
 
-function constantTimeEquals(a: string, b: string): boolean {
+async function constantTimeEquals(a: string, b: string): Promise<boolean> {
   const encoder = new TextEncoder();
-  const aBytes = encoder.encode(a);
-  const bBytes = encoder.encode(b);
-  if (aBytes.length !== bBytes.length) return false;
+  // Hash both values with SHA-256 first so comparisons always run over fixed
+  // 32-byte buffers, avoiding even length-based timing leaks.
+  const [aDigest, bDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(a)),
+    crypto.subtle.digest("SHA-256", encoder.encode(b)),
+  ]);
+  const aBytes = new Uint8Array(aDigest);
+  const bBytes = new Uint8Array(bDigest);
 
   let diff = 0;
   for (let i = 0; i < aBytes.length; i++) {
@@ -158,13 +169,18 @@ Deno.serve(async (req: Request) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const expectedHeader = `Bearer ${webhookSecret}`;
-  if (!constantTimeEquals(authHeader, expectedHeader)) {
+  if (!(await constantTimeEquals(authHeader, expectedHeader))) {
     return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+
+  const rawText = await req.text();
+  if (rawText.length > MAX_WEBHOOK_BODY_BYTES) {
+    return jsonResponse({ error: "Payload too large" }, 413);
   }
 
   let body: { event?: RevenueCatEvent };
   try {
-    body = (await req.json()) as { event?: RevenueCatEvent };
+    body = JSON.parse(rawText) as { event?: RevenueCatEvent };
   } catch {
     return jsonResponse({ error: "Invalid JSON payload" }, 400);
   }

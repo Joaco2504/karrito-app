@@ -152,7 +152,7 @@ export function AdminShell({
                   variant="secondary"
                   className="ml-1 tabular-nums"
                 >
-                  {formatNumberAR(data.ads.length)}
+                  {formatNumberAR(data.totalAdsCount)}
                 </Badge>
               </TabsTrigger>
 
@@ -166,7 +166,7 @@ export function AdminShell({
                   variant="secondary"
                   className="ml-1 tabular-nums"
                 >
-                  {formatNumberAR(data.users.length)}
+                  {formatNumberAR(data.totalUsersCount)}
                 </Badge>
               </TabsTrigger>
 
@@ -192,6 +192,7 @@ export function AdminShell({
           <TabsContent value="publicidad">
             <LocalAdsSection
               ads={data.ads}
+              totalCount={data.totalAdsCount}
               dialogOpen={adDialogOpen}
               onDialogOpenChange={setAdDialogOpen}
               onDataChanged={handleRefresh}
@@ -201,6 +202,7 @@ export function AdminShell({
           <TabsContent value="usuarios">
             <UsersSection
               users={data.users}
+              totalCount={data.totalUsersCount}
               todayArgentinaISO={data.metrics.todayArgentinaISO}
               currentAdminUserId={adminUserId}
               onDataChanged={handleRefresh}

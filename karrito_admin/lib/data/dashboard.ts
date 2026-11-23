@@ -13,43 +13,71 @@ import type {
   UserProfileRow,
 } from "@/lib/types/database";
 
+export const ADMIN_PAGE_SIZE = 50;
+
 export interface AdminDashboardData {
   metrics: DashboardMetrics;
   users: UserProfileRow[];
+  totalUsersCount: number;
   ads: LocalAdRow[];
+  totalAdsCount: number;
   config: AppConfigRow[];
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const adminClient = createAdminSupabaseClient();
 
-  const [usersRes, adsRes, configRes] = await Promise.all([
+  const [
+    usersPageRes,
+    usersMetricRes,
+    adsPageRes,
+    adsMetricRes,
+    configRes,
+  ] = await Promise.all([
     adminClient
       .from("users_profile")
       .select(
         "id, email, plan_tier, city, daily_ai_count, last_ai_date, fcm_token, is_banned, created_at, updated_at",
+        { count: "exact" },
       )
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .range(0, ADMIN_PAGE_SIZE - 1),
+    adminClient
+      .from("users_profile")
+      .select("email, plan_tier, daily_ai_count, last_ai_date"),
     adminClient
       .from("local_ads")
       .select(
         "id, business_name, city, tier, banner_url, interstitial_url, action_url, impressions, clicks, expires_at, is_active, created_at",
+        { count: "exact" },
       )
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .range(0, ADMIN_PAGE_SIZE - 1),
+    adminClient.from("local_ads").select("tier, is_active, expires_at"),
     adminClient
       .from("app_config")
       .select("key, value, description, updated_at")
       .order("key", { ascending: true }),
   ]);
 
-  if (usersRes.error) {
+  if (usersPageRes.error) {
     throw new Error(
-      `Error al consultar karrito.users_profile: ${usersRes.error.message}`,
+      `Error al consultar karrito.users_profile: ${usersPageRes.error.message}`,
     );
   }
-  if (adsRes.error) {
+  if (usersMetricRes.error) {
     throw new Error(
-      `Error al consultar karrito.local_ads: ${adsRes.error.message}`,
+      `Error al calcular métricas de usuarios: ${usersMetricRes.error.message}`,
+    );
+  }
+  if (adsPageRes.error) {
+    throw new Error(
+      `Error al consultar karrito.local_ads: ${adsPageRes.error.message}`,
+    );
+  }
+  if (adsMetricRes.error) {
+    throw new Error(
+      `Error al calcular métricas de anuncios: ${adsMetricRes.error.message}`,
     );
   }
   if (configRes.error) {
@@ -58,9 +86,23 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     );
   }
 
-  const users = (usersRes.data ?? []) as UserProfileRow[];
-  const ads = (adsRes.data ?? []) as LocalAdRow[];
+  const users = (usersPageRes.data ?? []) as UserProfileRow[];
+  const metricUsers = (usersMetricRes.data ?? []) as Array<{
+    email: string | null;
+    plan_tier: PlanTier;
+    daily_ai_count: number;
+    last_ai_date: string;
+  }>;
+  const ads = (adsPageRes.data ?? []) as LocalAdRow[];
+  const metricAds = (adsMetricRes.data ?? []) as Array<{
+    tier: LocalAdRow["tier"];
+    is_active: boolean;
+    expires_at: string;
+  }>;
   const config = (configRes.data ?? []) as AppConfigRow[];
+
+  const totalUsersCount = usersPageRes.count ?? metricUsers.length;
+  const totalAdsCount = adsPageRes.count ?? metricAds.length;
 
   const now = new Date();
   const todayArgentinaISO = getArgentinaDateISO(now);
@@ -74,7 +116,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     pro_3usd: 0,
   };
 
-  for (const user of users) {
+  for (const user of metricUsers) {
     if (user.email && user.email.trim().length > 0) {
       googleUsers += 1;
     } else {
@@ -93,7 +135,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   let activeBannerAdsCount = 0;
   let activeFeaturedAdsCount = 0;
 
-  for (const ad of ads) {
+  for (const ad of metricAds) {
     if (ad.is_active && !isAdExpired(ad.expires_at, now)) {
       if (ad.tier === "featured_5usd") {
         activeFeaturedAdsCount += 1;
@@ -109,7 +151,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   return {
     metrics: {
-      totalUsers: users.length,
+      totalUsers: totalUsersCount,
       guestUsers,
       googleUsers,
       planCounts,
@@ -121,7 +163,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       estimatedMonthlyRevenueUsd,
     },
     users,
+    totalUsersCount,
     ads,
+    totalAdsCount,
     config,
   };
 }

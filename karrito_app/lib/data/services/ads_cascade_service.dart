@@ -7,6 +7,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/monetization_config.dart';
+import '../../domain/services/safe_url_validator.dart';
 import '../local/app_database.dart';
 import 'subscription_service.dart';
 
@@ -204,12 +205,19 @@ class SupabaseAdsCascadeService implements AdsCascadeService {
         if (id.isEmpty ||
             businessName.isEmpty ||
             city.isEmpty ||
-            actionUrl.isEmpty ||
+            SafeUrlValidator.parseSafeAdUri(actionUrl) == null ||
             expiresAt == null) {
           continue;
         }
-        final bannerUrl = row['banner_url']?.toString().trim();
-        final interstitialUrl = row['interstitial_url']?.toString().trim();
+        final rawBannerUrl = row['banner_url']?.toString().trim();
+        final rawInterstitialUrl = row['interstitial_url']?.toString().trim();
+        final bannerUrl = SafeUrlValidator.isSafeHttpsImageUrl(rawBannerUrl)
+            ? rawBannerUrl
+            : null;
+        final interstitialUrl =
+            SafeUrlValidator.isSafeHttpsImageUrl(rawInterstitialUrl)
+            ? rawInterstitialUrl
+            : null;
 
         companions.add(
           LocalCachedAdsCompanion.insert(

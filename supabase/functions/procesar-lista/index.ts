@@ -1,12 +1,44 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
-import { corsHeaders } from "@supabase/supabase-js/cors";
 import { GoogleGenAI } from "@google/genai";
 
 const GEMINI_MODEL = "gemini-4-hydrogen";
-const MAX_TEXT_LENGTH = 8_000;
-const MAX_MEDIA_BASE64_LENGTH = 14_000_000;
+const MAX_TEXT_LENGTH = 4_000;
+const MAX_AUDIO_BASE64_LENGTH = 720_000; // ~540 KB raw (karrito-media-guard <= 500 KB M4A)
+const MAX_IMAGE_BASE64_LENGTH = 2_800_000; // ~2 MB raw max (1024 px JPEG 75%)
 const DEFAULT_FREE_DAILY_AI_LIMIT = 5;
+
+const DEFAULT_ALLOWED_ORIGINS = new Set<string>([
+  "https://karrito-admin.vercel.app",
+  "https://karrito.vercel.app",
+  "http://localhost:3000",
+]);
+
+function getAllowedOrigins(): Set<string> {
+  const configured = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  if (configured.length === 0) return DEFAULT_ALLOWED_ORIGINS;
+  return new Set<string>([...DEFAULT_ALLOWED_ORIGINS, ...configured]);
+}
+
+function buildCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin")?.trim().replace(/\/+$/, "") ?? "";
+  const allowedOrigins = getAllowedOrigins();
+  const baseHeaders: Record<string, string> = {
+    "Vary": "Origin",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+  };
+  if (origin && allowedOrigins.has(origin)) {
+    baseHeaders["Access-Control-Allow-Origin"] = origin;
+  }
+  return baseHeaders;
+}
 
 const STORE_AISLES = {
   "Supermercado": [
@@ -233,13 +265,14 @@ El usuario ingresó el nombre de una comida, una receta escrita o una foto/captu
 3. En recipe_note escribí SIEMPRE la cantidad exacta que pide la receta original en forma breve y clara en español argentino (ej: "100 g para el flan", "150 ml para la mezcla", "4 u para el flan", "1 cdita para el caramelo").`;
 
 function jsonResponse(
+  req: Request,
   body: Record<string, unknown>,
   status = 200,
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
+      ...buildCorsHeaders(req),
       "Content-Type": "application/json; charset=utf-8",
     },
   });
@@ -438,12 +471,27 @@ function buildGeminiInput(
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("Origin")?.trim().replace(/\/+$/, "") ?? "";
+  const cors = buildCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    if (origin && !cors["Access-Control-Allow-Origin"]) {
+      return new Response(null, { status: 403, headers: cors });
+    }
+    return new Response(null, { status: 204, headers: cors });
+  }
+
+  if (origin && !cors["Access-Control-Allow-Origin"]) {
+    return jsonResponse(
+      req,
+      { error: "Origen no autorizado para usar este servicio." },
+      403,
+    );
   }
 
   if (req.method !== "POST") {
     return jsonResponse(
+      req,
       { error: "Método no permitido. Usá POST para procesar una lista." },
       405,
     );
@@ -460,6 +508,7 @@ Deno.serve(async (req: Request) => {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey || !geminiApiKey) {
     console.error("Missing required server environment variables.");
     return jsonResponse(
+      req,
       { error: "Falta configurar el servidor para ordenar listas. Avisanos si el problema sigue." },
       500,
     );
@@ -468,6 +517,7 @@ Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.toLowerCase().startsWith("bearer ")) {
     return jsonResponse(
+      req,
       { error: "No pudimos validar tu sesión. Cerrá y volvé a entrar a la aplicación para continuar." },
       401,
     );
@@ -475,6 +525,7 @@ Deno.serve(async (req: Request) => {
   const jwt = authHeader.slice(7).trim();
   if (!jwt) {
     return jsonResponse(
+      req,
       { error: "No pudimos validar tu sesión. Cerrá y volvé a entrar a la aplicación para continuar." },
       401,
     );
@@ -498,6 +549,7 @@ Deno.serve(async (req: Request) => {
 
   if (authError || !user) {
     return jsonResponse(
+      req,
       { error: "Tu sesión venció o no es válida. Volvé a iniciar sesión para ordenar tu lista." },
       401,
     );
@@ -512,6 +564,7 @@ Deno.serve(async (req: Request) => {
   if (profileError) {
     console.error("Error reading karrito.users_profile:", profileError);
     return jsonResponse(
+      req,
       { error: "No pudimos consultar tu cuenta en este momento. Probá de nuevo en unos segundos." },
       500,
     );
@@ -531,6 +584,7 @@ Deno.serve(async (req: Request) => {
     if (upsertError || !createdProfile) {
       console.error("Error creating missing karrito.users_profile:", upsertError);
       return jsonResponse(
+        req,
         { error: "No pudimos preparar tu perfil en este momento. Probá de nuevo en unos segundos." },
         500,
       );
@@ -540,6 +594,7 @@ Deno.serve(async (req: Request) => {
 
   if (profile.is_banned) {
     return jsonResponse(
+      req,
       {
         error:
           "Tu cuenta tiene el acceso bloqueado para ordenar listas con IA. Comunicate con soporte para revisar tu caso.",
@@ -549,11 +604,27 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  const contentLengthHeader = Number.parseInt(
+    req.headers.get("content-length") ?? "",
+    10,
+  );
+  if (
+    Number.isFinite(contentLengthHeader) &&
+    contentLengthHeader > MAX_IMAGE_BASE64_LENGTH + 65_536
+  ) {
+    return jsonResponse(
+      req,
+      { error: "El envío supera el tamaño máximo permitido. Achicá el texto o la imagen e intentá de nuevo." },
+      413,
+    );
+  }
+
   let payload: ProcessRequestPayload;
   try {
     payload = (await req.json()) as ProcessRequestPayload;
   } catch {
     return jsonResponse(
+      req,
       { error: "El pedido no tiene un formato válido. Actualizá la aplicación o probá de nuevo." },
       400,
     );
@@ -566,6 +637,7 @@ Deno.serve(async (req: Request) => {
 
   if (!text && !audioBase64 && !imageBase64) {
     return jsonResponse(
+      req,
       { error: "Escribí al menos un producto, grabá un audio o sacá una foto para armar la lista." },
       400,
     );
@@ -573,17 +645,24 @@ Deno.serve(async (req: Request) => {
 
   if (text.length > MAX_TEXT_LENGTH) {
     return jsonResponse(
-      { error: "El texto es demasiado largo para procesarlo junto. Dividilo en listas más cortas e intentá de nuevo." },
+      req,
+      { error: `El texto supera el máximo de ${MAX_TEXT_LENGTH} caracteres. Dividilo en listas más cortas e intentá de nuevo.` },
       400,
     );
   }
 
-  if (
-    audioBase64.length > MAX_MEDIA_BASE64_LENGTH ||
-    imageBase64.length > MAX_MEDIA_BASE64_LENGTH
-  ) {
+  if (audioBase64.length > MAX_AUDIO_BASE64_LENGTH) {
     return jsonResponse(
-      { error: "El archivo pesa demasiado para analizarlo. Sacá una foto más liviana o grabá un audio más corto." },
+      req,
+      { error: "El audio supera el límite de 500 KB. Grabá un dictado más corto e intentá de nuevo." },
+      413,
+    );
+  }
+
+  if (imageBase64.length > MAX_IMAGE_BASE64_LENGTH) {
+    return jsonResponse(
+      req,
+      { error: "La imagen supera el tamaño máximo permitido. Comprimila o sacá una foto más liviana." },
       413,
     );
   }
@@ -593,16 +672,18 @@ Deno.serve(async (req: Request) => {
 
   if ((audioBase64 && !audioMimeType) || (imageBase64 && !imageMimeType)) {
     return jsonResponse(
+      req,
       { error: "Ese formato de archivo no es compatible. Usá audio M4A o foto en JPEG." },
       400,
     );
   }
 
-  if ((audioBase64 || imageBase64) && profile.plan_tier !== "pro_3usd") {
+  if ((audioBase64 || imageBase64 || isRecipe) && profile.plan_tier !== "pro_3usd") {
     return jsonResponse(
+      req,
       {
         error:
-          "El dictado por voz y el escaneo de fotos están disponibles solo en el plan Pro. Con tu plan actual podés escribir o pegar tu lista en texto.",
+          "El dictado por voz, el escaneo de fotos y el conversor de recetas están disponibles solo en el plan Pro. Con tu plan actual podés escribir o pegar tu lista en texto.",
         code: "PRO_PLAN_REQUIRED",
       },
       403,
@@ -628,6 +709,7 @@ Deno.serve(async (req: Request) => {
 
   if (profile.plan_tier === "free" && usedToday >= freeDailyLimit) {
     return jsonResponse(
+      req,
       {
         error:
           `Ya usaste tus ${freeDailyLimit} cargas gratuitas con IA de hoy. Podés agregar productos a mano, volver mañana o elegir un plan pago.`,
@@ -679,6 +761,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error("Gemini processing error:", err);
     return jsonResponse(
+      req,
       {
         error:
           "No pudimos ordenar tu lista en este momento porque el servicio de análisis falló. Probá de nuevo en unos segundos.",
@@ -701,7 +784,7 @@ Deno.serve(async (req: Request) => {
     console.error("Error incrementing daily_ai_count:", counterError);
   }
 
-  return jsonResponse({
+  return jsonResponse(req, {
     items,
     quota: {
       plan_tier: profile.plan_tier,

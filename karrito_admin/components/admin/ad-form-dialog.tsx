@@ -313,13 +313,13 @@ export function AdFormDialog({
               </FieldLabel>
               <FieldDescription>
                 Se sube directo al bucket ads-media. Formatos aceptados: JPG,
-                PNG o WebP hasta 5 MB.
+                PNG o WebP hasta 2 MB.
               </FieldDescription>
               <input
                 ref={bannerInputRef}
                 id="ad-banner-upload"
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept="image/png,image/jpeg,image/webp"
                 className="sr-only"
                 onChange={(event) =>
                   handleUploadImage(event.target.files?.[0], "banner")
@@ -409,7 +409,7 @@ export function AdFormDialog({
                   ref={interstitialInputRef}
                   id="ad-interstitial-upload"
                   type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  accept="image/png,image/jpeg,image/webp"
                   className="sr-only"
                   onChange={(event) =>
                     handleUploadImage(event.target.files?.[0], "interstitial")

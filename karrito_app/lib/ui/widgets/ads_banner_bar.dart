@@ -11,6 +11,7 @@ import '../../core/config/monetization_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/local/app_database.dart';
 import '../../data/services/ads_cascade_service.dart';
+import '../../domain/services/safe_url_validator.dart';
 import '../../providers/core_providers.dart';
 import '../../providers/shopping_providers.dart';
 
@@ -73,9 +74,12 @@ class _KarritoAdsBannerBarState extends ConsumerState<KarritoAdsBannerBar> {
   }
 
   Future<void> _handleLocalAdTap(CachedAdEntity ad) async {
+    final uri = SafeUrlValidator.parseSafeAdUri(ad.actionUrl);
+    if (uri == null) {
+      debugPrint('Karrito blocked unsafe local ad action_url.');
+      return;
+    }
     unawaited(ref.read(adsCascadeServiceProvider).recordClick(ad.id));
-    final uri = Uri.tryParse(ad.actionUrl.trim());
-    if (uri == null) return;
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {

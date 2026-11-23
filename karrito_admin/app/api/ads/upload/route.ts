@@ -3,14 +3,49 @@ import { requireAdminSession } from "@/lib/auth/admin";
 import { ADS_STORAGE_BUCKET } from "@/lib/constants/karrito";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-]);
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+// Must match `storage.buckets.file_size_limit = 2097152` on `ads-media`.
+const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+function detectMagicImageMime(bytes: Uint8Array): string | null {
+  if (bytes.length < 12) return null;
+
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+
+  // JPEG: FF D8 FF
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return "image/jpeg";
+  }
+
+  // WebP: RIFF....WEBP
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+
+  return null;
+}
 
 function getFileExtension(mimeType: string): string {
   switch (mimeType) {
@@ -18,8 +53,6 @@ function getFileExtension(mimeType: string): string {
       return "png";
     case "image/webp":
       return "webp";
-    case "image/gif":
-      return "gif";
     default:
       return "jpg";
   }
@@ -81,8 +114,7 @@ export async function POST(request: NextRequest) {
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
     return NextResponse.json(
       {
-        error:
-          "Formato no compatible. Subí una imagen JPG, PNG, WebP o GIF.",
+        error: "Formato no compatible. Subí una imagen JPG, PNG o WebP.",
       },
       { status: 400 },
     );
@@ -92,23 +124,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "La imagen pesa más de 5 MB o está vacía. Comprimila y probá de nuevo.",
+          "La imagen pesa más de 2 MB o está vacía. Comprimila y probá de nuevo.",
       },
       { status: 400 },
     );
   }
 
-  const ext = getFileExtension(file.type);
-  const randomSuffix = Math.random().toString(36).slice(2, 8);
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  const detectedMime = detectMagicImageMime(bytes);
+  if (!detectedMime || !ALLOWED_MIME_TYPES.has(detectedMime)) {
+    return NextResponse.json(
+      {
+        error:
+          "El contenido del archivo no corresponde a una imagen válida PNG, JPG o WebP.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const ext = getFileExtension(detectedMime);
+  const randomSuffix = crypto.randomUUID().slice(0, 8);
   const storagePath = `local-ads/${slot}/${Date.now()}-${randomSuffix}-${slug}.${ext}`;
 
-  const arrayBuffer = await file.arrayBuffer();
   const adminClient = createAdminSupabaseClient();
 
   const { error: uploadError } = await adminClient.storage
     .from(ADS_STORAGE_BUCKET)
     .upload(storagePath, Buffer.from(arrayBuffer), {
-      contentType: file.type,
+      contentType: detectedMime,
       cacheControl: "3600",
       upsert: false,
     });

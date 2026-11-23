@@ -4,6 +4,8 @@ import * as React from "react";
 import Image from "next/image";
 import {
   CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CopyIcon,
   ExternalLinkIcon,
   MegaphoneIcon,
@@ -14,6 +16,7 @@ import {
 import { toast } from "sonner";
 import {
   deleteLocalAdAction,
+  fetchLocalAdsPageAction,
   toggleLocalAdActiveAction,
 } from "@/app/actions/admin-actions";
 import {
@@ -25,6 +28,7 @@ import {
   formatPercentAR,
   isAdExpired,
 } from "@/lib/constants/karrito";
+import { isSafeHttpsUrl } from "@/lib/security/url";
 import type { LocalAdRow } from "@/lib/types/database";
 import { AdFormDialog } from "@/components/admin/ad-form-dialog";
 import {
@@ -80,8 +84,11 @@ const CITY_FILTER_ITEMS = [
   ...LOCAL_AD_CITIES.map((city) => ({ label: city, value: city })),
 ];
 
+const PAGE_SIZE = 50;
+
 interface LocalAdsSectionProps {
   ads: LocalAdRow[];
+  totalCount: number;
   dialogOpen: boolean;
   onDialogOpenChange: (open: boolean) => void;
   onDataChanged: () => void;
@@ -110,6 +117,7 @@ function buildWhatsappReport(ad: LocalAdRow): string {
 
 export function LocalAdsSection({
   ads: initialAds,
+  totalCount: initialTotalCount,
   dialogOpen,
   onDialogOpenChange,
   onDataChanged,
@@ -117,9 +125,15 @@ export function LocalAdsSection({
   const [prevInitialAds, setPrevInitialAds] =
     React.useState<LocalAdRow[]>(initialAds);
   const [ads, setAds] = React.useState<LocalAdRow[]>(initialAds);
+  const [totalCount, setTotalCount] = React.useState<number>(initialTotalCount);
+  const [page, setPage] = React.useState<number>(1);
+  const [isLoadingPage, setIsLoadingPage] = React.useState<boolean>(false);
+
   if (initialAds !== prevInitialAds) {
     setPrevInitialAds(initialAds);
     setAds(initialAds);
+    setTotalCount(initialTotalCount);
+    setPage(1);
   }
   const [cityFilter, setCityFilter] = React.useState<string>("__all__");
   const [editingAd, setEditingAd] = React.useState<LocalAdRow | null>(null);
@@ -128,10 +142,31 @@ export function LocalAdsSection({
   const [busyAdId, setBusyAdId] = React.useState<string | null>(null);
   const [copiedAdId, setCopiedAdId] = React.useState<string | null>(null);
 
+  const loadPage = React.useCallback(
+    async (targetPage: number, nextCity: string) => {
+      setIsLoadingPage(true);
+      const result = await fetchLocalAdsPageAction({
+        page: targetPage,
+        city: nextCity,
+      });
+      setIsLoadingPage(false);
+      if (!result.ok || !result.data) {
+        toast.error(result.message);
+        return;
+      }
+      setAds(result.data.rows);
+      setTotalCount(result.data.totalCount);
+      setPage(result.data.page);
+    },
+    [],
+  );
+
   const filteredAds = React.useMemo(() => {
     if (cityFilter === "__all__") return ads;
     return ads.filter((ad) => ad.city === cityFilter);
   }, [ads, cityFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const handleOpenCreate = () => {
     setEditingAd(null);
@@ -241,7 +276,10 @@ export function LocalAdsSection({
                 items={CITY_FILTER_ITEMS}
                 value={cityFilter}
                 onValueChange={(nextValue) => {
-                  if (nextValue) setCityFilter(nextValue);
+                  if (nextValue) {
+                    setCityFilter(nextValue);
+                    void loadPage(1, nextValue);
+                  }
                 }}
               >
                 <SelectTrigger id="ads-city-filter">
@@ -301,8 +339,9 @@ export function LocalAdsSection({
           ) : (
             <Table wrapperLabel="Tabla de comercios con publicidad local">
               <TableCaption>
+                Página {formatNumberAR(page)} de {formatNumberAR(totalPages)} ·
                 Mostrando {formatNumberAR(filteredAds.length)} de{" "}
-                {formatNumberAR(ads.length)} anuncios cargados.
+                {formatNumberAR(totalCount)} anuncios cargados.
               </TableCaption>
               <TableHeader>
                 <TableRow>
@@ -346,15 +385,21 @@ export function LocalAdsSection({
                             <span className="truncate font-medium text-foreground">
                               {ad.business_name}
                             </span>
-                            <a
-                              href={ad.action_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary hover:underline"
-                            >
-                              Abrir enlace
-                              <ExternalLinkIcon className="size-3" />
-                            </a>
+                            {isSafeHttpsUrl(ad.action_url) ? (
+                              <a
+                                href={ad.action_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary hover:underline"
+                              >
+                                Abrir enlace
+                                <ExternalLinkIcon className="size-3" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-destructive">
+                                Enlace bloqueado (no HTTPS)
+                              </span>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -469,6 +514,39 @@ export function LocalAdsSection({
                 })}
               </TableBody>
             </Table>
+          )}
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+              <span className="text-muted-foreground">
+                Página {formatNumberAR(page)} de {formatNumberAR(totalPages)} (
+                {formatNumberAR(totalCount)} anuncios, {PAGE_SIZE} por página)
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isLoadingPage}
+                  onClick={() => void loadPage(page - 1, cityFilter)}
+                  className="rounded-full"
+                >
+                  <ChevronLeftIcon data-icon="inline-start" />
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isLoadingPage}
+                  onClick={() => void loadPage(page + 1, cityFilter)}
+                  className="rounded-full"
+                >
+                  Siguiente
+                  <ChevronRightIcon data-icon="inline-end" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
