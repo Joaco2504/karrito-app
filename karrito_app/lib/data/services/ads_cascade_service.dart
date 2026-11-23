@@ -151,7 +151,7 @@ class SupabaseAdsCascadeService implements AdsCascadeService {
   SupabaseAdsCascadeService({required this.db, required this.client});
 
   final AppDatabase db;
-  final SupabaseClient client;
+  final SupabaseClient? client;
   bool _mobileAdsInitialized = false;
   InterstitialAd? _cachedAdMobInterstitial;
   bool _loadingInterstitial = false;
@@ -174,10 +174,12 @@ class SupabaseAdsCascadeService implements AdsCascadeService {
 
   @override
   Future<void> refreshLocalAds(String userCity) async {
+    final activeClient = client;
+    if (activeClient == null) return;
     try {
       final nowIso = DateTime.now().toUtc().toIso8601String();
       final rows = List<Map<String, dynamic>>.from(
-        await client
+        await activeClient
             .from('local_ads')
             .select(
               'id, business_name, city, tier, banner_url, interstitial_url, action_url, expires_at, is_active',
@@ -262,8 +264,10 @@ class SupabaseAdsCascadeService implements AdsCascadeService {
 
   @override
   Future<void> recordImpression(String adId) async {
+    final activeClient = client;
+    if (activeClient == null) return;
     try {
-      await client.rpc(
+      await activeClient.rpc(
         'increment_ad_impression',
         params: <String, dynamic>{'p_ad_id': adId},
       );
@@ -274,8 +278,10 @@ class SupabaseAdsCascadeService implements AdsCascadeService {
 
   @override
   Future<void> recordClick(String adId) async {
+    final activeClient = client;
+    if (activeClient == null) return;
     try {
-      await client.rpc(
+      await activeClient.rpc(
         'increment_ad_click',
         params: <String, dynamic>{'p_ad_id': adId},
       );

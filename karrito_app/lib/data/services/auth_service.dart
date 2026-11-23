@@ -33,18 +33,19 @@ class GoogleLinkOutcome {
 class AuthService {
   AuthService(this._client);
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
   Future<void>? _googleInitFuture;
 
-  Session? get currentSession => _client.auth.currentSession;
-  String? get currentUserId => _client.auth.currentUser?.id;
-  bool get isAnonymous => _client.auth.currentUser?.isAnonymous ?? true;
-  String? get currentEmail => _client.auth.currentUser?.email;
+  Session? get currentSession => _client?.auth.currentSession;
+  String? get currentUserId => _client?.auth.currentUser?.id;
+  bool get isAnonymous => _client?.auth.currentUser?.isAnonymous ?? true;
+  String? get currentEmail => _client?.auth.currentUser?.email;
   String? get currentPhotoUrl =>
-      extractPhotoUrlFromMetadata(_client.auth.currentUser?.userMetadata);
+      extractPhotoUrlFromMetadata(_client?.auth.currentUser?.userMetadata);
   String? get currentDisplayName =>
-      extractDisplayNameFromMetadata(_client.auth.currentUser?.userMetadata);
-  Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+      extractDisplayNameFromMetadata(_client?.auth.currentUser?.userMetadata);
+  Stream<AuthState> get onAuthStateChange =>
+      _client?.auth.onAuthStateChange ?? const Stream<AuthState>.empty();
 
   static String? extractPhotoUrlFromMetadata(Map<String, dynamic>? metadata) {
     if (metadata == null) return null;
@@ -102,29 +103,32 @@ class AuthService {
   /// Signs in anonymously if no session is present. Never throws on network
   /// errors so the offline-first UI stays responsive without signal.
   Future<bool> ensureSignedInSilently() async {
-    final existing = _client.auth.currentSession;
+    final client = _client;
+    if (client == null) return false;
+
+    final existing = client.auth.currentSession;
     if (existing != null && !existing.isExpired) {
       return true;
     }
 
     try {
       if (existing != null && existing.isExpired) {
-        final refreshed = await _client.auth.refreshSession();
+        final refreshed = await client.auth.refreshSession();
         if (refreshed.session != null) {
           return true;
         }
       }
-      final response = await _client.auth.signInAnonymously();
+      final response = await client.auth.signInAnonymously();
       return response.session != null;
     } on AuthException catch (e) {
       debugPrint(
         'Karrito AuthService silent sign-in AuthException: '
         'code=${e.code} status=${e.statusCode} message=${e.message}',
       );
-      return _client.auth.currentSession != null;
+      return client.auth.currentSession != null;
     } catch (error) {
       debugPrint('Karrito AuthService silent sign-in skipped: $error');
-      return _client.auth.currentSession != null;
+      return client.auth.currentSession != null;
     }
   }
 
@@ -146,6 +150,11 @@ class AuthService {
   /// while signaling `switchedUid` so local Drift data can be merged cleanly).
   /// Returns `null` if the user cancels the picker.
   Future<GoogleLinkOutcome?> linkOrSignInWithGoogle() async {
+    final client = _client;
+    if (client == null) {
+      throw const AuthActionException(AppStrings.googleOfflineError);
+    }
+
     try {
       await _ensureGoogleInitialized();
 
@@ -159,18 +168,18 @@ class AuthService {
       }
 
       await ensureSignedInSilently();
-      final previousUser = _client.auth.currentUser;
+      final previousUser = client.auth.currentUser;
       final previousUid = previousUser?.id;
       var switchedUid = false;
 
       if (previousUser != null && previousUser.isAnonymous) {
         try {
-          await _client.auth.linkIdentityWithIdToken(
+          await client.auth.linkIdentityWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
           );
           debugPrint(
-            'Karrito AuthService: linkIdentityWithIdToken succeeded for uid=${_client.auth.currentUser?.id}',
+            'Karrito AuthService: linkIdentityWithIdToken succeeded for uid=${client.auth.currentUser?.id}',
           );
         } on AuthException catch (e) {
           debugPrint(
@@ -184,29 +193,29 @@ class AuthService {
 
           // Account already exists in auth.users: sign in directly and flag
           // `switchedUid` so local Drift lists/preferences are migrated cleanly.
-          await _client.auth.signInWithIdToken(
+          await client.auth.signInWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
           );
-          switchedUid = _client.auth.currentUser?.id != previousUid;
+          switchedUid = client.auth.currentUser?.id != previousUid;
           debugPrint(
             'Karrito AuthService: fallback signInWithIdToken succeeded '
-            'uid=${_client.auth.currentUser?.id} switchedUid=$switchedUid',
+            'uid=${client.auth.currentUser?.id} switchedUid=$switchedUid',
           );
         }
       } else {
-        await _client.auth.signInWithIdToken(
+        await client.auth.signInWithIdToken(
           provider: OAuthProvider.google,
           idToken: idToken,
         );
-        switchedUid = _client.auth.currentUser?.id != previousUid;
+        switchedUid = client.auth.currentUser?.id != previousUid;
         debugPrint(
           'Karrito AuthService: direct signInWithIdToken succeeded '
-          'uid=${_client.auth.currentUser?.id} switchedUid=$switchedUid',
+          'uid=${client.auth.currentUser?.id} switchedUid=$switchedUid',
         );
       }
 
-      final newUser = _client.auth.currentUser;
+      final newUser = client.auth.currentUser;
       if (newUser == null) {
         throw const AuthActionException(AppStrings.googleTokenError);
       }
@@ -243,7 +252,7 @@ class AuthService {
         'code=${e.code} status=${e.statusCode} message=${e.message}',
       );
       // Avoid a false error if the session actually linked before a secondary exception.
-      final activeUser = _client.auth.currentUser;
+      final activeUser = client.auth.currentUser;
       if (activeUser != null && !activeUser.isAnonymous) {
         return GoogleLinkOutcome(
           userId: activeUser.id,
@@ -271,7 +280,7 @@ class AuthService {
     }
 
     try {
-      await _client.auth.signOut();
+      await _client?.auth.signOut();
     } catch (e) {
       debugPrint('Karrito Supabase signOut warning: $e');
     }
@@ -283,15 +292,22 @@ class AuthService {
   /// cloud records and the `auth.users` account, then signs out cleanly into a
   /// fresh anonymous guest session.
   Future<void> deleteAccountPermanently() async {
+    final client = _client;
+    if (client == null) {
+      throw const AuthActionException(
+        'No pudimos conectarnos al servidor para eliminar la cuenta. Revisá tu conexión e intentá de nuevo.',
+      );
+    }
+
     final hasSession = await ensureSignedInSilently();
-    if (!hasSession || _client.auth.currentUser == null) {
+    if (!hasSession || client.auth.currentUser == null) {
       throw const AuthActionException(
         'No pudimos validar tu sesión para eliminar la cuenta. Revisá tu conexión e intentá de nuevo.',
       );
     }
 
     try {
-      await _client.rpc('delete_my_account');
+      await client.rpc('delete_my_account');
     } on PostgrestException catch (e) {
       debugPrint(
         'Karrito delete_my_account RPC error: code=${e.code} message=${e.message}',

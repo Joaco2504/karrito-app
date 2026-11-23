@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/config/supabase_config.dart';
 import '../data/local/app_database.dart';
 import '../data/repositories/shopping_repository.dart';
 import '../data/services/ads_cascade_service.dart';
@@ -14,14 +18,50 @@ import '../data/services/subscription_service.dart';
 import '../data/services/sync_service.dart';
 import '../data/services/wakelock_service.dart';
 
+Future<bool>? _supabaseInitFuture;
+
+Future<bool> ensureSupabaseInitializedSafely() {
+  try {
+    Supabase.instance.client;
+    return Future<bool>.value(true);
+  } catch (_) {
+    // Not initialized yet.
+  }
+
+  return _supabaseInitFuture ??= () async {
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.supabaseUrl,
+        publishableKey: SupabaseConfig.supabaseAnonKey,
+        postgrestOptions: const PostgrestClientOptions(
+          schema: SupabaseConfig.schema,
+        ),
+      ).timeout(const Duration(seconds: 8));
+      return true;
+    } catch (e) {
+      debugPrint('Karrito Supabase deferred init skipped: $e');
+      _supabaseInitFuture = null;
+      return false;
+    }
+  }();
+}
+
+final supabaseInitializerProvider = Provider<Future<bool> Function()>((ref) {
+  return ensureSupabaseInitializedSafely;
+});
+
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(db.close);
   return db;
 });
 
-final supabaseClientProvider = Provider<SupabaseClient>((ref) {
-  return Supabase.instance.client;
+final supabaseClientProvider = Provider<SupabaseClient?>((ref) {
+  try {
+    return Supabase.instance.client;
+  } catch (_) {
+    return null;
+  }
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {

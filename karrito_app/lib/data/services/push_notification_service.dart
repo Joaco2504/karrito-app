@@ -17,7 +17,7 @@ abstract interface class PushNotificationService {
 class FirebasePushNotificationService implements PushNotificationService {
   FirebasePushNotificationService(this._client);
 
-  final SupabaseClient _client;
+  final SupabaseClient? _client;
   bool _firebaseReady = false;
   String? _lastRegisteredToken;
   StreamSubscription<String>? _tokenRefreshSub;
@@ -61,7 +61,7 @@ class FirebasePushNotificationService implements PushNotificationService {
         final trimmed = registeredToken.trim();
         if (trimmed.isEmpty) return;
         _lastRegisteredToken = trimmed;
-        final activeUid = _client.auth.currentUser?.id ?? userId.trim();
+        final activeUid = _client?.auth.currentUser?.id ?? userId.trim();
         unawaited(_saveToken(activeUid, trimmed));
       });
 
@@ -86,8 +86,10 @@ class FirebasePushNotificationService implements PushNotificationService {
   }
 
   Future<void> _saveToken(String userId, String token) async {
+    final client = _client;
+    if (client == null) return;
     try {
-      await _client
+      await client
           .from('users_profile')
           .update(<String, dynamic>{'fcm_token': token})
           .eq('id', userId);

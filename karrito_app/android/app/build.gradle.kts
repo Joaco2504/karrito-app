@@ -51,3 +51,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Force modern WorkManager/Room over play-services-ads' transitive work-runtime 2.7.0
+    // for R8 full mode and Android 14-16 / MIUI stability.
+    implementation("androidx.work:work-runtime:2.9.1")
+}

@@ -341,6 +341,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            supabaseInitializerProvider.overrideWithValue(() async => true),
             appDatabaseProvider.overrideWithValue(db),
             authServiceProvider.overrideWithValue(auth),
             wakelockServiceProvider.overrideWithValue(_TestWakelockService()),

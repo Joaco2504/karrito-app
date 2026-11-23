@@ -193,44 +193,94 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
-          await m.addColumn(localLists, localLists.ownerId);
-          await m.addColumn(localLists, localLists.isShared);
-          await m.addColumn(localLists, localLists.shareCode);
-          await m.addColumn(localLists, localLists.isJoinedRemote);
-          await m.addColumn(localAisleOrder, localAisleOrder.updatedAt);
-          await m.addColumn(localAisleOrder, localAisleOrder.syncStatus);
-          await m.addColumn(localLearnedItems, localLearnedItems.displayName);
-          await m.addColumn(localLearnedItems, localLearnedItems.syncStatus);
-          await m.createTable(localPendingDeletions);
+          await _addColumnIfMissing(m, localLists, localLists.ownerId);
+          await _addColumnIfMissing(m, localLists, localLists.isShared);
+          await _addColumnIfMissing(m, localLists, localLists.shareCode);
+          await _addColumnIfMissing(m, localLists, localLists.isJoinedRemote);
+          await _addColumnIfMissing(
+            m,
+            localAisleOrder,
+            localAisleOrder.updatedAt,
+          );
+          await _addColumnIfMissing(
+            m,
+            localAisleOrder,
+            localAisleOrder.syncStatus,
+          );
+          await _addColumnIfMissing(
+            m,
+            localLearnedItems,
+            localLearnedItems.displayName,
+          );
+          await _addColumnIfMissing(
+            m,
+            localLearnedItems,
+            localLearnedItems.syncStatus,
+          );
+          await _createTableIfMissing(m, localPendingDeletions);
         }
         if (from < 3) {
-          await m.addColumn(localPreferences, localPreferences.lastSyncedAt);
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.lastSyncedAt,
+          );
           await _createPerformanceIndexes();
         }
         if (from < 4) {
-          await m.addColumn(localPreferences, localPreferences.soundEnabled);
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.soundEnabled,
+          );
         }
         if (from < 5) {
-          await m.addColumn(
+          await _addColumnIfMissing(
+            m,
             localPreferences,
             localPreferences.vibrationEnabled,
           );
-          await m.addColumn(localPreferences, localPreferences.avatarChoice);
-          await m.addColumn(localPreferences, localPreferences.googlePhotoUrl);
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.avatarChoice,
+          );
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.googlePhotoUrl,
+          );
           await _seedAisleOrderOnly();
         }
         if (from < 6) {
-          await m.addColumn(localItems, localItems.price);
-          await m.addColumn(localPreferences, localPreferences.planTier);
-          await m.addColumn(localPreferences, localPreferences.freeMaxLists);
-          await m.addColumn(localPreferences, localPreferences.basicMaxLists);
-          await m.addColumn(localPreferences, localPreferences.proMaxLists);
-          await m.addColumn(
+          await _addColumnIfMissing(m, localItems, localItems.price);
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.planTier,
+          );
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.freeMaxLists,
+          );
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.basicMaxLists,
+          );
+          await _addColumnIfMissing(
+            m,
+            localPreferences,
+            localPreferences.proMaxLists,
+          );
+          await _addColumnIfMissing(
+            m,
             localPreferences,
             localPreferences.monthlyBudgetArs,
           );
-          await m.createTable(localCachedAds);
-          await m.createTable(localExpenseHistory);
+          await _createTableIfMissing(m, localCachedAds);
+          await _createTableIfMissing(m, localExpenseHistory);
           await _createPhase5Indexes();
         }
       },
@@ -238,6 +288,40 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('PRAGMA foreign_keys = ON');
       },
     );
+  }
+
+  Future<bool> _tableExists(String tableName) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable.withString(tableName)],
+    ).get();
+    return rows.isNotEmpty;
+  }
+
+  Future<bool> _columnExists(String tableName, String columnName) async {
+    final rows = await customSelect("PRAGMA table_info('$tableName')").get();
+    return rows.any((row) => row.read<String>('name') == columnName);
+  }
+
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+    GeneratedColumn<Object> column,
+  ) async {
+    final exists = await _columnExists(table.actualTableName, column.name);
+    if (!exists) {
+      await m.addColumn(table, column);
+    }
+  }
+
+  Future<void> _createTableIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+  ) async {
+    final exists = await _tableExists(table.actualTableName);
+    if (!exists) {
+      await m.createTable(table);
+    }
   }
 
   Future<void> _createPerformanceIndexes() async {

@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'core/config/supabase_config.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_database.dart';
@@ -18,17 +18,21 @@ import 'ui/screens/shopping_list_screen.dart';
 import 'ui/widgets/karrito_asset_icon.dart';
 import 'ui/widgets/karrito_toast.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: SupabaseConfig.supabaseUrl,
-    publishableKey: SupabaseConfig.supabaseAnonKey,
-    postgrestOptions: const PostgrestClientOptions(
-      schema: SupabaseConfig.schema,
-    ),
-  );
+  // Never let an uncaught background SDK or framework error kill the UI loop.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Karrito FlutterError: ${details.exceptionAsString()}');
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('Karrito unhandled async error: $error');
+    return true;
+  };
 
+  // Start rendering local Drift UI + Electric Mercado theme immediately without
+  // blocking the first frame on Firebase, AdMob, RevenueCat, or Supabase.
   runApp(const ProviderScope(child: KarritoApp()));
 }
 
@@ -53,17 +57,52 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
     unawaited(KarritoAssetRegistry.warmUp());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncService = ref.read(syncServiceProvider);
-      unawaited(ref.read(pushNotificationServiceProvider).initializeSafely());
-      unawaited(
-        ref.read(adsCascadeServiceProvider).initializeMobileAdsSafely(),
-      );
-      _handleOnlineState(ref.read(isOnlineProvider));
-      _updateRealtimeSubscription(
-        isOnline: ref.read(isOnlineProvider),
-        activeList: ref.read(activeListProvider),
-      );
+      unawaited(_initializeDeferredServices());
     });
+  }
+
+  /// Initializes external SDKs asynchronously after the first local Drift frame
+  /// renders, isolating every SDK in its own `try / catch` block so no external
+  /// service can ever block or crash app startup.
+  Future<void> _initializeDeferredServices() async {
+    // 1. Firebase / FCM (independent)
+    unawaited(() async {
+      try {
+        if (!mounted) return;
+        await ref.read(pushNotificationServiceProvider).initializeSafely();
+      } catch (e) {
+        debugPrint('Karrito deferred Firebase init skipped: $e');
+      }
+    }());
+
+    // 2. Google Mobile Ads (independent)
+    unawaited(() async {
+      try {
+        if (!mounted) return;
+        await ref.read(adsCascadeServiceProvider).initializeMobileAdsSafely();
+      } catch (e) {
+        debugPrint('Karrito deferred MobileAds init skipped: $e');
+      }
+    }());
+
+    // 3. Supabase (independent, unlocks sync/auth/ads refresh)
+    try {
+      final ready = await ref.read(supabaseInitializerProvider)();
+      if (!mounted) return;
+      if (ready && ref.read(supabaseClientProvider) == null) {
+        ref.invalidate(supabaseClientProvider);
+      }
+    } catch (e) {
+      debugPrint('Karrito deferred Supabase init skipped: $e');
+    }
+
+    if (!mounted) return;
+    _syncService = ref.read(syncServiceProvider);
+    _handleOnlineState(ref.read(isOnlineProvider));
+    _updateRealtimeSubscription(
+      isOnline: ref.read(isOnlineProvider),
+      activeList: ref.read(activeListProvider),
+    );
   }
 
   @override
@@ -95,49 +134,89 @@ class _KarritoAppState extends ConsumerState<KarritoApp> {
   }
 
   Future<void> _bootstrapOnlineSync() async {
-    final auth = ref.read(authServiceProvider);
-    await auth.ensureSignedInSilently();
+    String? currentUserId;
+    try {
+      final auth = ref.read(authServiceProvider);
+      await auth.ensureSignedInSilently();
+      if (!mounted) return;
+      currentUserId = auth.currentUserId;
+      ref.read(accountStatusProvider.notifier).refresh();
+      final photoUrl = auth.currentPhotoUrl;
+      final currentPrefs = ref.read(preferencesProvider).value;
+      if (!auth.isAnonymous &&
+          photoUrl != null &&
+          photoUrl.isNotEmpty &&
+          currentPrefs != null &&
+          currentPrefs.googlePhotoUrl != photoUrl) {
+        unawaited(
+          ref
+              .read(shoppingRepositoryProvider)
+              .updatePreferences(
+                googlePhotoUrl: photoUrl,
+                avatarChoice: currentPrefs.avatarChoice == 'avatar_1'
+                    ? 'google'
+                    : null,
+              ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Karrito silent auth bootstrap skipped: $e');
+    }
+
     if (!mounted) return;
-    ref.read(accountStatusProvider.notifier).refresh();
-    final photoUrl = auth.currentPhotoUrl;
-    final currentPrefs = ref.read(preferencesProvider).value;
-    if (!auth.isAnonymous &&
-        photoUrl != null &&
-        photoUrl.isNotEmpty &&
-        currentPrefs != null &&
-        currentPrefs.googlePhotoUrl != photoUrl) {
-      unawaited(
-        ref
-            .read(shoppingRepositoryProvider)
-            .updatePreferences(
-              googlePhotoUrl: photoUrl,
-              avatarChoice: currentPrefs.avatarChoice == 'avatar_1'
-                  ? 'google'
-                  : null,
-            ),
+    try {
+      await ref
+          .read(subscriptionServiceProvider)
+          .configure(appUserId: currentUserId);
+    } catch (e) {
+      debugPrint('Karrito RevenueCat deferred configure skipped: $e');
+    }
+
+    if (!mounted) return;
+    try {
+      await ref
+          .read(shoppingControllerProvider.notifier)
+          .reprocessPendingAi(userTriggered: false);
+    } catch (e) {
+      debugPrint('Karrito pending AI reprocess skipped: $e');
+    }
+
+    if (!mounted) return;
+    try {
+      await ref
+          .read(shoppingControllerProvider.notifier)
+          .syncNow(userTriggered: false);
+    } catch (e) {
+      debugPrint('Karrito startup syncNow skipped: $e');
+    }
+
+    if (!mounted) return;
+    try {
+      await ref.read(shoppingControllerProvider.notifier).refreshPlanAndAds();
+    } catch (e) {
+      debugPrint('Karrito refreshPlanAndAds skipped: $e');
+    }
+
+    if (!mounted) return;
+    try {
+      if (ref.read(effectivePlanTierProvider) == KarritoPlanTier.free) {
+        unawaited(
+          ref.read(adsCascadeServiceProvider).preloadAdMobInterstitial(),
+        );
+      }
+    } catch (e) {
+      debugPrint('Karrito AdMob interstitial preload skipped: $e');
+    }
+
+    if (!mounted) return;
+    try {
+      _updateRealtimeSubscription(
+        isOnline: ref.read(isOnlineProvider),
+        activeList: ref.read(activeListProvider),
       );
+    } catch (e) {
+      debugPrint('Karrito realtime subscription skipped: $e');
     }
-    await ref
-        .read(subscriptionServiceProvider)
-        .configure(appUserId: auth.currentUserId);
-    if (!mounted) return;
-    await ref
-        .read(shoppingControllerProvider.notifier)
-        .reprocessPendingAi(userTriggered: false);
-    if (!mounted) return;
-    await ref
-        .read(shoppingControllerProvider.notifier)
-        .syncNow(userTriggered: false);
-    if (!mounted) return;
-    await ref.read(shoppingControllerProvider.notifier).refreshPlanAndAds();
-    if (!mounted) return;
-    if (ref.read(effectivePlanTierProvider) == KarritoPlanTier.free) {
-      unawaited(ref.read(adsCascadeServiceProvider).preloadAdMobInterstitial());
-    }
-    _updateRealtimeSubscription(
-      isOnline: ref.read(isOnlineProvider),
-      activeList: ref.read(activeListProvider),
-    );
   }
 
   void _updateRealtimeSubscription({

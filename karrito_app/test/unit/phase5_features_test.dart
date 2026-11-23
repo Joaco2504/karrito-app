@@ -536,5 +536,137 @@ void main() {
         expect(expIndexes, contains('idx_local_expense_history_recorded'));
       },
     );
+
+    test(
+      'handles partially migrated v5 -> v6 databases idempotently without duplicate column errors',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'karrito_v5_partial_',
+        );
+        final dbFile = File(
+          '${tempDir.path}${Platform.pathSeparator}test_partial.db',
+        );
+        addTearDown(() async {
+          if (await tempDir.exists()) {
+            await tempDir.delete(recursive: true);
+          }
+        });
+
+        final db = AppDatabase(
+          NativeDatabase(
+            dbFile,
+            setup: (raw) {
+              if (raw.userVersion != 0) return;
+              raw.execute('''
+                CREATE TABLE local_lists (
+                  id TEXT NOT NULL PRIMARY KEY,
+                  title TEXT NOT NULL,
+                  owner_id TEXT,
+                  is_shared INTEGER NOT NULL DEFAULT 0,
+                  share_code TEXT,
+                  is_joined_remote INTEGER NOT NULL DEFAULT 0,
+                  created_at INTEGER NOT NULL,
+                  updated_at INTEGER NOT NULL,
+                  sync_status TEXT NOT NULL DEFAULT 'pending'
+                );
+              ''');
+              // Already has `price` column even though user_version is still 5!
+              raw.execute('''
+                CREATE TABLE local_items (
+                  id TEXT NOT NULL PRIMARY KEY,
+                  list_id TEXT NOT NULL REFERENCES local_lists(id) ON DELETE CASCADE,
+                  raw_text TEXT NOT NULL,
+                  clean_name TEXT NOT NULL,
+                  quantity REAL NOT NULL DEFAULT 1.0,
+                  unit TEXT NOT NULL DEFAULT 'u',
+                  store_category TEXT NOT NULL,
+                  aisle_name TEXT NOT NULL,
+                  price REAL,
+                  is_checked INTEGER NOT NULL DEFAULT 0,
+                  position INTEGER NOT NULL DEFAULT 0,
+                  updated_at INTEGER NOT NULL,
+                  sync_status TEXT NOT NULL DEFAULT 'pending'
+                );
+              ''');
+              raw.execute('''
+                CREATE TABLE local_aisle_order (
+                  store_category TEXT NOT NULL,
+                  aisle_name TEXT NOT NULL,
+                  sort_order INTEGER NOT NULL,
+                  updated_at INTEGER,
+                  sync_status TEXT NOT NULL DEFAULT 'seeded',
+                  PRIMARY KEY (store_category, aisle_name)
+                );
+              ''');
+              raw.execute('''
+                CREATE TABLE local_learned_items (
+                  normalized_name TEXT NOT NULL PRIMARY KEY,
+                  display_name TEXT,
+                  preferred_store TEXT NOT NULL,
+                  preferred_aisle TEXT NOT NULL,
+                  use_count INTEGER NOT NULL DEFAULT 1,
+                  updated_at INTEGER NOT NULL,
+                  sync_status TEXT NOT NULL DEFAULT 'pending'
+                );
+              ''');
+              // Already has `plan_tier` column even though user_version is 5!
+              raw.execute('''
+                CREATE TABLE local_preferences (
+                  id INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+                  city TEXT NOT NULL DEFAULT 'Andalgalá',
+                  theme_mode TEXT NOT NULL DEFAULT 'system',
+                  onboarding_completed INTEGER NOT NULL DEFAULT 0,
+                  keep_screen_on INTEGER NOT NULL DEFAULT 1,
+                  sound_enabled INTEGER NOT NULL DEFAULT 1,
+                  vibration_enabled INTEGER NOT NULL DEFAULT 1,
+                  avatar_choice TEXT NOT NULL DEFAULT 'avatar_1',
+                  google_photo_url TEXT,
+                  plan_tier TEXT NOT NULL DEFAULT 'free',
+                  last_synced_at INTEGER
+                );
+              ''');
+              raw.execute('''
+                CREATE TABLE local_pending_deletions (
+                  id TEXT NOT NULL PRIMARY KEY,
+                  entity_type TEXT NOT NULL,
+                  entity_key TEXT NOT NULL,
+                  is_leave_only INTEGER NOT NULL DEFAULT 0,
+                  deleted_at INTEGER NOT NULL
+                );
+              ''');
+              // Already has `local_cached_ads` table!
+              raw.execute('''
+                CREATE TABLE local_cached_ads (
+                  id TEXT NOT NULL PRIMARY KEY,
+                  business_name TEXT NOT NULL,
+                  city TEXT NOT NULL,
+                  tier TEXT NOT NULL,
+                  banner_url TEXT,
+                  interstitial_url TEXT,
+                  action_url TEXT NOT NULL,
+                  expires_at INTEGER NOT NULL,
+                  is_active INTEGER NOT NULL DEFAULT 1,
+                  cached_at INTEGER NOT NULL
+                );
+              ''');
+              raw.execute(
+                'INSERT INTO local_preferences (id, city, plan_tier) '
+                "VALUES (1, 'Belén', 'pro_3usd');",
+              );
+              raw.execute('PRAGMA user_version = 5;');
+            },
+          ),
+        );
+        addTearDown(db.close);
+
+        final repo = ShoppingRepository(db: db, aiClassifier: _NoopAi());
+        final prefs = await repo.watchPreferences().first;
+        expect(prefs.city, 'Belén');
+        expect(prefs.planTier, KarritoPlanTier.pro);
+        expect(prefs.freeMaxLists, 3);
+        expect(prefs.basicMaxLists, 10);
+        expect(prefs.proMaxLists, 999);
+      },
+    );
   });
 }
