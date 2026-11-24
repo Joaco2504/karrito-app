@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "971712549329-4t93o6548s5jfnsladeg68sle714iru3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.karrito.app",
+            "certificate_hash": "43c867d1698dcca73a8d4679723312259e5e9d3a"
+          }
+        },
+        {
           "client_id": "971712549329-auu523gdcphdacpcckr36tim4g49de18.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.karrito.app",
             "certificate_hash": "b3969af4bf71f2ae35701c88d31967929e6c4503"
+          }
+        },
+        {
+          "client_id": "971712549329-s9ceju3o5ablute493tvtt12nc5e6ak4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.karrito.app",
+            "certificate_hash": "cb676ebe2084f63dbbf891fa04aa789679c15767"
           }
         },
         {
