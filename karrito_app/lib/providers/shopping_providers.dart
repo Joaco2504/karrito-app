@@ -192,6 +192,10 @@ class ShoppingUiState {
     this.isError = false,
     this.messageVersion = 0,
     this.interstitialTriggerVersion = 0,
+    this.diagnosticDialogTitle,
+    this.diagnosticDialogMessage,
+    this.diagnosticDialogTechnicalDetail,
+    this.diagnosticDialogVersion = 0,
   });
 
   final bool isSubmitting;
@@ -204,6 +208,10 @@ class ShoppingUiState {
   final bool isError;
   final int messageVersion;
   final int interstitialTriggerVersion;
+  final String? diagnosticDialogTitle;
+  final String? diagnosticDialogMessage;
+  final String? diagnosticDialogTechnicalDetail;
+  final int diagnosticDialogVersion;
 
   ShoppingUiState copyWith({
     bool? isSubmitting,
@@ -217,6 +225,10 @@ class ShoppingUiState {
     bool? isError,
     int? messageVersion,
     int? interstitialTriggerVersion,
+    String? diagnosticDialogTitle,
+    String? diagnosticDialogMessage,
+    String? diagnosticDialogTechnicalDetail,
+    int? diagnosticDialogVersion,
   }) {
     return ShoppingUiState(
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -233,6 +245,15 @@ class ShoppingUiState {
       messageVersion: messageVersion ?? this.messageVersion,
       interstitialTriggerVersion:
           interstitialTriggerVersion ?? this.interstitialTriggerVersion,
+      diagnosticDialogTitle:
+          diagnosticDialogTitle ?? this.diagnosticDialogTitle,
+      diagnosticDialogMessage:
+          diagnosticDialogMessage ?? this.diagnosticDialogMessage,
+      diagnosticDialogTechnicalDetail:
+          diagnosticDialogTechnicalDetail ??
+          this.diagnosticDialogTechnicalDetail,
+      diagnosticDialogVersion:
+          diagnosticDialogVersion ?? this.diagnosticDialogVersion,
     );
   }
 }
@@ -249,6 +270,19 @@ class ShoppingController extends Notifier<ShoppingUiState> {
       feedbackMessage: message,
       isError: isError,
       messageVersion: state.messageVersion + 1,
+    );
+  }
+
+  void _emitDiagnosticError({
+    required String title,
+    required String message,
+    required String technicalDetail,
+  }) {
+    state = state.copyWith(
+      diagnosticDialogTitle: title,
+      diagnosticDialogMessage: message,
+      diagnosticDialogTechnicalDetail: technicalDetail,
+      diagnosticDialogVersion: state.diagnosticDialogVersion + 1,
     );
   }
 
@@ -394,7 +428,13 @@ class ShoppingController extends Notifier<ShoppingUiState> {
       debugPrint('Karrito syncNow failed: $error');
       if (userTriggered) {
         final refCode = SupabaseSyncService.extractDiagnosticCode(error);
-        _emitFeedback(AppStrings.syncFailedWithRef(refCode), isError: true);
+        final msg = AppStrings.syncFailedWithRef(refCode);
+        _emitFeedback(msg, isError: true);
+        _emitDiagnosticError(
+          title: AppStrings.syncErrorDialogTitle,
+          message: msg,
+          technicalDetail: AuthService.formatTechnicalError(error),
+        );
       }
     } finally {
       state = state.copyWith(isSyncing: false);
@@ -413,6 +453,15 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
     state = state.copyWith(isLinkingGoogle: true);
     try {
+      // Ensure deferred Supabase initialization has finished before Google auth
+      // (important if the user taps Google Sign-In immediately on onboarding).
+      if (ref.read(supabaseClientProvider) == null) {
+        final ready = await ref.read(supabaseInitializerProvider)();
+        if (ready && ref.read(supabaseClientProvider) == null) {
+          ref.invalidate(supabaseClientProvider);
+        }
+      }
+
       GoogleLinkOutcome? outcome;
       try {
         outcome = await ref.read(authServiceProvider).linkOrSignInWithGoogle();
@@ -422,6 +471,9 @@ class ShoppingController extends Notifier<ShoppingUiState> {
 
         // Immediately refresh UI so the linked account shows up even if sync fails.
         ref.read(accountStatusProvider.notifier).refresh();
+        unawaited(
+          ref.read(subscriptionServiceProvider).identifyUser(outcome.userId),
+        );
 
         final currentPrefs = ref.read(preferencesProvider).value;
         final hasGooglePhoto =
@@ -454,10 +506,24 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         }
       } on AuthActionException catch (e) {
         _emitFeedback(e.message, isError: true);
+        if (e.technicalDetails != null &&
+            e.technicalDetails!.trim().isNotEmpty) {
+          _emitDiagnosticError(
+            title: AppStrings.googleErrorDialogTitle,
+            message: e.message,
+            technicalDetail: e.technicalDetails!.trim(),
+          );
+        }
         return false;
       } catch (error) {
-        debugPrint('Karrito linkGoogleAccount auth error: $error');
+        final tech = AuthService.formatTechnicalError(error);
+        debugPrint('Karrito linkGoogleAccount auth error: $tech');
         _emitFeedback(AppStrings.googleTokenError, isError: true);
+        _emitDiagnosticError(
+          title: AppStrings.googleErrorDialogTitle,
+          message: AppStrings.googleTokenError,
+          technicalDetail: tech,
+        );
         return false;
       }
 
@@ -466,11 +532,15 @@ class ShoppingController extends Notifier<ShoppingUiState> {
         ref.read(accountStatusProvider.notifier).refresh();
         _emitFeedback(AppStrings.googleLinkedNotice);
       } catch (syncError) {
-        debugPrint(
-          'Karrito linkGoogleAccount post-link sync deferred: $syncError',
-        );
+        final tech = AuthService.formatTechnicalError(syncError);
+        debugPrint('Karrito linkGoogleAccount post-link sync deferred: $tech');
         ref.read(accountStatusProvider.notifier).refresh();
         _emitFeedback(AppStrings.googleLinkedSyncPendingNotice);
+        _emitDiagnosticError(
+          title: AppStrings.syncErrorDialogTitle,
+          message: AppStrings.googleLinkedSyncPendingNotice,
+          technicalDetail: tech,
+        );
       }
       return true;
     } finally {

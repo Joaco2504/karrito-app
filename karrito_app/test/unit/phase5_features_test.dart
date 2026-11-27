@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:karrito_app/core/config/monetization_config.dart';
 import 'package:karrito_app/core/constants/store_hierarchy.dart';
 import 'package:karrito_app/data/local/app_database.dart';
@@ -9,11 +11,14 @@ import 'package:karrito_app/data/models/procesar_lista_response.dart';
 import 'package:karrito_app/data/repositories/shopping_repository.dart';
 import 'package:karrito_app/data/services/ads_cascade_service.dart';
 import 'package:karrito_app/data/services/ai_classifier_service.dart';
+import 'package:karrito_app/data/services/auth_service.dart';
 import 'package:karrito_app/data/services/media_capture_service.dart';
 import 'package:karrito_app/data/services/subscription_service.dart';
 import 'package:karrito_app/domain/services/currency_formatter.dart';
 import 'package:karrito_app/ui/widgets/karrito_asset_icon.dart';
 import 'package:karrito_app/ui/widgets/profile_avatar_widget.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _NoopAi implements AiClassifierService {
   @override
@@ -388,6 +393,177 @@ void main() {
             MonetizationConfig.entitlementPro,
           }),
           KarritoPlanTier.pro,
+        );
+      },
+    );
+
+    test(
+      'RevenueCat offer resolver reads ARS priceString for both basic and pro across split offerings and unified offerings',
+      () {
+        final basicPkg = Package(
+          r'$rc_monthly',
+          PackageType.monthly,
+          const StoreProduct(
+            'karrito_basic_2usd:basic-monthly',
+            'Sin anuncios y hasta 10 listas',
+            'Plan Básico',
+            2900.0,
+            'ARS 2.900,00',
+            'ARS',
+          ),
+          const PresentedOfferingContext('Defaul', null, null),
+        );
+        final proPkg = Package(
+          r'$rc_monthly',
+          PackageType.monthly,
+          const StoreProduct(
+            'karrito_pro_3usd:pro-monthly',
+            'Todas las herramientas Pro',
+            'Plan Pro',
+            4350.0,
+            'ARS 4.350,00',
+            'ARS',
+          ),
+          const PresentedOfferingContext('offering default', null, null),
+        );
+
+        final currentOffering = Offering(
+          'Defaul',
+          'Default',
+          const <String, Object>{},
+          <Package>[basicPkg],
+          monthly: basicPkg,
+        );
+        final secondOffering = Offering(
+          'offering default',
+          'default',
+          const <String, Object>{},
+          <Package>[proPkg],
+          monthly: proPkg,
+        );
+
+        final splitOfferings = Offerings(<String, Offering>{
+          'Defaul': currentOffering,
+          'offering default': secondOffering,
+        }, current: currentOffering);
+
+        final resolvedSplit =
+            RevenueCatSubscriptionService.resolveMonthlyOffersFromOfferings(
+              splitOfferings,
+            );
+        final resolvedBasic = resolvedSplit.firstWhere(
+          (o) => o.planTier == KarritoPlanTier.basic,
+        );
+        final resolvedPro = resolvedSplit.firstWhere(
+          (o) => o.planTier == KarritoPlanTier.pro,
+        );
+        expect(resolvedBasic.priceLabel, 'ARS 2.900,00');
+        expect(resolvedBasic.storePackage, same(basicPkg));
+        expect(resolvedPro.priceLabel, 'ARS 4.350,00');
+        expect(resolvedPro.storePackage, same(proPkg));
+
+        // Also verify unified single `default` offering using hyphenated base plan IDs.
+        final unifiedBasic = Package(
+          'basic-monthly',
+          PackageType.custom,
+          const StoreProduct(
+            'karrito_basic_2usd:basic-monthly',
+            'Sin anuncios',
+            'Plan Básico',
+            2900.0,
+            'ARS 2.900,00',
+            'ARS',
+          ),
+          const PresentedOfferingContext('default', null, null),
+        );
+        final unifiedPro = Package(
+          'pro-monthly',
+          PackageType.custom,
+          const StoreProduct(
+            'karrito_pro_3usd:pro-monthly',
+            'Pro completo',
+            'Plan Pro',
+            4350.0,
+            'ARS 4.350,00',
+            'ARS',
+          ),
+          const PresentedOfferingContext('default', null, null),
+        );
+        final unifiedOffering = Offering(
+          'default',
+          'Default',
+          const <String, Object>{},
+          <Package>[unifiedBasic, unifiedPro],
+        );
+        final unifiedOffers =
+            RevenueCatSubscriptionService.resolveMonthlyOffersFromOfferings(
+              Offerings(<String, Offering>{
+                'default': unifiedOffering,
+              }, current: unifiedOffering),
+            );
+        expect(
+          unifiedOffers
+              .firstWhere((o) => o.planTier == KarritoPlanTier.basic)
+              .priceLabel,
+          'ARS 2.900,00',
+        );
+        expect(
+          unifiedOffers
+              .firstWhere((o) => o.planTier == KarritoPlanTier.pro)
+              .priceLabel,
+          'ARS 4.350,00',
+        );
+      },
+    );
+
+    test(
+      'AuthService preserves exact technical error messages and distinguishes developer errors from user cancel',
+      () {
+        expect(
+          AuthService.isUserCanceledGoogleSignIn(
+            const GoogleSignInException(
+              code: GoogleSignInExceptionCode.canceled,
+              description: 'activity is cancelled by the user.',
+            ),
+          ),
+          isTrue,
+        );
+        expect(
+          AuthService.isUserCanceledGoogleSignIn(
+            const GoogleSignInException(
+              code: GoogleSignInExceptionCode.canceled,
+              description: '[28444] Developer console is not set up correctly.',
+            ),
+          ),
+          isFalse,
+        );
+        expect(
+          AuthService.formatTechnicalError(
+            const GoogleSignInException(
+              code: GoogleSignInExceptionCode.unknownError,
+              description: '[16] Account reauth failed.',
+            ),
+          ),
+          contains('Account reauth failed'),
+        );
+        expect(
+          AuthService.formatTechnicalError(
+            PlatformException(
+              code: 'sign_in_failed',
+              message: '10: DEVELOPER_ERROR',
+            ),
+          ),
+          contains('DEVELOPER_ERROR'),
+        );
+        expect(
+          AuthService.formatTechnicalError(
+            const AuthException(
+              'Unacceptable audience in id_token',
+              statusCode: '400',
+              code: 'bad_jwt',
+            ),
+          ),
+          contains('Unacceptable audience in id_token'),
         );
       },
     );

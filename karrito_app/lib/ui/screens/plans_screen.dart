@@ -35,9 +35,12 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
   }
 
   Future<void> _loadOffers() async {
-    final loaded = await ref
-        .read(subscriptionServiceProvider)
-        .fetchMonthlyOffers();
+    final service = ref.read(subscriptionServiceProvider);
+    if (!service.isConfigured) {
+      final uid = ref.read(authServiceProvider).currentUserId;
+      await service.configure(appUserId: uid);
+    }
+    final loaded = await service.fetchMonthlyOffers();
     if (mounted) {
       setState(() => _offers = loaded);
     }

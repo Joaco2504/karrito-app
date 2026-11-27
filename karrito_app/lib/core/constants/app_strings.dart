@@ -281,6 +281,12 @@ class AppStrings {
       'No pudimos vincular tu cuenta porque no hay conexión a internet. Probá cuando vuelva la señal.';
   static const String googleTokenError =
       'No pudimos completar la verificación con Google. Probá de nuevo en unos segundos.';
+  static const String googleErrorDialogTitle = 'Error al vincular con Google';
+  static const String syncErrorDialogTitle = 'Error al sincronizar cuenta';
+  static const String errorTechnicalDetailLabel = 'Detalle técnico';
+  static const String copyDiagnosticButton = 'Copiar detalle';
+  static const String diagnosticCopiedNotice = 'Detalle técnico copiado.';
+  static const String closeDialogButton = 'Cerrar';
   static const String syncCompletedNotice =
       'Sincronización completa con tu cuenta.';
   static const String syncFailedError =

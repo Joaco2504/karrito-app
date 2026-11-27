@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -6,11 +7,13 @@ import '../../core/config/supabase_config.dart';
 import '../../core/constants/app_strings.dart';
 
 class AuthActionException implements Exception {
-  const AuthActionException(this.message);
+  const AuthActionException(this.message, {this.technicalDetails});
   final String message;
+  final String? technicalDetails;
 
   @override
-  String toString() => message;
+  String toString() =>
+      technicalDetails == null ? message : '$message ($technicalDetails)';
 }
 
 class GoogleLinkOutcome {
@@ -132,9 +135,90 @@ class AuthService {
     }
   }
 
+  /// Formats exact technical details from Google Sign-In, platform channel, or
+  /// Supabase exceptions so testers can inspect/copy the real failure cause.
+  static String formatTechnicalError(Object error) {
+    if (error is GoogleSignInException) {
+      final parts = <String>[
+        'code=${error.code.name}',
+        if (error.description != null && error.description!.trim().isNotEmpty)
+          'description=${error.description!.trim()}',
+        if (error.details != null) 'details=${error.details}',
+      ];
+      return 'GoogleSignInException(${parts.join(', ')})';
+    }
+    if (error is PlatformException) {
+      final parts = <String>[
+        'code=${error.code}',
+        if (error.message != null && error.message!.trim().isNotEmpty)
+          'message=${error.message!.trim()}',
+        if (error.details != null) 'details=${error.details}',
+      ];
+      return 'PlatformException(${parts.join(', ')})';
+    }
+    if (error is AuthException) {
+      final parts = <String>[
+        if (error.code != null && error.code!.trim().isNotEmpty)
+          'code=${error.code!.trim()}',
+        if (error.statusCode != null && error.statusCode!.trim().isNotEmpty)
+          'status=${error.statusCode!.trim()}',
+        if (error.message.trim().isNotEmpty) 'message=${error.message.trim()}',
+      ];
+      return 'AuthException(${parts.join(', ')})';
+    }
+    if (error is PostgrestException) {
+      final parts = <String>[
+        if (error.code != null && error.code!.trim().isNotEmpty)
+          'code=${error.code!.trim()}',
+        if (error.message.trim().isNotEmpty) 'message=${error.message.trim()}',
+        if (error.details != null) 'details=${error.details}',
+        if (error.hint != null) 'hint=${error.hint}',
+      ];
+      return 'PostgrestException(${parts.join(', ')})';
+    }
+    return '${error.runtimeType}: $error';
+  }
+
+  /// Returns `true` only for a genuine user dismissal of the Google picker.
+  /// Android Credential Manager occasionally surfaces SHA-1/OAuth console
+  /// misconfigurations (e.g. `[28444]` or `[16] reauth failed`) under a
+  /// cancellation wrapper; those must NOT be swallowed silently.
+  static bool isUserCanceledGoogleSignIn(GoogleSignInException e) {
+    if (e.code != GoogleSignInExceptionCode.canceled) return false;
+    final desc = (e.description ?? '').trim().toLowerCase();
+    if (desc.isEmpty) return true;
+    const technicalErrorMarkers = <String>[
+      'developer',
+      'console',
+      'reauth',
+      '28444',
+      '16:',
+      '10:',
+      'sha',
+      'config',
+      'mismatch',
+      'credential',
+      'token',
+      'failed',
+      'error',
+    ];
+    for (final marker in technicalErrorMarkers) {
+      if (desc.contains(marker)) return false;
+    }
+    return true;
+  }
+
   Future<void> _ensureGoogleInitialized() async {
+    final serverClientId = SupabaseConfig.googleWebClientId.trim();
+    if (serverClientId.isEmpty) {
+      throw const AuthActionException(
+        AppStrings.googleTokenError,
+        technicalDetails:
+            'Missing SupabaseConfig.googleWebClientId (client_type: 3).',
+      );
+    }
     _googleInitFuture ??= GoogleSignIn.instance.initialize(
-      serverClientId: SupabaseConfig.googleWebClientId,
+      serverClientId: serverClientId,
     );
     try {
       await _googleInitFuture;
@@ -152,7 +236,10 @@ class AuthService {
   Future<GoogleLinkOutcome?> linkOrSignInWithGoogle() async {
     final client = _client;
     if (client == null) {
-      throw const AuthActionException(AppStrings.googleOfflineError);
+      throw const AuthActionException(
+        AppStrings.googleOfflineError,
+        technicalDetails: 'SupabaseClient is null (not initialized).',
+      );
     }
 
     try {
@@ -164,7 +251,11 @@ class AuthService {
         debugPrint(
           'Karrito AuthService: Google returned null/empty idToken for ${googleUser.email}',
         );
-        throw const AuthActionException(AppStrings.googleTokenError);
+        throw AuthActionException(
+          AppStrings.googleTokenError,
+          technicalDetails:
+              'GoogleSignIn returned empty idToken for ${googleUser.email}.',
+        );
       }
 
       await ensureSignedInSilently();
@@ -217,7 +308,11 @@ class AuthService {
 
       final newUser = client.auth.currentUser;
       if (newUser == null) {
-        throw const AuthActionException(AppStrings.googleTokenError);
+        throw const AuthActionException(
+          AppStrings.googleTokenError,
+          technicalDetails:
+              'Supabase auth.currentUser remained null after Google ID token exchange.',
+        );
       }
 
       final resolvedPhotoUrl =
@@ -235,22 +330,27 @@ class AuthService {
         displayName: resolvedName,
       );
     } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled ||
-          e.code == GoogleSignInExceptionCode.interrupted) {
+      if (isUserCanceledGoogleSignIn(e)) {
         return null;
       }
-      debugPrint(
-        'Karrito GoogleSignInException: code=${e.code} '
-        'description=${e.description} details=${e.details}',
+      final tech = formatTechnicalError(e);
+      debugPrint('Karrito $tech');
+      throw AuthActionException(
+        AppStrings.googleTokenError,
+        technicalDetails: tech,
       );
-      throw const AuthActionException(AppStrings.googleTokenError);
+    } on PlatformException catch (e) {
+      final tech = formatTechnicalError(e);
+      debugPrint('Karrito Google sign-in $tech');
+      throw AuthActionException(
+        AppStrings.googleTokenError,
+        technicalDetails: tech,
+      );
     } on AuthActionException {
       rethrow;
     } on AuthException catch (e) {
-      debugPrint(
-        'Karrito Supabase Google AuthException: '
-        'code=${e.code} status=${e.statusCode} message=${e.message}',
-      );
+      final tech = formatTechnicalError(e);
+      debugPrint('Karrito Supabase Google $tech');
       // Avoid a false error if the session actually linked before a secondary exception.
       final activeUser = client.auth.currentUser;
       if (activeUser != null && !activeUser.isAnonymous) {
@@ -262,10 +362,17 @@ class AuthService {
           displayName: extractDisplayNameFromMetadata(activeUser.userMetadata),
         );
       }
-      throw const AuthActionException(AppStrings.googleTokenError);
+      throw AuthActionException(
+        AppStrings.googleTokenError,
+        technicalDetails: tech,
+      );
     } catch (e) {
-      debugPrint('Karrito unexpected Google sign-in error: $e');
-      throw const AuthActionException(AppStrings.googleTokenError);
+      final tech = formatTechnicalError(e);
+      debugPrint('Karrito unexpected Google sign-in error: $tech');
+      throw AuthActionException(
+        AppStrings.googleTokenError,
+        technicalDetails: tech,
+      );
     }
   }
 

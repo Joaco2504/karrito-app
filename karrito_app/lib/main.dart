@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -311,6 +312,80 @@ class _KarritoAppState extends ConsumerState<KarritoApp>
     return KarritoToastType.success;
   }
 
+  Future<void> _showDiagnosticErrorDialog({
+    required String title,
+    required String message,
+    required String technicalDetail,
+  }) async {
+    final navContext = _navigatorKey.currentContext;
+    if (navContext == null || !mounted) return;
+
+    await showDialog<void>(
+      context: navContext,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        final karritoColors = theme.extension<KarritoColors>()!;
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(message, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 12),
+                Text(
+                  AppStrings.errorTechnicalDetailLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: karritoColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: karritoColors.fieldSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: karritoColors.border),
+                  ),
+                  child: SelectableText(
+                    technicalDetail,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'monospace',
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: technicalDetail));
+                if (!mounted) return;
+                final overlay = _navigatorKey.currentState?.overlay;
+                if (overlay != null) {
+                  KarritoToast.showInOverlay(
+                    overlay,
+                    message: AppStrings.diagnosticCopiedNotice,
+                    type: KarritoToastType.info,
+                  );
+                }
+              },
+              child: const Text(AppStrings.copyDiagnosticButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text(AppStrings.closeDialogButton),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<ShoppingUiState>(shoppingControllerProvider, (previous, next) {
@@ -325,6 +400,19 @@ class _KarritoAppState extends ConsumerState<KarritoApp>
             type: _resolveToastType(next),
           );
         }
+      }
+      if (next.diagnosticDialogVersion != previous?.diagnosticDialogVersion &&
+          next.diagnosticDialogTechnicalDetail != null &&
+          mounted) {
+        unawaited(
+          _showDiagnosticErrorDialog(
+            title:
+                next.diagnosticDialogTitle ?? AppStrings.googleErrorDialogTitle,
+            message:
+                next.diagnosticDialogMessage ?? AppStrings.googleTokenError,
+            technicalDetail: next.diagnosticDialogTechnicalDetail!,
+          ),
+        );
       }
     });
 

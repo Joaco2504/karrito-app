@@ -34,6 +34,7 @@ class SubscriptionPlanOffer {
     required this.productId,
     required this.priceLabel,
     this.storePackage,
+    this.fallbackProduct,
   });
 
   final String planTier;
@@ -41,6 +42,7 @@ class SubscriptionPlanOffer {
   final String productId;
   final String priceLabel;
   final Package? storePackage;
+  final StoreProduct? fallbackProduct;
 }
 
 class SubscriptionActionOutcome {
@@ -161,56 +163,222 @@ class RevenueCatSubscriptionService implements SubscriptionService {
     }
   }
 
+  static String _cleanPriceLabel(StoreProduct? product, String fallback) {
+    final price = product?.priceString.trim();
+    if (price != null && price.isNotEmpty) {
+      return price;
+    }
+    return fallback;
+  }
+
+  static bool _matchesPlanProduct(
+    StoreProduct product, {
+    required String productId,
+    required String basePlanId,
+  }) {
+    final idLower = product.identifier.trim().toLowerCase();
+    final targetProd = productId.trim().toLowerCase();
+    final targetBase = basePlanId.trim().toLowerCase();
+
+    if (idLower == targetProd ||
+        idLower.startsWith('$targetProd:') ||
+        idLower.contains(targetProd)) {
+      return true;
+    }
+
+    final defaultOpt = product.defaultOption;
+    if (defaultOpt != null) {
+      final optId = defaultOpt.id.trim().toLowerCase();
+      final optProd = defaultOpt.productId.trim().toLowerCase();
+      final optStoreProd = defaultOpt.storeProductId.trim().toLowerCase();
+      if (optId == targetBase ||
+          optId.startsWith('$targetBase:') ||
+          optProd == targetProd ||
+          optStoreProd == targetProd ||
+          optStoreProd.startsWith('$targetProd:')) {
+        return true;
+      }
+    }
+
+    final options = product.subscriptionOptions;
+    if (options != null) {
+      for (final opt in options) {
+        final optId = opt.id.trim().toLowerCase();
+        final optProd = opt.productId.trim().toLowerCase();
+        final optStoreProd = opt.storeProductId.trim().toLowerCase();
+        if (optId == targetBase ||
+            optId.startsWith('$targetBase:') ||
+            optProd == targetProd ||
+            optStoreProd == targetProd ||
+            optStoreProd.startsWith('$targetProd:')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static bool _matchesPlanPackage(
+    Package pkg, {
+    required List<String> packageIds,
+    required String productId,
+    required String basePlanId,
+  }) {
+    final pkgIdLower = pkg.identifier.trim().toLowerCase();
+    for (final candidate in packageIds) {
+      if (pkgIdLower == candidate.toLowerCase()) {
+        return true;
+      }
+    }
+    return _matchesPlanProduct(
+      pkg.storeProduct,
+      productId: productId,
+      basePlanId: basePlanId,
+    );
+  }
+
+  /// Resolves both monthly plans from RevenueCat [Offerings].
+  ///
+  /// Searches `offerings.current` first, then `offerings.getOffering('default')`,
+  /// and finally all other offerings in `offerings.all.values` so that both
+  /// `karrito_basic_2usd` (`basic-monthly`) and `karrito_pro_3usd` (`pro-monthly`)
+  /// always read their localized Google Play `storeProduct.priceString` (e.g. ARS)
+  /// even if RevenueCat dashboard has them split across separate offerings.
+  static List<SubscriptionPlanOffer> resolveMonthlyOffersFromOfferings(
+    Offerings offerings,
+  ) {
+    final orderedPackages = <Package>[];
+    final seenOfferingIds = <String>{};
+
+    void addOfferingPackages(Offering? offering) {
+      if (offering == null) return;
+      if (!seenOfferingIds.add(offering.identifier)) return;
+      orderedPackages.addAll(offering.availablePackages);
+    }
+
+    addOfferingPackages(offerings.current);
+    addOfferingPackages(
+      offerings.getOffering(MonetizationConfig.revenueCatOfferingId),
+    );
+    for (final offering in offerings.all.values) {
+      addOfferingPackages(offering);
+    }
+
+    Package? findMatching({
+      required List<String> packageIds,
+      required String productId,
+      required String basePlanId,
+    }) {
+      for (final pkg in orderedPackages) {
+        if (_matchesPlanPackage(
+          pkg,
+          packageIds: packageIds,
+          productId: productId,
+          basePlanId: basePlanId,
+        )) {
+          return pkg;
+        }
+      }
+      return null;
+    }
+
+    final basicPkg = findMatching(
+      packageIds: const <String>[
+        MonetizationConfig.packageBasicMonthly,
+        MonetizationConfig.basePlanBasicMonthly,
+        MonetizationConfig.productBasicId,
+      ],
+      productId: MonetizationConfig.productBasicId,
+      basePlanId: MonetizationConfig.basePlanBasicMonthly,
+    );
+    final proPkg = findMatching(
+      packageIds: const <String>[
+        MonetizationConfig.packageProMonthly,
+        MonetizationConfig.basePlanProMonthly,
+        MonetizationConfig.productProId,
+      ],
+      productId: MonetizationConfig.productProId,
+      basePlanId: MonetizationConfig.basePlanProMonthly,
+    );
+
+    return <SubscriptionPlanOffer>[
+      SubscriptionPlanOffer(
+        planTier: KarritoPlanTier.basic,
+        packageId:
+            basicPkg?.identifier ?? MonetizationConfig.packageBasicMonthly,
+        productId: MonetizationConfig.productBasicId,
+        priceLabel: _cleanPriceLabel(basicPkg?.storeProduct, 'USD 2 / mes'),
+        storePackage: basicPkg,
+      ),
+      SubscriptionPlanOffer(
+        planTier: KarritoPlanTier.pro,
+        packageId: proPkg?.identifier ?? MonetizationConfig.packageProMonthly,
+        productId: MonetizationConfig.productProId,
+        priceLabel: _cleanPriceLabel(proPkg?.storeProduct, 'USD 3 / mes'),
+        storePackage: proPkg,
+      ),
+    ];
+  }
+
   @override
   Future<List<SubscriptionPlanOffer>> fetchMonthlyOffers() async {
     final fallback = defaultFallbackOffers();
+    if (!isConfigured && MonetizationConfig.isRevenueCatConfigured) {
+      await configure();
+    }
     if (!isConfigured) return fallback;
 
     try {
       final offerings = await Purchases.getOfferings();
-      final offering =
-          offerings.getOffering(MonetizationConfig.revenueCatOfferingId) ??
-          offerings.current;
-      if (offering == null) return fallback;
+      var resolved = resolveMonthlyOffersFromOfferings(offerings);
 
-      Package? findPackage(String pkgId, String productId) {
-        final direct = offering.getPackage(pkgId);
-        if (direct != null) return direct;
-        for (final pkg in offering.availablePackages) {
-          if (pkg.identifier == pkgId ||
-              pkg.storeProduct.identifier == productId ||
-              pkg.storeProduct.identifier.startsWith('$productId:')) {
-            return pkg;
-          }
+      final missingProductIds = <String>[
+        for (final offer in resolved)
+          if (offer.storePackage == null) offer.productId,
+      ];
+
+      if (missingProductIds.isNotEmpty) {
+        debugPrint(
+          'Karrito RevenueCat: missing packages in offerings ($missingProductIds); '
+          'current=${offerings.current?.identifier}, all=${offerings.all.keys.toList()}. '
+          'Querying Google Play products directly.',
+        );
+        try {
+          final storeProducts = await Purchases.getProducts(
+            missingProductIds,
+            productCategory: ProductCategory.subscription,
+          );
+          resolved = resolved.map((offer) {
+            if (offer.storePackage != null) return offer;
+            final basePlanId = offer.planTier == KarritoPlanTier.pro
+                ? MonetizationConfig.basePlanProMonthly
+                : MonetizationConfig.basePlanBasicMonthly;
+            StoreProduct? matched;
+            for (final prod in storeProducts) {
+              if (_matchesPlanProduct(
+                prod,
+                productId: offer.productId,
+                basePlanId: basePlanId,
+              )) {
+                matched = prod;
+                break;
+              }
+            }
+            if (matched == null) return offer;
+            return SubscriptionPlanOffer(
+              planTier: offer.planTier,
+              packageId: offer.packageId,
+              productId: offer.productId,
+              priceLabel: _cleanPriceLabel(matched, offer.priceLabel),
+              fallbackProduct: matched,
+            );
+          }).toList();
+        } catch (e) {
+          debugPrint('Karrito RevenueCat getProducts fallback skipped: $e');
         }
-        return null;
       }
 
-      final basicPkg = findPackage(
-        MonetizationConfig.packageBasicMonthly,
-        MonetizationConfig.productBasicId,
-      );
-      final proPkg = findPackage(
-        MonetizationConfig.packageProMonthly,
-        MonetizationConfig.productProId,
-      );
-
-      return <SubscriptionPlanOffer>[
-        SubscriptionPlanOffer(
-          planTier: KarritoPlanTier.basic,
-          packageId: MonetizationConfig.packageBasicMonthly,
-          productId: MonetizationConfig.productBasicId,
-          priceLabel: basicPkg?.storeProduct.priceString ?? 'USD 2 / mes',
-          storePackage: basicPkg,
-        ),
-        SubscriptionPlanOffer(
-          planTier: KarritoPlanTier.pro,
-          packageId: MonetizationConfig.packageProMonthly,
-          productId: MonetizationConfig.productProId,
-          priceLabel: proPkg?.storeProduct.priceString ?? 'USD 3 / mes',
-          storePackage: proPkg,
-        ),
-      ];
+      return resolved;
     } catch (e) {
       debugPrint('Karrito RevenueCat getOfferings fallback: $e');
       return fallback;
@@ -237,7 +405,8 @@ class RevenueCatSubscriptionService implements SubscriptionService {
         orElse: () => offers.last,
       );
       final pkg = selected.storePackage;
-      if (pkg == null) {
+      final fallbackProduct = selected.fallbackProduct;
+      if (pkg == null && fallbackProduct == null) {
         return const SubscriptionActionOutcome(
           planTier: KarritoPlanTier.free,
           succeeded: false,
@@ -246,7 +415,10 @@ class RevenueCatSubscriptionService implements SubscriptionService {
         );
       }
 
-      final result = await Purchases.purchase(PurchaseParams.package(pkg));
+      final params = pkg != null
+          ? PurchaseParams.package(pkg)
+          : PurchaseParams.storeProduct(fallbackProduct!);
+      final result = await Purchases.purchase(params);
       final resolvedTier = resolveTierFromEntitlements(
         result.customerInfo.entitlements.active.keys,
       );

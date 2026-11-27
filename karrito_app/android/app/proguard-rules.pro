@@ -16,9 +16,19 @@
 -keep class com.github.dart_lang.jni.** { *; }
 -keep class com.github.dart_lang.jni_flutter.** { *; }
 
-# Keep AndroidX Credential Manager & Google Identity classes used by google_sign_in_android.
+# Keep AndroidX Credential Manager, Google Identity, Play Services Auth,
+# Google Sign-In Android, and Supabase deep-link classes intact in release AABs.
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 -keep class androidx.credentials.** { *; }
+-keep class androidx.credentials.playservices.** { *; }
 -keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class com.google.android.gms.auth.** { *; }
+-keep class com.google.android.gms.identitycredentials.** { *; }
+-keep class com.google.android.gms.fido.** { *; }
+-keep class com.google.android.gms.common.api.** { *; }
+-keep class io.flutter.plugins.googlesignin.** { *; }
+-keep class com.llfbandit.app_links.** { *; }
+-keep class io.supabase.** { *; }
 
 # Keep Google Mobile Ads, Google Play Billing, RevenueCat, Firebase, Record,
 # Mobile Scanner, and Image Compress classes loaded via reflection.

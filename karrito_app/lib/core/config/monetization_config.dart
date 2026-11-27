@@ -44,6 +44,10 @@ abstract final class MonetizationConfig {
   static const String packageBasicMonthly = 'basic_monthly';
   static const String packageProMonthly = 'pro_monthly';
 
+  /// Base plans mensuales configurados en Google Play Console / RevenueCat.
+  static const String basePlanBasicMonthly = 'basic-monthly';
+  static const String basePlanProMonthly = 'pro-monthly';
+
   /// IDs de productos en Google Play / RevenueCat.
   static const String productBasicId = 'karrito_basic_2usd';
   static const String productProId = 'karrito_pro_3usd';
